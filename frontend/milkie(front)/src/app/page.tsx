@@ -45,7 +45,7 @@ export default function LoginPage() {
             Copyright © 2025 SeedProd LLC. "SeedProd" é uma marca registrada da SeedProd LLC.
           </p>
           <p className="text-black text-base md:text-xs mt-2">
-            <a href="#" className="underline">Termos de Serviço</a> | <a href="#" className="underline">Política de Privacidade</a>
+            <a href="#" className="underline">Termos de Serviço</a> | <a href="#" className="underline">Política de Privacidade</a> 
           </p>
         </div>
       </div>
