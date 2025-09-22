@@ -19,8 +19,35 @@
   }
 }
 
+
+
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+ 
+  transition: padding-right 0.3s ease-in-out;
+}
+
+body.navbar-open {
+  padding-right: 18rem; /* Espaço para o menu móvel (w-64 ou sm:w-72) */
+}
+
+@media (min-width: 640px) {
+  body.navbar-open {
+    padding-right: 18rem; /* Ajuste para sm:w-72 */
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-in-out forwards;
 }
