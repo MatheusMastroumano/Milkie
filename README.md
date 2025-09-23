@@ -1,7 +1,7 @@
 <p align="center">
-  <img src="./Milkie" alt="Logo Milkiê" width="90"/>
+  <img src="/public/Milkie.svg" alt="Logo Milkiê" width="90"/>
   &nbsp;&nbsp;&nbsp;
-  <img src="./LogoMilkie" alt="Logo Milkiê 2" width="90"/>
+  <img src="/public/LogoMilkie.svg" alt="Logo Milkiê 2" width="90"/>
 </p>
 
 <h1 align="center">Milkiê</h1>
@@ -30,14 +30,12 @@ O **Milkiê** é um sistema voltado para o gerenciamento de **compras e vendas d
 ## 📂 Estrutura do Projeto
 
 milkie/
-│── src/ # Código-fonte principal
-│── config/ # Arquivos de configuração
-│── public/ # Arquivos estáticos
-│── node_modules/ # Dependências instaladas
-│── package.json # Dependências e scripts
-│── README.md # Documentação do projeto
-
-
+├── src/ # Código-fonte principal
+├── config/ # Arquivos de configuração
+├── public/ # Arquivos estáticos
+├── node_modules/ # Dependências instaladas
+├── package.json # Dependências e scripts
+└── README.md # Documentação do projeto
 
 ---
 
@@ -94,42 +92,45 @@ http://localhost:3000
 ---
 ## 📌 Funcionalidades Principais
 
-# 🥛 Cadastro de produtos de laticínios (leite, queijos, iogurtes, etc.)
+ 🥛 Cadastro de produtos de laticínios (leite, queijos, iogurtes, etc.)
 
-# 📦 Controle de estoque com atualização automática
+ 📦 Controle de estoque com atualização automática
 
-# 🛒 Registro de compras e vendas
+ 🛒 Registro de compras e vendas
 
-# 📊 Relatórios detalhados de movimentação
+ 📊 Relatórios detalhados de movimentação
 
-# 🗄️ Integração com base de dados relacional
+ 🗄️ Integração com base de dados relacional
+
+---
 
 ## 🛠️ Scripts Disponíveis
 
-Script Função
----
+| Script          | Função                                           |
+|-----------------|-------------------------------------------------|
+| `npm run dev`   | Inicia o servidor em ambiente de desenvolvimento |
+| `npm run build` | Gera a versão de produção do sistema            |
+| `npm start`     | Executa o sistema em modo de produção          |
+| `npm test`      | Executa a suíte de testes automáticos          |
 
-```npm run dev```          Inicia o servidor em ambiente de desenvolvimento
-```npm run build```	        Gera a versão de produção do sistema
-```npm start```          Executa o sistema em modo de produção
-```npm test```	            Executa a suíte de testes automáticos
+---
 
 ## 💻 Tecnologias Utilizadas
 
-# Node.js - Plataforma de backend
+### Node.js - Plataforma de backend
 
-# Express - Framework para Node.js
+### Express - Framework para Node.js
 
-# JavaScript - Linguagem principal
+### JavaScript - Linguagem principal
 
-# MySQL - Banco de dados relacional
+### MySQL - Banco de dados relacional
 
-# dotenv - Gerenciamento de variáveis de ambiente
+### dotenv - Gerenciamento de variáveis de ambiente
 
-# React - Front-end
+### React - Front-end
 
 ## 📄 Licença
 
 Este projeto está licenciado sob a MIT License.
 
-<p align="center"> Made with ❤️ by <strong>Milkiê Team</strong> </p> ```
+<p align="center"> Concluido na marra pela <strong>Equipe Milkiê</strong> </p>
