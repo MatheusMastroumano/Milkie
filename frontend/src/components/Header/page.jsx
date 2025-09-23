@@ -76,7 +76,7 @@ export default function Navbar() {
         {
           name: 'Lojas: Cadastrar/Editar/Excluir',
           shortName: 'Lojas',
-          href: '/stores/register',
+          href: '/matriz/lojas',
           icon: (
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -277,7 +277,7 @@ export default function Navbar() {
                     src="/profile-image.jpg" // Substitua por sua imagem de perfil
                     className="w-6 h-6 xl:w-7 xl:h-7 rounded-full bg-[#AD343E] object-cover"
                     alt="Foto de Perfil"
-                    onError={(e) => (e.target.src = '/fallback-profile.png')} // Fallback para imagem quebrada
+                  
                   />
                   <svg className="w-4 h-4 ml-1 text-[#FFFFFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
@@ -390,7 +390,7 @@ export default function Navbar() {
                         src="/profile-image.jpg" // Substitua por sua imagem de perfil
                         className="w-10 h-10 rounded-full bg-[#AD343E] object-cover"
                         alt="Foto de Perfil"
-                        onError={(e) => (e.target.src = '/fallback-profile.png')} // Fallback para imagem quebrada
+                 
                       />
                     </div>
                     <div className="flex flex-col min-w-0">
