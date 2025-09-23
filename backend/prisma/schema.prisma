@@ -13,11 +13,10 @@ generator client {
 model lojas {
   id        Int        @id @default(autoincrement())
   nome      String
-  tipo      TipoLoja
+  tipo      TipoLoja   @default(filial)
   endereco  String?
-  aberta_em DateTime   @default(now())
   ativo     Boolean    @default(true)
-  criado_em DateTime   @default(now())
+  criado_em DateTime   @default(now()) 
   usuarios  usuarios[]
   precos    precos[]
   estoque   estoque[]
