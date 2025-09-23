@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/MatheusMastroumano/Milkie/refs/heads/main/frontend/public/Milkie.svg" alt="Logo Milkiê" width="90"/>
+  <img src="https://raw.githubusercontent.com/MatheusMastroumano/Milkie/refs/heads/main/frontend/public/Milkie.svg" alt="Logo Milkiê" width="120"/>
   &nbsp;&nbsp;&nbsp;
   <img src="https://raw.githubusercontent.com/MatheusMastroumano/Milkie/refs/heads/main/frontend/public/LogoMilkie.svg" alt="Logo Milkiê 2" width="90"/>
 </p>
