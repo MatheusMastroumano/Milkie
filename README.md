@@ -1,20 +1,33 @@
-<div align="center" style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+<p align="center">
+  <img src="./Milkie" alt="Logo Milkiê" width="90"/>
+  &nbsp;&nbsp;&nbsp;
+  <img src="./LogoMilkie" alt="Logo Milkiê 2" width="90"/>
+</p>
 
-  <img src="./20250922_1650_Minimalist Blue Cow_remix_01k5sfg70nfej9dhy9kapggzcx.svg" alt="Logo Milkiê" width="90"/>
+<h1 align="center">Milkiê</h1>
 
-  <h1 style="margin: 0; font-size: 42px; color: #2a4e73; font-weight: bold;">Milkiê</h1>
-
-</div>
+<p align="center">
+  <a href="https://github.com/seu-usuario/milkie/stargazers">
+    <img src="https://img.shields.io/github/stars/seu-usuario/milkie?style=flat-square" alt="Stars">
+  </a>
+  <a href="https://github.com/seu-usuario/milkie/issues">
+    <img src="https://img.shields.io/github/issues/seu-usuario/milkie?style=flat-square" alt="Issues">
+  </a>
+  <a href="https://github.com/seu-usuario/milkie/network">
+    <img src="https://img.shields.io/github/forks/seu-usuario/milkie?style=flat-square" alt="Forks">
+  </a>
+  <a href="https://img.shields.io/badge/license-MIT-blue?style=flat-square">
+    <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License">
+  </a>
+</p>
 
 ---
 
-O **Milkiê** é um sistema voltado para o gerenciamento de **compras e vendas de produtos de laticínios**, permitindo controle eficiente de estoque, cadastro de clientes e fornecedores, além de relatórios de movimentações.
+O **Milkiê** é um sistema voltado para o gerenciamento de **compras e vendas de produtos de laticínios**, permitindo controle eficiente de estoque, cadastro de clientes e fornecedores, além de relatórios detalhados de movimentações.
 
 ---
 
-<div style="border-radius: 12px; padding: 16px; background: #cfe8f9; border: 1px solid #2a4e73; color: #3a3a3a;">
-
-<h2 style="color:#2a4e73;">📂 Estrutura do Projeto</h2>
+## 📂 Estrutura do Projeto
 
 milkie/
 │── src/ # Código-fonte principal
@@ -24,84 +37,99 @@ milkie/
 │── package.json # Dependências e scripts
 │── README.md # Documentação do projeto
 
-yaml
-Copiar código
-</div>
+
 
 ---
 
-<div style="border-radius: 12px; padding: 16px; background: #ffffff; border: 1px solid #2a4e73; color: #3a3a3a;">
-
-<h2 style="color:#ad343e;">⚙️ Instalação</h2>
+## ⚙️ Instalação
 
 Clone o repositório em sua máquina:
 
 ```bash
 git clone https://github.com/seu-usuario/milkie.git
 cd milkie
-Instale as dependências dentro da pasta <b>src</b>:
+```
 
-bash
-Copiar código
+---
+
+## Instale as dependências dentro da pasta src:
+
+```bash
 cd src
 npm install
-Para instalar pacotes apenas na pasta <b>config</b>:
+```
 
-bash
-Copiar código
-cd config
+---
+
+## Para instalar pacotes apenas na pasta config:
+
+```bash
+cd ../config
 npm init -y
 npm install dotenv
-</div>
-<div style="border-radius: 12px; padding: 16px; background: #cfe8f9; border: 1px solid #2a4e73; color: #3a3a3a;"> <h2 style="color:#2a4e73;">▶️ Como Usar</h2>
-No diretório raiz do projeto, execute:
+```
 
-bash
-Copiar código
+---
+
+## ▶️ Como Usar
+No diretório raiz do projeto, execute:
+```bash
 npm run dev
+```
+
 Saída esperada no terminal:
 
-shell
-Copiar código
+```bash
 > Starting Milkiê server...
 > Listening on http://localhost:3000
 > Database connected successfully
-Acesse em seu navegador:
+```
 
-arduino
-Copiar código
+## Acesse em seu navegador:
+
+```bash
 http://localhost:3000
-</div>
-<div style="border-radius: 12px; padding: 16px; background: #ffffff; border: 1px solid #ad343e; color: #3a3a3a;"> <h2 style="color:#ad343e;">📌 Funcionalidades Principais</h2>
-Cadastro de produtos de laticínios (leite, queijos, iogurtes, etc.)
+```
 
-Controle de estoque com atualização automática
+---
+## 📌 Funcionalidades Principais
 
-Registro de compras e vendas
+# 🥛 Cadastro de produtos de laticínios (leite, queijos, iogurtes, etc.)
 
-Relatórios detalhados de movimentação
+# 📦 Controle de estoque com atualização automática
 
-Integração com base de dados relacional
+# 🛒 Registro de compras e vendas
 
-</div>
-<div style="border-radius: 12px; padding: 16px; background: #cfe8f9; border: 1px solid #2a4e73; color: #3a3a3a;"> <h2 style="color:#2a4e73;">🛠️ Scripts Disponíveis</h2>
-Script	Função
-npm run dev	Inicia o servidor em ambiente de desenvolvimento
-npm run build	Gera a versão de produção do sistema
-npm start	Executa o sistema em modo de produção
-npm test	Executa a suíte de testes automáticos
+# 📊 Relatórios detalhados de movimentação
 
-</div>
-<div style="border-radius: 12px; padding: 16px; background: #ffffff; border: 1px solid #2a4e73; color: #3a3a3a;"> <h2 style="color:#ad343e;">🧑‍💻 Contribuindo</h2>
-Para contribuir com o projeto, faça um fork, crie uma branch e abra um Pull Request:
+# 🗄️ Integração com base de dados relacional
 
-bash
-Copiar código
-git checkout -b minha-feature
-git commit -m "Adicionando nova funcionalidade"
-git push origin minha-feature
-</div>
-<div style="border-radius: 12px; padding: 16px; background: #cfe8f9; border: 1px solid #2a4e73; color: #3a3a3a;"> <h2 style="color:#2a4e73;">📄 Licença</h2>
-Este projeto é licenciado sob a <b>MIT License</b>.
+## 🛠️ Scripts Disponíveis
 
-</div> ```
+Script Função
+---
+
+```npm run dev```          Inicia o servidor em ambiente de desenvolvimento
+```npm run build```	        Gera a versão de produção do sistema
+```npm start```          Executa o sistema em modo de produção
+```npm test```	            Executa a suíte de testes automáticos
+
+## 💻 Tecnologias Utilizadas
+
+# Node.js - Plataforma de backend
+
+# Express - Framework para Node.js
+
+# JavaScript - Linguagem principal
+
+# MySQL - Banco de dados relacional
+
+# dotenv - Gerenciamento de variáveis de ambiente
+
+# React - Front-end
+
+## 📄 Licença
+
+Este projeto está licenciado sob a MIT License.
+
+<p align="center"> Made with ❤️ by <strong>Milkiê Team</strong> </p> ```
