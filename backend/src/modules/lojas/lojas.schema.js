@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { id, nome, criadoEm } from '../../shared/config/verify.js';
+import { id, nome, criadoEm } from '../../shared/utils/verify.js';
 
 export const LojaSchema = z.object({
     id: id,
