@@ -84,9 +84,9 @@ export default function Navbar() {
           ),
         },
         {
-          name: 'Usuários: Cadastrar/Editar/Excluir',
-          shortName: 'Usuários',
-          href: '/users/register',
+          name: 'funcionários: Cadastrar/Editar/Excluir',
+          shortName: 'funcionários',
+          href: '/matriz/funcionarios',
           icon: (
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
@@ -219,8 +219,8 @@ export default function Navbar() {
             {/* Logo and Brand */}
             <div className="flex items-center justify-center space-x-2 sm:space-x-3 min-w-0 flex-shrink-0">
               <img 
-                src="/logo-laticinios.png" 
-                className="h-6 sm:h-8 w-auto" 
+                src="/milkie.svg" 
+                className="h-15 sm:h-18 w-18" 
                 alt="Laticínios Sabor" 
               />
               
