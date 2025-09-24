@@ -29,6 +29,7 @@ O **Milkiê** é um sistema voltado para o gerenciamento de **compras e vendas d
 
 ## 📂 Estrutura do Projeto
 
+```
 milkie/
 ├── src/ # Código-fonte principal
 ├── config/ # Arquivos de configuração
@@ -36,6 +37,7 @@ milkie/
 ├── node_modules/ # Dependências instaladas
 ├── package.json # Dependências e scripts
 └── README.md # Documentação do projeto
+```
 
 ---
 
