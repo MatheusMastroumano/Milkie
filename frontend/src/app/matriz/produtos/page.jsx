@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from "@/components/Header/page";
 
 export default function Produtos() {
+  const router = useRouter();
   const [fornecedores] = useState([
     { id: 1, nome: 'Fornecedor A' },
     { id: 2, nome: 'Fornecedor B' },
@@ -52,6 +54,16 @@ export default function Produtos() {
   const [errors, setErrors] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notification, setNotification] = useState(null);
+
+  // Função para navegar para a página de detalhes do produto
+  const handleViewProduct = (produto) => {
+    // Salvar os dados do produto no localStorage temporariamente
+    localStorage.setItem('productDetails', JSON.stringify({
+      ...produto,
+      fornecedor: fornecedores.find(f => f.id === produto.fornecedor_id)?.nome || 'Sem fornecedor'
+    }));
+    router.push(`/matriz/produtos/${produto.id}`);
+  };
 
   // Função para mostrar notificação e fechar após 3 segundos
   const showNotification = (message) => {
@@ -359,7 +371,11 @@ export default function Produtos() {
                   </thead>
                   <tbody>
                     {produtos.map((produto) => (
-                      <tr key={produto.id} className="border-b border-gray-200 hover:bg-[#CFE8F9]">
+                      <tr 
+                        key={produto.id} 
+                        className="border-b border-gray-200 hover:bg-[#CFE8F9] cursor-pointer"
+                        onClick={() => handleViewProduct(produto)}
+                      >
                         <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.sku}</td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[150px] sm:max-w-[200px]">
                           {produto.nome}
@@ -372,13 +388,19 @@ export default function Produtos() {
                         </td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3 text-center space-x-2">
                           <button
-                            onClick={() => openEditProduto(produto)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditProduto(produto);
+                            }}
                             className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                           >
                             Editar
                           </button>
                           <button
-                            onClick={() => handleDeleteProduto(produto.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteProduto(produto.id);
+                            }}
                             className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                           >
                             Excluir
