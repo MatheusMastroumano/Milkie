@@ -190,7 +190,8 @@ model venda_pagamentos {
 
 enum MetodoPagamento {
   dinheiro
-  cartao
+  cartaocredito
+  cartaodebito
   pix
 }
 

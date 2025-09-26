@@ -9,7 +9,7 @@ export const FuncionariosSchema = z.object({
     telefone: z.string(),
     idade: z.number().int().positive(),
     cargo: string,
-    salario: z.number().positive(),
+    salario: z.union([ z.string(), z.number()]).transform((val) => new Decimal(val)),
     ativo: z.boolean().default(true),
     criado_em: criadoEm,
 });
