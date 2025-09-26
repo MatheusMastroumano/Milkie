@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const tabelas = {
+export const tabelas = {
     lojas: prisma.lojas,
     funcionarios: prisma.funcionarios,
     usuarios: prisma.usuarios,
