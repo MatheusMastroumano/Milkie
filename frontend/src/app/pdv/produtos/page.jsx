@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function PDV() {
@@ -23,34 +24,6 @@ export default function PDV() {
             svg: "/code.png"
         },
     ];
-
-    // Estado para histórico de vendas
-    const [historicoVendas, setHistoricoVendas] = useState([
-        {
-            id: 1,
-            data: '2025-01-26',
-            hora: '14:30',
-            total: 45.50,
-            itens: ['Queijo x2', 'Leite x1'],
-            metodo: 'Dinheiro'
-        },
-        {
-            id: 2,
-            data: '2025-01-26',
-            hora: '13:15',
-            total: 32.99,
-            itens: ['Leite x1', 'Queijo x1'],
-            metodo: 'PIX'
-        },
-        {
-            id: 3,
-            data: '2025-01-25',
-            hora: '16:45',
-            total: 67.50,
-            itens: ['Queijo x3', 'Leite x2'],
-            metodo: 'Cartão'
-        }
-    ]);
 
     const [quantidades, setQuantidades] = useState({})
     const [listaCompras, setListaCompras] = useState([])
@@ -93,7 +66,6 @@ export default function PDV() {
         setQuantidades({ ...quantidades, [id]: valor })
     }
 
-
     return (
         <>
             <main className="min-h-screen bg-[#FFFFFF] transition-all duration-300">
@@ -112,56 +84,17 @@ export default function PDV() {
                         <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] text-center flex-1">
                             Ponto de Venda (PDV)
                         </h1>
-                        <div className="w-32"></div>
+                        <div className="w-32"></div> {/* Espaçador para centralizar o título */}
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                        {/* Histórico de Vendas - Esquerda */}
-                        <div className="lg:col-span-3">
-                            <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 h-[600px] overflow-y-auto">
-                                <h2 className="text-lg font-semibold text-[#2A4E73] mb-4 text-center">
-                                    Histórico de Vendas
-                                </h2>
-                                
-                                {historicoVendas.length === 0 ? (
-                                    <div className="text-center py-8">
-                                        <p className="text-[#2A4E73] text-sm">Nenhuma venda registrada</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {historicoVendas.map((venda) => (
-                                            <div key={venda.id} className="bg-[#FFFFFF] rounded-lg p-3 border border-gray-200 hover:shadow-md transition-shadow">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">{venda.data}</p>
-                                                        <p className="text-xs text-gray-500">{venda.hora}</p>
-                                                    </div>
-                                                    <span className="text-sm font-bold text-[#2A4E73]">
-                                                        R$ {venda.total.toFixed(2)}
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-1">
-                                                    {venda.itens.map((item, index) => (
-                                                        <p key={index} className="text-xs text-gray-600">{item}</p>
-                                                    ))}
-                                                </div>
-                                                <div className="mt-2 pt-2 border-t border-gray-100">
-                                                    <span className="text-xs text-[#2A4E73] font-medium">{venda.metodo}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </section>
-                        </div>
-
-                        {/* Produtos - Centro */}
-                        <div className="lg:col-span-6">
-                            <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 h-[600px] overflow-y-auto">
-                                <h2 className="text-lg font-semibold text-[#2A4E73] mb-4 text-center">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Seção de Produtos */}
+                        <div className="lg:col-span-2">
+                            <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
+                                <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
                                     Produtos Disponíveis
                                 </h2>
-                                <div className="grid grid-cols-1 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {produtos.map((produto) => (
                                         <div key={produto.id} className="bg-[#FFFFFF] rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg transition-shadow">
                                             <div className="flex items-center space-x-4">
@@ -201,17 +134,17 @@ export default function PDV() {
                             </section>
                         </div>
 
-                        {/* Carrinho e Total - Direita */}
-                        <div className="lg:col-span-3">
-                            <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 h-[600px] overflow-y-auto">
-                                <h2 className="text-lg font-semibold text-[#2A4E73] mb-4 text-center">
+                        {/* Seção do Carrinho */}
+                        <div className="lg:col-span-1">
+                            <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
+                                <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
                                     Carrinho de Compras
                                 </h2>
                                 
                         {listaCompras.length === 0 ? (
                                     <div className="text-center py-8">
-                                        <p className="text-[#2A4E73] text-sm">Nenhum item no carrinho</p>
-                                        <p className="text-gray-600 text-xs mt-2">Adicione produtos para começar a venda</p>
+                                        <p className="text-[#2A4E73] text-lg">Nenhum item no carrinho</p>
+                                        <p className="text-gray-600 text-sm mt-2">Adicione produtos para começar a venda</p>
                                     </div>
                         ) : (
                                     <>
@@ -292,3 +225,4 @@ export default function PDV() {
         </>
     );
 }
+
