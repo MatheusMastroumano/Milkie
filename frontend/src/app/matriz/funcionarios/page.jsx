@@ -7,20 +7,27 @@ export default function Funcionarios() {
   const [lojas, setLojas] = useState([
     { id: 1, nome: 'Loja Centro', tipo: 'Matriz', endereco: 'Rua Principal, 123' },
     { id: 2, nome: 'Loja Sul', tipo: 'Filial', endereco: 'Av. Sul, 456' },
+    { id: 3, nome: 'Loja Norte', tipo: 'Filial', endereco: 'Rua Norte, 789' },
+    { id: 4, nome: 'Loja Oeste', tipo: 'Filial', endereco: 'Av. Oeste, 321' },
   ]);
   const [funcionarios, setFuncionarios] = useState([
-    { id: 1, loja_id: 1, nome: 'Ana Silva', cargo: 'Gerente', telefone: '(11) 98765-4321' },
-    { id: 2, loja_id: 1, nome: 'João Santos', cargo: 'Vendedor', telefone: '(11) 91234-5678' },
-    { id: 3, loja_id: 2, nome: 'Maria Oliveira', cargo: 'Vendedor', telefone: '(11) 93456-7890' },
+    { id: 1, loja_id: 1, nome: 'Ana Silva', cargo: 'Gerente', telefone: '(11) 98765-4321', email: 'ana.silva@empresa.com' },
+    { id: 2, loja_id: 1, nome: 'João Santos', cargo: 'Vendedor', telefone: '(11) 91234-5678', email: 'joao.santos@empresa.com' },
+    { id: 3, loja_id: 2, nome: 'Maria Oliveira', cargo: 'Vendedor', telefone: '(11) 93456-7890', email: 'maria.oliveira@empresa.com' },
+    { id: 4, loja_id: 3, nome: 'Pedro Costa', cargo: 'Supervisor', telefone: '(11) 95678-1234', email: 'pedro.costa@empresa.com' },
+    { id: 5, loja_id: 4, nome: 'Julia Lima', cargo: 'Vendedor', telefone: '(11) 94567-8901', email: 'julia.lima@empresa.com' },
   ]);
   const [novoFuncionario, setNovoFuncionario] = useState({
     nome: '',
     cargo: '',
     telefone: '',
+    email: '',
     loja_id: '',
   });
   const [editFuncionario, setEditFuncionario] = useState(null);
   const [selectedLojaId, setSelectedLojaId] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [lojaSearchTerm, setLojaSearchTerm] = useState('');
   const [errors, setErrors] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -39,6 +46,8 @@ export default function Funcionarios() {
     if (!funcionario.telefone.trim()) newErrors.telefone = 'O telefone é obrigatório';
     else if (!/^\(\d{2}\)\s\d{5}-\d{4}$/.test(funcionario.telefone))
       newErrors.telefone = 'Formato de telefone inválido (ex.: (11) 98765-4321)';
+    if (funcionario.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(funcionario.email))
+      newErrors.email = 'Formato de email inválido';
     if (!funcionario.loja_id) newErrors.loja_id = 'Selecione uma loja';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -60,11 +69,12 @@ export default function Funcionarios() {
   const handleAddFuncionario = (e) => {
     e.preventDefault();
     if (validateForm(novoFuncionario)) {
+      const nextId = Math.max(...funcionarios.map(func => func.id), 0) + 1;
       setFuncionarios([
         ...funcionarios,
-        { id: funcionarios.length + 1, ...novoFuncionario, loja_id: parseInt(novoFuncionario.loja_id) },
+        { id: nextId, ...novoFuncionario, loja_id: parseInt(novoFuncionario.loja_id) },
       ]);
-      setNovoFuncionario({ nome: '', cargo: '', telefone: '', loja_id: '' });
+      setNovoFuncionario({ nome: '', cargo: '', telefone: '', email: '', loja_id: '' });
       setErrors({});
       showNotification('Funcionário criado com sucesso! 🎉');
     }
@@ -109,9 +119,23 @@ export default function Funcionarios() {
     }
   };
 
-  // Filtrar funcionários pela loja selecionada
+  // Filtrar lojas pelo termo de busca
+  const filteredLojas = lojas.filter(loja => 
+    loja.nome.toLowerCase().includes(lojaSearchTerm.toLowerCase()) ||
+    loja.tipo.toLowerCase().includes(lojaSearchTerm.toLowerCase()) ||
+    loja.endereco.toLowerCase().includes(lojaSearchTerm.toLowerCase())
+  );
+
+  // Filtrar funcionários pela loja selecionada e pelo termo de busca
   const filteredFuncionarios = selectedLojaId
-    ? funcionarios.filter((func) => func.loja_id === parseInt(selectedLojaId))
+    ? funcionarios
+        .filter((func) => func.loja_id === parseInt(selectedLojaId))
+        .filter((func) =>
+          func.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          func.cargo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          func.telefone.includes(searchTerm) ||
+          (func.email && func.email.toLowerCase().includes(searchTerm.toLowerCase()))
+        )
     : [];
 
   return (
@@ -129,8 +153,8 @@ export default function Funcionarios() {
             <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
               Adicionar Novo Funcionário
             </h2>
-            <form onSubmit={handleAddFuncionario} className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-              <div className="flex-1">
+            <form onSubmit={handleAddFuncionario} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
                 <label htmlFor="nome" className="block text-sm font-medium text-[#2A4E73] mb-1">
                   Nome do Funcionário
                 </label>
@@ -144,7 +168,7 @@ export default function Funcionarios() {
                 />
                 {errors.nome && <p className="text-[#AD343E] text-sm mt-1">{errors.nome}</p>}
               </div>
-              <div className="flex-1">
+              <div>
                 <label htmlFor="cargo" className="block text-sm font-medium text-[#2A4E73] mb-1">
                   Cargo
                 </label>
@@ -158,7 +182,7 @@ export default function Funcionarios() {
                 />
                 {errors.cargo && <p className="text-[#AD343E] text-sm mt-1">{errors.cargo}</p>}
               </div>
-              <div className="flex-1">
+              <div>
                 <label htmlFor="telefone" className="block text-sm font-medium text-[#2A4E73] mb-1">
                   Telefone
                 </label>
@@ -173,7 +197,21 @@ export default function Funcionarios() {
                 />
                 {errors.telefone && <p className="text-[#AD343E] text-sm mt-1">{errors.telefone}</p>}
               </div>
-              <div className="flex-1">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                  Email (opcional)
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={novoFuncionario.email}
+                  onChange={(e) => setNovoFuncionario({ ...novoFuncionario, email: e.target.value })}
+                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                  placeholder="Ex.: funcionario@empresa.com"
+                />
+                {errors.email && <p className="text-[#AD343E] text-sm mt-1">{errors.email}</p>}
+              </div>
+              <div>
                 <label htmlFor="loja_id" className="block text-sm font-medium text-[#2A4E73] mb-1">
                   Loja
                 </label>
@@ -186,7 +224,7 @@ export default function Funcionarios() {
                   <option value="">Selecione uma loja</option>
                   {lojas.map((loja) => (
                     <option key={loja.id} value={loja.id}>
-                      {loja.nome}
+                      {loja.nome} ({loja.tipo})
                     </option>
                   ))}
                 </select>
@@ -195,7 +233,7 @@ export default function Funcionarios() {
               <div className="flex items-end">
                 <button
                   type="submit"
-                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                  className="w-full px-4 py-2 sm:py-3 text-sm sm:text-base font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                 >
                   Adicionar
                 </button>
@@ -208,32 +246,97 @@ export default function Funcionarios() {
             <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
               Funcionários por Loja
             </h2>
+
+            {/* Busca de Loja com Lupa */}
+            <div className="mb-6">
+              <label htmlFor="search-loja" className="block text-sm font-medium text-[#2A4E73] mb-2">
+                 Buscar Loja
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="search-loja"
+                  value={lojaSearchTerm}
+                  onChange={(e) => setLojaSearchTerm(e.target.value)}
+                  className="w-full sm:w-80 px-4 py-2 pl-10 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                  placeholder="Digite o nome, tipo ou endereço da loja..."
+                />
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#2A4E73]">
+                  
+                </div>
+              </div>
+            </div>
+
+            {/* Lista de Lojas Filtradas */}
+            {lojaSearchTerm && (
+              <div className="mb-6">
+                <h3 className="text-md font-medium text-[#2A4E73] mb-3">Lojas Encontradas:</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredLojas.map((loja) => (
+                    <div
+                      key={loja.id}
+                      onClick={() => {
+                        setSelectedLojaId(loja.id.toString());
+                        setLojaSearchTerm('');
+                      }}
+                      className="p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-[#CFE8F9] hover:border-[#2A4E73] transition-colors"
+                    >
+                      <h4 className="font-semibold text-[#2A4E73]">{loja.nome}</h4>
+                      <p className="text-sm text-gray-600">{loja.tipo}</p>
+                      <p className="text-sm text-gray-500">{loja.endereco}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Seleção de Loja */}
             <div className="mb-6">
               <label htmlFor="select-loja" className="block text-sm font-medium text-[#2A4E73] mb-2">
-                Selecionar Loja
+                Loja Selecionada
               </label>
               <select
                 id="select-loja"
                 value={selectedLojaId}
                 onChange={(e) => setSelectedLojaId(e.target.value)}
-                className="w-full sm:w-64 px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                className="w-full sm:w-80 px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
               >
                 <option value="">Selecione uma loja</option>
                 {lojas.map((loja) => (
                   <option key={loja.id} value={loja.id}>
-                    {loja.nome}
+                    {loja.nome} ({loja.tipo}) - {loja.endereco}
                   </option>
                 ))}
               </select>
             </div>
+
+            {/* Pesquisa de Funcionário */}
+            {selectedLojaId && (
+              <div className="mb-6">
+                <label htmlFor="search-funcionario" className="block text-sm font-medium text-[#2A4E73] mb-2">
+                  Pesquisar Funcionário
+                </label>
+                <input
+                  type="text"
+                  id="search-funcionario"
+                  placeholder="Digite o nome, cargo, telefone ou email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full sm:w-96 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm sm:text-base text-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                />
+              </div>
+            )}
+
+            {/* Notificação */}
             {notification && (
               <div className="w-full max-w-md mx-auto mb-4 p-4 px-4 py-2 bg-[#CFE8F9] text-[#2A4E73] rounded-md shadow-md text-sm sm:text-base font-medium text-center animate-fadeIn">
                 {notification}
               </div>
             )}
+
             {selectedLojaId ? (
               filteredFuncionarios.length === 0 ? (
-                <p className="text-[#2A4E73] text-center">Nenhum funcionário cadastrado para esta loja.</p>
+                <p className="text-[#2A4E73] text-center">Nenhum funcionário encontrado para esta loja.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm sm:text-base text-[#2A4E73] border-collapse">
@@ -243,6 +346,7 @@ export default function Funcionarios() {
                         <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Nome</th>
                         <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Cargo</th>
                         <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Telefone</th>
+                        <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Email</th>
                         <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Loja</th>
                         <th className="px-3 sm:px-4 py-2 sm:py-3 text-center rounded-tr-md">Ações</th>
                       </tr>
@@ -256,6 +360,9 @@ export default function Funcionarios() {
                           </td>
                           <td className="px-3 sm:px-4 py-2 sm:py-3">{func.cargo}</td>
                           <td className="px-3 sm:px-4 py-2 sm:py-3">{func.telefone}</td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[150px] sm:max-w-[200px]">
+                            {func.email || '-'}
+                          </td>
                           <td className="px-3 sm:px-4 py-2 sm:py-3">
                             {lojas.find((loja) => loja.id === func.loja_id)?.nome || 'Loja Não Encontrada'}
                           </td>
@@ -350,9 +457,23 @@ export default function Funcionarios() {
                         onChange={(e) => handleTelefoneChange(e, setEditFuncionario)}
                         className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                         placeholder="(XX) XXXXX-XXXX"
-                        maxLength={14}
+                        maxLength={15}
                       />
                       {errors.telefone && <p className="text-[#AD343E] text-sm mt-1">{errors.telefone}</p>}
+                    </div>
+                    <div>
+                      <label htmlFor="edit-email" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                        Email (opcional)
+                      </label>
+                      <input
+                        type="email"
+                        id="edit-email"
+                        value={editFuncionario.email || ''}
+                        onChange={(e) => setEditFuncionario({ ...editFuncionario, email: e.target.value })}
+                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        placeholder="Ex.: funcionario@empresa.com"
+                      />
+                      {errors.email && <p className="text-[#AD343E] text-sm mt-1">{errors.email}</p>}
                     </div>
                     <div>
                       <label htmlFor="edit-loja_id" className="block text-sm font-medium text-[#2A4E73] mb-1">
@@ -367,7 +488,7 @@ export default function Funcionarios() {
                         <option value="">Selecione uma loja</option>
                         {lojas.map((loja) => (
                           <option key={loja.id} value={loja.id}>
-                            {loja.nome}
+                            {loja.nome} ({loja.tipo})
                           </option>
                         ))}
                       </select>
