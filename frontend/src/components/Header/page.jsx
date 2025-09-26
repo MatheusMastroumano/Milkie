@@ -123,7 +123,7 @@ export default function Navbar() {
         {
           name: 'Fornecedores: Cadastrar/Editar',
           shortName: 'Fornecedores',
-          href: '/suppliers/manage',
+          href: '/matriz/fornecedores',
           icon: (
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
@@ -133,7 +133,7 @@ export default function Navbar() {
         {
           name: 'Estoque: Consultar/Ajustar/Movimentar',
           shortName: 'Estoque',
-          href: '/stock/manage',
+          href: '/matriz/estoque',
           icon: (
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
