@@ -1,15 +1,15 @@
 import { z } from 'zod';
-import { id, nome, criadoEm, string } from '../../shared/utils/verify.js';
+import * as utils from '../../shared/utils/verify.js';
 
 export const ProdutosSchema = z.object({
-    id: id,
-    nome: nome,
+    id: utils.id,
+    nome: utils.nome,
     marca: z.string(),
     categoria: z.string(),
     descricao: z.string(),
-    sku: string,
+    sku: utils.string,
     fabricacao: z.coerce.date(),
     validade: z.coerce.date(),
     ativo: z.boolean.default(true),
-    criado_em: criadoEm,
+    criado_em: utils.criadoEm,
 });

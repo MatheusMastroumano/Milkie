@@ -1,13 +1,13 @@
 import { z } from 'zod';
-import { id, nome, criadoEm } from '../../shared/utils/verify.js';
+import * as utils from '../../shared/utils/verify.js';
 
 export const LojasSchema = z.object({
-    id: id,
-    nome: nome,
+    id: utils.id,
+    nome: utils.nome,
     tipo: TipoLojaEnum.default('filial'),
     endereco: z.string(),
     ativo: z.boolean().default(true),
-    criado_em: criadoEm,
+    criado_em: utils.riadoEm,
 });
 
 const TipoLojaEnum = z.enum(['matriz', 'filial']);
