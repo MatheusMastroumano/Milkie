@@ -1,8 +1,9 @@
-import * as model from '../../shared/config/database.js';
+import prisma from '../../shared/config/database.js';
 
-export async function listarCaixas() {
+/* ----------------------------- FUNÇÕES BÁSICAS ---------------------------- */
+export async function getCaixas() {
   try {
-    return await model.getAll('caixa');
+    return await prisma.caixa.findMany();
   } catch (err) {
     console.log('Error: ', err);
     throw new Error(err.message);
@@ -11,7 +12,9 @@ export async function listarCaixas() {
 
 export async function getCaixasById(id) {
   try {
-    return await model.getById('caixa', id);
+    return await prisma.caixa.findUnique({
+      where: { id: id },
+    });
   } catch (err) {
     console.log('Error: ', err);
     throw new Error(err.message);
@@ -20,7 +23,9 @@ export async function getCaixasById(id) {
 
 export async function createCaixas(data) {
   try {
-    return await model.create('caixa', data);
+    return await prisma.caixa.create({
+      data: data
+    });
   } catch (err) {
     console.log('Error: ', err);
     throw new Error(err.message);
@@ -29,7 +34,10 @@ export async function createCaixas(data) {
 
 export async function updateCaixas(id, data) {
   try {
-    return await model.update('caixa', id, data);
+    return await prisma.caixa.update({
+      where: { id: id },
+      data: data,
+    });
   } catch (err) {
     console.log('Error: ', err);
     throw new Error(err.message);
@@ -38,40 +46,42 @@ export async function updateCaixas(id, data) {
 
 export async function removeCaixas(id) {
   try {
-    return await model.remove('caixa', id);
+    return await prisma.caixa.delete({
+      where: { id: id },
+    });
   } catch (err) {
     console.log('Error: ', err);
     throw new Error(err.message);
   }
 }
 
-// ---------------------------------------------------------------------------------------
-
-// services/caixa.service.js
-import { getAll, getById, create, update } from '../../shared/config/database.js';
-import { tabelas } from '../../shared/config/database.js'; // se tiver exportado
+/* -------------------------- ABERTURA E FECHAMENTO ------------------------- */
 
 // 3. Abrir caixa (não pode haver outro aberto na mesma loja)
 export async function abrirCaixa({ loja_id, aberto_por, valor_inicial }) {
-  const caixaAberto = await tabelas.caixa.findFirst({
+  const caixaAberto = await prisma.caixa.findMany({
     where: { loja_id, status: 'aberto' },
   });
 
-  if (caixaAberto) {
+  if (caixaAberto.length > 0) {
     throw new Error('Já existe um caixa aberto nesta loja.');
   }
 
-  return await model.create('caixa', {
-    loja_id,
-    aberto_por,
-    valor_inicial,
-    status: 'aberto',
+  return await prisma.caixa.create({
+    data: {
+      loja_id,
+      aberto_por,
+      valor_inicial,
+      status: 'aberto',
+    },
   });
 }
 
 // 4. Fechar caixa (atualiza valores e status)
-export async function fecharCaixa(id, { fechado_por, valor_final }) {
-  const caixa = await model.getById('caixa', id);
+export async function fecharCaixa(id, fechado_por, valor_final) {
+  const caixa = await prisma.caixa.findUnique({
+    where: { id: id },
+  });
 
   if (!caixa) {
     throw new Error('Caixa não encontrado.');
@@ -81,21 +91,26 @@ export async function fecharCaixa(id, { fechado_por, valor_final }) {
     throw new Error('Caixa já está fechado.');
   }
 
-  return await model.update('caixa', id, {
-    fechado_por,
-    fechado_em: new Date(),
-    valor_final,
-    status: 'fechado',
-  });
-}
-
-// 5. Listar caixas de uma loja
-export async function listarCaixasPorLoja(lojaId) {
-  return await tabelas.caixa.findMany({
-    where: { loja_id: Number(lojaId) },
-    include: {
-      abertoPor: true,
-      fechadoPor: true,
+  return await prisma.caixa.update({
+    where: { id: id },
+    data: {
+      fechado_por,
+      fechado_em: new Date(),
+      valor_final,
+      status: 'fechado',
     },
   });
 }
+
+
+
+// // 5. Listar caixas de uma loja
+// export async function listarCaixasPorLoja(lojaId) {
+//   return await tabelas.caixa.findMany({
+//     where: { loja_id: Number(lojaId) },
+//     include: {
+//       abertoPor: true,
+//       fechadoPor: true,
+//     },
+//   });
+// }
