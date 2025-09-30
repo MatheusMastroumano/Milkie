@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from "@/components/Header/page";
 
 export default function Funcionarios() {
+  const router = useRouter();
   const [lojas, setLojas] = useState([
     { id: 1, nome: 'Loja Centro', tipo: 'Matriz', endereco: 'Rua Principal, 123' },
     { id: 2, nome: 'Loja Sul', tipo: 'Filial', endereco: 'Av. Sul, 456' },
@@ -32,6 +34,15 @@ export default function Funcionarios() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notification, setNotification] = useState(null);
 
+  // Função para navegar para a página de detalhes do funcionário
+  const handleViewFuncionario = (funcionario) => {
+    localStorage.setItem('funcionarioDetails', JSON.stringify({
+      ...funcionario,
+      loja: lojas.find(l => l.id === funcionario.loja_id)?.nome || 'Loja Não Encontrada'
+    }));
+    router.push(`/matriz/funcionarios/${funcionario.id}`);
+  };
+
   // Função para mostrar notificação e fechar após 3 segundos
   const showNotification = (message) => {
     setNotification(message);
@@ -55,8 +66,8 @@ export default function Funcionarios() {
 
   // Função para formatar telefone enquanto digita
   const handleTelefoneChange = (e, setFuncionario) => {
-    let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não é dígito
-    if (value.length > 11) value = value.slice(0, 11); // Limita a 11 dígitos
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
     if (value.length > 2) {
       value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7, 11)}`;
     } else if (value.length > 0) {
@@ -250,7 +261,7 @@ export default function Funcionarios() {
             {/* Busca de Loja com Lupa */}
             <div className="mb-6">
               <label htmlFor="search-loja" className="block text-sm font-medium text-[#2A4E73] mb-2">
-                 Buscar Loja
+                Buscar Loja
               </label>
               <div className="relative">
                 <input
@@ -262,7 +273,7 @@ export default function Funcionarios() {
                   placeholder="Digite o nome, tipo ou endereço da loja..."
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#2A4E73]">
-                  
+                  {/* Ícone de lupa pode ser adicionado aqui */}
                 </div>
               </div>
             </div>
@@ -353,7 +364,11 @@ export default function Funcionarios() {
                     </thead>
                     <tbody>
                       {filteredFuncionarios.map((func) => (
-                        <tr key={func.id} className="border-b border-gray-200 hover:bg-[#CFE8F9]">
+                        <tr 
+                          key={func.id} 
+                          className="border-b border-gray-200 hover:bg-[#CFE8F9] cursor-pointer"
+                          onClick={() => handleViewFuncionario(func)}
+                        >
                           <td className="px-3 sm:px-4 py-2 sm:py-3">{func.id}</td>
                           <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[150px] sm:max-w-[200px]">
                             {func.nome}
@@ -368,13 +383,19 @@ export default function Funcionarios() {
                           </td>
                           <td className="px-3 sm:px-4 py-2 sm:py-3 text-center space-x-2">
                             <button
-                              onClick={() => openEditFuncionario(func)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditFuncionario(func);
+                              }}
                               className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                             >
                               Editar
                             </button>
                             <button
-                              onClick={() => handleDeleteFuncionario(func.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteFuncionario(func.id);
+                              }}
                               className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                             >
                               Excluir

@@ -84,12 +84,12 @@ export default function Navbar() {
           ),
         },
         {
-          name: 'funcionários: Cadastrar/Editar/Excluir',
-          shortName: 'funcionários',
+          name: 'Funcionários: Cadastrar/Editar/Excluir',
+          shortName: 'Funcionários',
           href: '/matriz/funcionarios',
           icon: (
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           ),
         },
@@ -149,7 +149,7 @@ export default function Navbar() {
         {
           name: 'PDV/Vendas: Visualizar Vendas',
           shortName: 'PDV/Vendas',
-          href: '/sales/view',
+          href: '/matriz/pdv',
           icon: (
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -218,12 +218,13 @@ export default function Navbar() {
           <div className="flex items-center justify-center h-14 sm:h-16">
             {/* Logo and Brand */}
             <div className="flex items-center justify-center space-x-2 sm:space-x-3 min-w-0 flex-shrink-0">
-              <img 
-                src="/milkie.svg" 
-                className="h-15 sm:h-18 w-18" 
-                alt="Laticínios Sabor" 
-              />
-              
+              <Link href="/matriz/home">
+                <img 
+                  src="/milkie.svg" 
+                  className="h-15 sm:h-18 w-18" 
+                  alt="Laticínios Sabor" 
+                />
+              </Link>
             </div>
 
             {/* Desktop Menu */}
@@ -277,7 +278,6 @@ export default function Navbar() {
                     src="/profile-image.jpg" // Substitua por sua imagem de perfil
                     className="w-6 h-6 xl:w-7 xl:h-7 rounded-full bg-[#AD343E] object-cover"
                     alt="Foto de Perfil"
-                  
                   />
                   <svg className="w-4 h-4 ml-1 text-[#FFFFFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
@@ -390,7 +390,6 @@ export default function Navbar() {
                         src="/profile-image.jpg" // Substitua por sua imagem de perfil
                         className="w-10 h-10 rounded-full bg-[#AD343E] object-cover"
                         alt="Foto de Perfil"
-                 
                       />
                     </div>
                     <div className="flex flex-col min-w-0">
