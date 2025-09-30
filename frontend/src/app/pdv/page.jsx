@@ -4,102 +4,96 @@ import { useRouter } from "next/navigation";
 
 export default function PDV() {
     const router = useRouter();
-    
+
     const produtos = [
-        {
-            id: 1,
-            nome: 'Queijo',
-            descricao: 'Queijin gotoso',
-            img: "/queijo.jpg",
-            preco: 10.99,
-            svg: "/code.png"
-        },
-        {
-            id: 2,
-            nome: 'Leite',
-            descricao: 'Las maiores leitadas de 2025',
-            img: "/leite.jpeg",
-            preco: 19.99,
-            svg: "/code.png"
-        },
+        { id: 1, nome: 'Queijo', descricao: 'Queijo Minas', img: "/queijo.jpg", preco: 10.99 },
+        { id: 2, nome: 'Leite', descricao: 'Leite Integral', img: "/leite.jpeg", preco: 19.99 }
     ];
 
-    // Estado para histórico de vendas
-    const [historicoVendas, setHistoricoVendas] = useState([
-        {
-            id: 1,
-            data: '2025-01-26',
-            hora: '14:30',
-            total: 45.50,
-            itens: ['Queijo x2', 'Leite x1'],
-            metodo: 'Dinheiro'
-        },
-        {
-            id: 2,
-            data: '2025-01-26',
-            hora: '13:15',
-            total: 32.99,
-            itens: ['Leite x1', 'Queijo x1'],
-            metodo: 'PIX'
-        },
-        {
-            id: 3,
-            data: '2025-01-25',
-            hora: '16:45',
-            total: 67.50,
-            itens: ['Queijo x3', 'Leite x2'],
-            metodo: 'Cartão'
-        }
-    ]);
+    const [quantidades, setQuantidades] = useState({});
+    const [listaCompras, setListaCompras] = useState([]);
+    const [selectedItemId, setSelectedItemId] = useState(null);
+    const [keypadMode, setKeypadMode] = useState('discount');
+    const [inputValue, setInputValue] = useState("");
+    const [termoBusca, setTermoBusca] = useState("");
 
-    const [quantidades, setQuantidades] = useState({})
-    const [listaCompras, setListaCompras] = useState([])
-    
-    const adicionarProduto = (produto) => {
-        const quantidade = parseInt(quantidades[produto.id]) || 1;
-
-        const existe = listaCompras.find((item) => item.id === produto.id);
-
-        if (existe) {
-            setListaCompras(
-                listaCompras.map((item) =>
-                    item.id === produto.id ? { ...item, quantidade: item.quantidade + quantidade } : item)
-            )
-        } else {
-            setListaCompras([...listaCompras, { ...produto, quantidade }])
-        }
-    }
-
-    const removerProduto = (id) => {
-        setListaCompras(listaCompras.filter((item) => item.id !== id));
-    }
-
-    const atualizarQuantidadeCarrinho = (id, novaQuantidade) => {
-        if (novaQuantidade <= 0) {
-            removerProduto(id);
-            return;
-        }
-        setListaCompras(
-            listaCompras.map((item) =>
-                item.id === id ? { ...item, quantidade: novaQuantidade } : item)
-        );
-    }
-
-    const valorTotal = listaCompras.reduce(
-        (total, item) => total + item.preco * item.quantidade, 0
+    const produtosFiltrados = produtos.filter(p =>
+        p.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
+        p.descricao.toLowerCase().includes(termoBusca.toLowerCase())
     );
 
-    const atualizarQuantidade = (id, valor) => {
-        setQuantidades({ ...quantidades, [id]: valor })
-    }
+    const adicionarProduto = (produto) => {
+        const quantidade = parseInt(String(quantidades[produto.id])) || 1;
+        const existente = listaCompras.find((i) => i.id === produto.id);
+        if (existente) {
+            setListaCompras(listaCompras.map((i) => (i.id === produto.id ? { ...i, quantidade: i.quantidade + quantidade } : i)));
+        } else {
+            setListaCompras([
+                ...listaCompras,
+                { ...produto, quantidade, originalPreco: produto.preco, descontoPercent: 0, precoCustom: false }
+            ]);
+        }
+        setSelectedItemId(produto.id);
+        setInputValue("");
+    };
 
+    const removerProduto = (id) => {
+        setListaCompras(listaCompras.filter((i) => i.id !== id));
+        if (selectedItemId === id) setSelectedItemId(null);
+    };
+
+    const atualizarQuantidadeCarrinho = (id, novaQuantidade) => {
+        if (novaQuantidade <= 0) return removerProduto(id);
+        setListaCompras(listaCompras.map((i) => (i.id === id ? { ...i, quantidade: novaQuantidade } : i)));
+    };
+
+    const valorTotal = listaCompras.reduce((t, i) => t + i.preco * i.quantidade, 0);
+
+    const atualizarQuantidade = (id, valor) => {
+        setQuantidades({ ...quantidades, [id]: valor });
+    };
+
+    const handleKey = (key) => {
+        if (key === 'C') return setInputValue("");
+        if (key === 'BACK') return setInputValue((v) => v.slice(0, -1));
+        setInputValue((v) => v + key);
+    };
+
+    const aplicarValor = () => {
+        if (selectedItemId == null) return;
+        const item = listaCompras.find((i) => i.id === selectedItemId);
+        if (!item) return;
+        if (keypadMode === 'qty') {
+            const q = Math.max(1, parseInt(inputValue || '0'));
+            atualizarQuantidadeCarrinho(item.id, q);
+        } else if (keypadMode === 'discount') {
+            const percent = Math.max(0, Math.min(100, parseFloat(inputValue || '0')));
+            const base = item.originalPreco ?? item.preco;
+            const novoPreco = Math.max(0, parseFloat((base * (1 - percent / 100)).toFixed(2)));
+            setListaCompras(listaCompras.map((i) => i.id === item.id ? { ...i, preco: novoPreco, descontoPercent: percent, precoCustom: false } : i));
+        } else if (keypadMode === 'price') {
+            const novoPreco = Math.max(0, parseFloat(inputValue || '0'));
+            if (!isNaN(novoPreco)) {
+                setListaCompras(listaCompras.map((i) => i.id === item.id ? { ...i, preco: parseFloat(novoPreco.toFixed(2)), descontoPercent: 0, precoCustom: true, originalPreco: i.originalPreco ?? i.preco } : i));
+            }
+        }
+        setInputValue("");
+    };
+
+    const aplicarDesabilitado = () => {
+        if (!selectedItemId || inputValue === '') return true;
+        if (keypadMode === 'qty') return parseInt(inputValue) <= 0 || isNaN(parseInt(inputValue));
+        if (keypadMode === 'discount') return isNaN(parseFloat(inputValue));
+        if (keypadMode === 'price') return isNaN(parseFloat(inputValue));
+        return true;
+    };
 
     return (
         <>
             <main className="min-h-screen bg-[#FFFFFF] transition-all duration-300">
                 <div className="max-w-7xl mx-auto px-1 sm:px-2 lg:px-3 xl:px-4 py-4">
-                    {/* Botão de Retorno e Título */}
-                    <div className="flex items-center justify-between mb-6">
+                    {/* Barra superior */}
+                    <div className="flex items-center justify-between mb-4">
                         <button
                             onClick={() => router.push('/')}
                             className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
@@ -107,183 +101,129 @@ export default function PDV() {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
-                            <span>Voltar para Home</span>
+                            <span>Início</span>
                             </button>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] text-center flex-1">
-                            Ponto de Venda (PDV)
-                        </h1>
-                        <div className="w-32"></div>
+                        <div className="w-56">
+                            <input value={termoBusca} onChange={(e)=>setTermoBusca(e.target.value)} className="w-full px-3 py-2 text-sm text-[#2A4E73] bg-[#F7FAFC] border border-gray-200 rounded-md" placeholder="Buscar produtos" />
+                        </div>
                     </div>
 
+                    {/* Grid principal: esquerda (4) | centro (8) */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                        {/* Histórico de Vendas - Esquerda */}
-                        <div className="lg:col-span-3">
-                            <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 h-[600px] overflow-y-auto">
-                                <h2 className="text-lg font-semibold text-[#2A4E73] mb-4 text-center">
-                                    Histórico de Vendas
-                                </h2>
-                                
-                                {historicoVendas.length === 0 ? (
+                        {/* ESQUERDA: carrinho + total + teclado */}
+                        <div className="lg:col-span-4">
+                            {/* Lista do carrinho */}
+                            <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 h-[360px] overflow-y-auto">
+                                <h2 className="text-lg font-semibold text-[#2A4E73] mb-4">Carrinho</h2>
+                        {listaCompras.length === 0 ? (
                                     <div className="text-center py-8">
-                                        <p className="text-[#2A4E73] text-sm">Nenhuma venda registrada</p>
+                                        <p className="text-[#2A4E73] text-sm">Nenhum item no carrinho</p>
                                     </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {historicoVendas.map((venda) => (
-                                            <div key={venda.id} className="bg-[#FFFFFF] rounded-lg p-3 border border-gray-200 hover:shadow-md transition-shadow">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div>
-                                                        <p className="text-xs text-gray-500">{venda.data}</p>
-                                                        <p className="text-xs text-gray-500">{venda.hora}</p>
+                        ) : (
+                                    <div className="space-y-2">
+                                {listaCompras.map((item) => (
+                                            <div key={item.id} onClick={() => setSelectedItemId(item.id)} className={`rounded-md p-3 border bg-white hover:shadow ${selectedItemId===item.id ? 'border-[#2A4E73]' : 'border-gray-200'} cursor-pointer`}>
+                                                <div className="flex justify-between text-sm">
+                                                    <div className="truncate max-w-[60%] text-[#2A4E73] font-medium">{item.nome}</div>
+                                                    <div className="text-[#2A4E73] font-semibold">R$ {(item.preco * item.quantidade).toFixed(2)}</div>
+                                                </div>
+                                                <div className="flex items-center justify-between mt-1 text-xs text-gray-600">
+                                                    <span>{item.quantidade}.00 Unidades × R$ {item.preco.toFixed(2)} / Unidade</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <button onClick={(e)=>{e.stopPropagation(); atualizarQuantidadeCarrinho(item.id, item.quantidade-1);}} className="w-5 h-5 flex items-center justify-center rounded-full bg-[#AD343E] text-white">-</button>
+                                                        <button onClick={(e)=>{e.stopPropagation(); atualizarQuantidadeCarrinho(item.id, item.quantidade+1);}} className="w-5 h-5 flex items-center justify-center rounded-full bg-[#2A4E73] text-white">+</button>
+                                                        <button onClick={(e)=>{e.stopPropagation(); removerProduto(item.id);}} className="text-[#AD343E] hover:text-[#2A4E73]">✕</button>
                                                     </div>
-                                                    <span className="text-sm font-bold text-[#2A4E73]">
-                                                        R$ {venda.total.toFixed(2)}
-                                                    </span>
                                                 </div>
-                                                <div className="space-y-1">
-                                                    {venda.itens.map((item, index) => (
-                                                        <p key={index} className="text-xs text-gray-600">{item}</p>
-                                                    ))}
-                                                </div>
-                                                <div className="mt-2 pt-2 border-t border-gray-100">
-                                                    <span className="text-xs text-[#2A4E73] font-medium">{venda.metodo}</span>
+
+                                                {/* Preço/Desconto badges */}
+                                                <div className="mt-1">
+                                                    {item.descontoPercent > 0 ? (
+                                                        <div className="text-xs">
+                                                            <span className="line-through text-gray-400 mr-2">R$ {(item.originalPreco ?? item.preco).toFixed(2)}</span>
+                                                            <span className="text-[#2A4E73] font-semibold">R$ {item.preco.toFixed(2)} cada</span>
+                                                            <span className="ml-2 px-2 py-0.5 rounded-full bg-[#CFE8F9] text-[#2A4E73]">-{item.descontoPercent}%</span>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-xs text-gray-600">R$ {item.preco.toFixed(2)} cada</p>
+                                                    )}
+                                                    {item.precoCustom && item.descontoPercent === 0 && (
+                                                        <span className="mt-1 inline-block px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 text-[10px] font-medium">Preço ajustado</span>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 )}
                             </section>
-                        </div>
 
-                        {/* Produtos - Centro */}
-                        <div className="lg:col-span-6">
-                            <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 h-[600px] overflow-y-auto">
-                                <h2 className="text-lg font-semibold text-[#2A4E73] mb-4 text-center">
-                                    Produtos Disponíveis
-                                </h2>
-                                <div className="grid grid-cols-1 gap-4">
-                                    {produtos.map((produto) => (
-                                        <div key={produto.id} className="bg-[#FFFFFF] rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg transition-shadow">
-                                            <div className="flex items-center space-x-4">
-                                                <img 
-                                                    className="w-16 h-16 object-cover rounded-lg" 
-                                                    src={produto.img} 
-                                                    alt={produto.nome}
-                                                />
-                                                <div className="flex-1">
-                                                    <h3 className="text-lg font-semibold text-[#2A4E73]">{produto.nome}</h3>
-                                                    <p className="text-sm text-gray-600 mb-2">{produto.descricao}</p>
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-lg font-bold text-[#2A4E73]">
-                                                            R$ {produto.preco.toFixed(2)}
-                                                        </span>
-                                                        <div className="flex items-center space-x-2">
-                                                            <input
-                                                                type="number"
-                                                                min="1"
-                                                                value={quantidades[produto.id] || 1}
-                                                                onChange={(e) => atualizarQuantidade(produto.id, e.target.value)}
-                                                                className="w-16 px-2 py-1 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
-                                                            />
-                                                            <button
-                                                                onClick={() => adicionarProduto(produto)}
-                                                                className="px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                                                            >
-                                                                Adicionar
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                            {/* Total (sem impostos) */}
+                            <section className="bg-white rounded-lg shadow-md border border-gray-200 mt-3 p-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="text-xl font-bold text-[#2A4E73]">Total: R$ {valorTotal.toFixed(2)}</div>
+                                    <div className="text-xs text-gray-500"></div>
+                                </div>
+                                {listaCompras.length > 0 && (
+                                    <div className="mt-3 flex justify-end">
+                                        <button
+                                            onClick={() => {
+                                                try {
+                                                    const payload = { itens: listaCompras, total: valorTotal };
+                                                    if (typeof window !== 'undefined') {
+                                                        localStorage.setItem('pdv_cart', JSON.stringify(payload));
+                                                    }
+                                                } catch (_) {}
+                                                router.push('/pdv/pagamento');
+                                            }}
+                                            className="px-4 py-2 text-sm font-medium text-white bg-[#2A4E73] rounded-md hover:bg-[#AD343E]"
+                                        >
+                                            Ir para pagamento
+                                        </button>
+                                    </div>
+                                )}
+                            </section>
+
+                            {/* Teclado + Pagamento (limpo) */}
+                            <section className="mt-3 grid grid-cols-3 gap-2 items-stretch">
+                                {/* Numpad 3x4 (limpo) */}
+                                <div className="col-span-2 grid grid-cols-3 gap-2">
+                                    {['1','2','3','4','5','6','7','8','9','C','0','BACK'].map((k) => (
+                                        <button
+                                            key={k}
+                                            onClick={() => handleKey(k)}
+                                            className="px-4 py-3 text-sm font-medium text-[#2A4E73] bg-white border border-gray-200 rounded-md hover:bg-[#CFE8F9]"
+                                        >{k === 'BACK' ? '⌫' : k}</button>
                                     ))}
                                 </div>
+
+                                {/* Coluna de modos/aplicar (sem Qtd) */}
+                                <div className="col-span-1 grid grid-rows-3 gap-2">
+                                    <button onClick={() => setKeypadMode('discount')} className={`px-3 py-2 rounded-md text-sm ${keypadMode==='discount' ? 'bg-[#2A4E73] text-white' : 'bg-white text-[#2A4E73] border border-gray-200'}`}>% Desconto</button>
+                                    <button onClick={() => setKeypadMode('price')} className={`px-3 py-2 rounded-md text-sm ${keypadMode==='price' ? 'bg-[#2A4E73] text-white' : 'bg-white text-[#2A4E73] border border-gray-200'}`}>Preço</button>
+                                    <button onClick={aplicarValor} disabled={aplicarDesabilitado()} className="px-3 py-2 rounded-md text-sm bg-green-600 text-white disabled:opacity-50">Aplicar</button>
+                    </div>
                             </section>
-                        </div>
+                </div>
 
-                        {/* Carrinho e Total - Direita */}
-                        <div className="lg:col-span-3">
-                            <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 h-[600px] overflow-y-auto">
-                                <h2 className="text-lg font-semibold text-[#2A4E73] mb-4 text-center">
-                                    Carrinho de Compras
-                                </h2>
-                                
-                        {listaCompras.length === 0 ? (
-                                    <div className="text-center py-8">
-                                        <p className="text-[#2A4E73] text-sm">Nenhum item no carrinho</p>
-                                        <p className="text-gray-600 text-xs mt-2">Adicione produtos para começar a venda</p>
-                                    </div>
-                        ) : (
-                                    <>
-                                        <div className="space-y-3 mb-6">
-                                {listaCompras.map((item) => (
-                                                <div key={item.id} className="bg-[#FFFFFF] rounded-lg p-3 border border-gray-200">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex-1">
-                                                            <h4 className="font-semibold text-[#2A4E73] text-sm">{item.nome}</h4>
-                                                            <p className="text-xs text-gray-600">R$ {item.preco.toFixed(2)} cada</p>
-                                                        </div>
-                                                        <div className="flex items-center space-x-2">
-                                                            <button
-                                                                onClick={() => atualizarQuantidadeCarrinho(item.id, item.quantidade - 1)}
-                                                                className="w-6 h-6 flex items-center justify-center text-[#FFFFFF] bg-[#AD343E] rounded-full hover:bg-[#2A4E73] transition-colors text-sm"
-                                                            >
-                                                                -
-                                                            </button>
-                                                            <span className="text-sm font-medium text-[#2A4E73] min-w-[20px] text-center">
-                                                                {item.quantidade}
-                                                            </span>
-                                                            <button
-                                                                onClick={() => atualizarQuantidadeCarrinho(item.id, item.quantidade + 1)}
-                                                                className="w-6 h-6 flex items-center justify-center text-[#FFFFFF] bg-[#2A4E73] rounded-full hover:bg-[#AD343E] transition-colors text-sm"
-                                                            >
-                                                                +
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center justify-between mt-2">
-                                                        <span className="text-sm font-bold text-[#2A4E73]">
-                                                            Total: R$ {(item.preco * item.quantidade).toFixed(2)}
-                                                        </span>
-                                                        <button
-                                                            onClick={() => removerProduto(item.id)}
-                                                            className="text-[#AD343E] hover:text-[#2A4E73] text-sm font-medium transition-colors"
-                                                        >
-                                                            Remover
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {/* Total */}
-                                        <div className="border-t border-gray-300 pt-4">
-                                            <div className="flex justify-between items-center mb-4">
-                                                <span className="text-lg font-semibold text-[#2A4E73]">Total:</span>
-                                                <span className="text-xl font-bold text-[#2A4E73]">
-                                                    R$ {valorTotal.toFixed(2)}
-                                                </span>
+                        {/* CENTRO: produtos */}
+                        <div className="lg:col-span-8">
+                            <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 min-h-[680px]">
+                                {/* Grade de produtos */}
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                                    {produtosFiltrados.map((produto) => (
+                                        <button
+                                            key={produto.id}
+                                            onClick={() => adicionarProduto(produto)}
+                                            className="bg-white rounded-lg shadow-sm p-3 border border-gray-200 hover:shadow-md transition-shadow text-left"
+                                        >
+                                            <div className="relative">
+                                                <img className="w-full h-28 object-cover rounded-md" src={produto.img} alt={produto.nome} />
                                             </div>
-                                            
-                                            {/* Botões de Ação */}
-                                            <div className="space-y-2">
-                                                <button 
-                                                    onClick={() => router.push('/pdv/pagamento')}
-                                                    disabled={listaCompras.length === 0}
-                                                    className="w-full px-4 py-3 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    Ir para Pagamento
-                                                </button>
-                                                <button 
-                                                    onClick={() => setListaCompras([])}
-                                                    className="w-full px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                                                >
-                                                    Limpar Carrinho
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
+                                            <div className="mt-2 truncate text-sm font-semibold text-[#2A4E73]">{produto.nome}</div>
+                                            <div className="text-xs text-gray-600 truncate">R$ {produto.preco.toFixed(2)}/Unidade</div>
+                                        </button>
+                                    ))}
+                                </div>
                             </section>
                         </div>
                     </div>
