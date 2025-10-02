@@ -104,7 +104,7 @@ export default function Pagamento() {
                             <div className="space-y-4">
                                 {/* Dinheiro */}
                                 <div className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => setMetodoPagamento('dinheiro')}>
-                                    <input type="radio" id="dinheiro" name="pagamento" value="dinheiro" checked={metodoPagamento === 'dinheiro'} onChange={(e) => setMetodoPagamento(e.target.value)} className="text-[#2A4E73] focus:ring-[#CFE8F9]" />
+                                    <input type="radio" id="dinheiro" name="pagamento" value="dinheiro" checked={metodoPagamento === 'dinheiro'} onChange={(e) => setMetodoPagamento(e.target.value)} className="text-[#2A4E73] focus:ring-[#CFE8F9] checked:accent-[#AD343E]" />
                                     <label htmlFor="dinheiro" className="flex items-center space-x-3 cursor-pointer flex-1">
                                         <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">💵</div>
                                         <div>
@@ -116,7 +116,7 @@ export default function Pagamento() {
 
                                 {/* Cartão de Débito */}
                                 <div className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => setMetodoPagamento('debito')}>
-                                    <input type="radio" id="debito" name="pagamento" value="debito" checked={metodoPagamento === 'debito'} onChange={(e) => setMetodoPagamento(e.target.value)} className="text-[#2A4E73] focus:ring-[#CFE8F9]" />
+                                    <input type="radio" id="debito" name="pagamento" value="debito" checked={metodoPagamento === 'debito'} onChange={(e) => setMetodoPagamento(e.target.value)} className="text-[#2A4E73] focus:ring-[#CFE8F9] checked:accent-[#AD343E]" />
                                     <label htmlFor="debito" className="flex items-center space-x-3 cursor-pointer flex-1">
                                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">💳</div>
                                         <div>
@@ -128,7 +128,7 @@ export default function Pagamento() {
 
                                 {/* Cartão de Crédito */}
                                 <div className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => setMetodoPagamento('credito')}>
-                                    <input type="radio" id="credito" name="pagamento" value="credito" checked={metodoPagamento === 'credito'} onChange={(e) => setMetodoPagamento(e.target.value)} className="text-[#2A4E73] focus:ring-[#CFE8F9]" />
+                                    <input type="radio" id="credito" name="pagamento" value="credito" checked={metodoPagamento === 'credito'} onChange={(e) => setMetodoPagamento(e.target.value)} className="text-[#2A4E73] focus:ring-[#CFE8F9] checked:accent-[#AD343E]" />
                                     <label htmlFor="credito" className="flex items-center space-x-3 cursor-pointer flex-1">
                                         <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">💳</div>
                                         <div>
@@ -140,7 +140,7 @@ export default function Pagamento() {
 
                                 {/* PIX */}
                                 <div className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => setMetodoPagamento('pix')}>
-                                    <input type="radio" id="pix" name="pagamento" value="pix" checked={metodoPagamento === 'pix'} onChange={(e) => setMetodoPagamento(e.target.value)} className="text-[#2A4E73] focus:ring-[#CFE8F9]" />
+                                    <input type="radio" id="pix" name="pagamento" value="pix" checked={metodoPagamento === 'pix'} onChange={(e) => setMetodoPagamento(e.target.value)} className="text-[#2A4E73] focus:ring-[#CFE8F9] checked:accent-[#AD343E]" />
                                     <label htmlFor="pix" className="flex items-center space-x-3 cursor-pointer flex-1">
                                         <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">⚡</div>
                                         <div>
