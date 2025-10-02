@@ -25,7 +25,7 @@ export async function getFuncionariosByIdController(req, res) {
     }
 }
 
-export async function createFuncionariosController() {
+export async function createFuncionariosController(req, res) {
     try {
         const { id, nome, cpf, email, telefone, idade, cargo, salario, ativo, criado_em } = req.body;
 
