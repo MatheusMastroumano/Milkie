@@ -1,13 +1,12 @@
-// middlewares/validate.js
-export const validate = (schema) => (req, res, next) => {
-    try {
-      // faz parse e substitui req.body com os dados já validados/ajustados
-      req.body = schema.parse(req.body); 
-      next();
-    } catch (err) {
-      return res.status(400).json({
-        error: "Erro de validação",
-        details: err.errors, // array do zod com mensagens
-      });
+const validate = (schema) => (req, res, next) => {
+    const parsed = schema.safeParse(req.body);
+
+    if (!parsed.success) {
+        return res.status(400).json({ mensagem: parsed.error.format() });
     }
-  };
+
+    req.body = parsed.data 
+    return next();
+};
+
+export default validate;
