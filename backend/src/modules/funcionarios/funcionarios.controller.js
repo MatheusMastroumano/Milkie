@@ -1,5 +1,6 @@
 import * as funcionariosService from './funcionarios.service.js';
 
+/* ------------------------------ BUSCAR TODOS ----------------------------- */
 export async function getFuncionariosController(req, res) {
     try {
         const funcionarios = await funcionariosService.getFuncionarios();
@@ -10,6 +11,7 @@ export async function getFuncionariosController(req, res) {
     }
 }
 
+/* ------------------------------ BUSCAR POR ID ----------------------------- */
 export async function getFuncionariosByIdController(req, res) {
     try {
         const funcionario = await funcionariosService.getFuncionariosById(req.params.id);
@@ -25,6 +27,7 @@ export async function getFuncionariosByIdController(req, res) {
     }
 }
 
+/* ---------------------------------- CRIAR --------------------------------- */
 export async function createFuncionariosController(req, res) {
     try {
         const { id, nome, cpf, email, telefone, idade, cargo, salario, ativo, criado_em } = req.body;
@@ -40,6 +43,7 @@ export async function createFuncionariosController(req, res) {
     }
 }
 
+/* ------------------------------- ATUALIZAR ------------------------------- */
 export async function updateFuncionariosController(req, res) {
     try {
         const funcionarioId = req.params.id;
@@ -62,6 +66,7 @@ export async function updateFuncionariosController(req, res) {
     }
 }
 
+/* ------------------------------- REMOVER ------------------------------- */
 export async function removeFuncionariosController(req, res) {
     try {
         const funcionarioId = req.params.id;
