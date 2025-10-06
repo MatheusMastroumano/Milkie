@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Header from "@/components/Headerfilial/page";
 
 export default function FuncionariosFilial() {
   const router = useRouter();
@@ -111,6 +112,7 @@ export default function FuncionariosFilial() {
 
   return (
     <div className="container mx-auto py-6">
+        <Header />
       <h1 className="text-3xl font-bold mb-6">Gestão de Funcionários - Filial</h1>
       
       <div className="bg-white rounded-lg shadow">

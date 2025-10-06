@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Header from "@/components/Headerfilial/page";
 
 export default function RelatoriosFilial() {
   const router = useRouter();
@@ -78,6 +79,7 @@ export default function RelatoriosFilial() {
 
     return (
       <div className="overflow-x-auto">
+        <Header />
         <table className="w-full whitespace-nowrap">
           <thead>
             <tr className="bg-gray-100">

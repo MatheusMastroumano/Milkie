@@ -274,21 +274,20 @@ export default function Home() {
     );
   };
 
-  return (
+return (
     <div className="min-h-screen bg-gradient-to-br from-[#F9FAFB] via-[#E5E7EB] to-[#F9FAFB]">
+      <br></br>
+      <br></br>
       <Header />
-      <br></br>
-      <br></br>
-  
-
+      
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Header Section */}
         <div className="flex justify-between items-center pt-4">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#4B5EAA] to-[#A83B3B] bg-clip-text text-transparent">
-              Dashboard Administrativo
-            </h1>
-            <p className="text-[#6B7280] text-sm mt-1">Bem-vindo de volta! Aqui está seu resumo de hoje.</p>
+          <div className="text-center w-full">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-6 text-center">
+            Gerenciamento de Funcionários
+          </h1>
+            <p className="text-[#4B5EAA] text-sm mt-1">Bem-vindo de volta! Aqui está seu resumo de hoje.</p>
           </div>
           <select 
             value={timeFilter}
@@ -343,21 +342,19 @@ export default function Home() {
 
         {/* Gráficos */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB]">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-xl font-semibold text-[#1F2937] flex items-center gap-2">
-                  <Icon name="activity" className="w-5 h-5 text-[#4B5EAA]" />
-                  Tendência de Vendas
-                </h3>
-                <p className="text-[#6B7280] text-sm mt-1">Últimos 7 dias</p>
-              </div>
+          <div className="lg:col-span-2 bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB] text-center">
+            <div className="mb-6">
+              <h3 className="text-xl font-semibold text-[#1F2937] flex items-center justify-center gap-2">
+                <Icon name="activity" className="w-5 h-5 text-[#4B5EAA]" />
+                Tendência de Vendas
+              </h3>
+              <p className="text-[#6B7280] text-sm mt-1">Últimos 7 dias</p>
             </div>
             {renderAdvancedLineChart()}
           </div>
 
-          <div className="bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB]">
-            <h3 className="text-xl font-semibold text-[#1F2937] mb-6 flex items-center gap-2">
+          <div className="bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB] text-center">
+            <h3 className="text-xl font-semibold text-[#1F2937] mb-6 flex items-center justify-center gap-2">
               <Icon name="chart" className="w-5 h-5 text-[#A83B3B]" />
               Vendas por Loja
             </h3>
@@ -367,7 +364,7 @@ export default function Home() {
 
         {/* Top Produtos */}
         <div className="bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB]">
-          <h3 className="text-xl font-semibold text-[#1F2937] mb-6">Top Produtos</h3>
+          <h3 className="text-xl font-semibold text-[#1F2937] mb-6 text-center">Top Produtos</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {productPerformance.map((product, idx) => (
               <div key={idx} className="bg-[#F9FAFB] bg-opacity-50 rounded-xl p-4 hover:bg-opacity-70 transition-all cursor-pointer group">
@@ -391,7 +388,7 @@ export default function Home() {
 
         {/* Menu de Ações Rápidas */}
         <div className="bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB]">
-          <h3 className="text-xl font-semibold text-[#1F2937] mb-6">⚡ Ações Rápidas</h3>
+          <h3 className="text-xl font-semibold text-[#1F2937] mb-6 text-center">⚡ Ações Rápidas</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {menuItems.map((item, idx) => (
               <Link key={idx} href={item.href}>

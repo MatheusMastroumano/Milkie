@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Header from "@/components/Headerfilial/page";
 
 export default function VendasFilial() {
   const router = useRouter();
@@ -92,7 +93,9 @@ export default function VendasFilial() {
 
   return (
     <div className="container mx-auto py-6">
+        <Header />
       <h1 className="text-3xl font-bold mb-6">Gestão de Vendas - Filial</h1>
+
       
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-4">

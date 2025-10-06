@@ -15,9 +15,9 @@ export default function LoginPage() {
       </div>
       <div className="bg-[#F9FAFB] relative hidden lg:block">
         <img
-          src="https://via.placeholder.com/600x800"
+          src="./vaquinha.png"
           alt="Login Background"
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          className="absolute inset-0 h-250 w-250 object-cover dark:brightness-[0.2] dark:grayscale"
         />
       </div>
     </div>
