@@ -14,7 +14,7 @@ model lojas {
   id        Int        @id @default(autoincrement())
   nome      String
   tipo      TipoLoja   @default(filial)
-  endereco  String?
+  CEP       String
   ativo     Boolean    @default(true)
   criado_em DateTime   @default(now())
   usuarios  usuarios[]
@@ -124,9 +124,9 @@ model estoque {
  * ---------------------- // fornecedores dos produtos ----------------------
  */
 model fornecedores {
-  id          Int                   @id @default(autoincrement())
-  nome        String
-  cnpj_cpf    String?
+  id       Int     @id @default(autoincrement())
+  nome     String
+  cnpj_cpf String?
 
   cep         String
   estado      String
@@ -136,11 +136,10 @@ model fornecedores {
   numero      String
   complemento String?
 
-  ativo       Boolean               @default(true)
-  criado_em   DateTime              @default(now())
-  produtos    fornecedor_produtos[]
+  ativo     Boolean               @default(true)
+  criado_em DateTime              @default(now())
+  produtos  fornecedor_produtos[]
 }
-
 
 /**
  * ------- // ligação dos fornecedores com qual produto eles fornecem -------

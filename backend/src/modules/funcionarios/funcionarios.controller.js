@@ -4,7 +4,7 @@ import * as funcionariosService from './funcionarios.service.js';
 export async function getFuncionariosController(req, res) {
     try {
         const funcionarios = await funcionariosService.getFuncionarios();
-        res.status(500).json({ funcionarios });
+        res.status(200).json({ funcionarios });
     } catch (err) {
         console.error('Erro ao listar funcionários: ', err.message);
         res.status(500).json({ mensagem: 'Erro ao listar funcionários: ', err });
@@ -46,7 +46,7 @@ export async function createFuncionariosController(req, res) {
 /* ------------------------------- ATUALIZAR ------------------------------- */
 export async function updateFuncionariosController(req, res) {
     try {
-        const funcionarioId = req.params.id;
+        const funcionarioId = parseInt(req.params.id);
         const funcionario = await funcionariosService.getFuncionariosById(funcionarioId);
 
         if (!funcionario) {
@@ -76,7 +76,7 @@ export async function removeFuncionariosController(req, res) {
             res.status(404).json({ mensagem: 'Funcionario não encontrado' });
         }
 
-        await funcionariosService.removeFuncionarios(id);
+        await funcionariosService.removeFuncionarios(funcionarioId);
         res.status(200).json({ mensagem: 'Funcionario removido com sucesso' });
     } catch (err) {
         console.error('Erro ao criar funcionários: ', err.message);

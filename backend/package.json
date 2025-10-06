@@ -13,6 +13,8 @@
   "dependencies": {
     "@prisma/client": "^6.16.2",
     "bcrypt": "^6.0.0",
+    "brazilian-values": "^0.13.1",
+    "cep-promise": "^4.4.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "cpf-cnpj-validator": "^1.0.3",
