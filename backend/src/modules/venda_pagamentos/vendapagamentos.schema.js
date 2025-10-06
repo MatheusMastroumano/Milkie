@@ -2,11 +2,13 @@ import { z } from 'zod';
 import * as utils from '../../shared/utils/verify.js';
 import { Decimal } from '@prisma/client/runtime/library';
 
-export const VendasPagamentosSchema = z.object({
+const metodoPagamento = z.enum(["dinheiro", "cartaodebito", "cartaocredito", "pix"]);
+
+const VendasPagamentosSchema = z.object({
     id: utils.id,
     vneda_id: utils.id,
     metodo: metodoPagamento,
     valor: z.union([z.string(), z.number()]).transform((val) => new Decimal(val)),
 });
 
-const metodoPagamento = z.enum(["dinheiro", "cartaodebito", "cartaocredito", "pix"]);
+export default VendasPagamentosSchema;

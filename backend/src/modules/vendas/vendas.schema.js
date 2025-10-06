@@ -2,7 +2,7 @@ import { z } from 'zod';
 import * as utils from '../../shared/utils/verify.js';
 import { Decimal } from "@prisma/client/runtime/library";
 
-export const VendasSchema = z.object({
+const VendasSchema = z.object({
     id: utils.id,
     loja_id: z.number().int().positive(),
     usuario_id: z.number().int().positive(),
@@ -10,3 +10,5 @@ export const VendasSchema = z.object({
     valor_total: z.union([z.string(), z.number()]).transform((val) => new Decimal(val)),
     data: z.coerce().date(),
 });
+
+export default VendasSchema;
