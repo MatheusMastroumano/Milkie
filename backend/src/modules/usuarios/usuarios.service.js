@@ -63,6 +63,10 @@ export async function createUsuarios(data) {
         if (usernameExiste) {
             throw new Error('Nome de usuário já está em uso');
         }
+
+        if (data.funcao !== 'admin' && data.funcao !== 'gerente' && data.funcao !== 'caixa') {
+            throw new Error('Função inválida');
+        }
         
         // Hash da senha
         const saltRounds = 10;
@@ -128,6 +132,10 @@ export async function updateUsuarios(id, data) {
             if (usernameExiste) {
                 throw new Error('Nome de usuário já está em uso');
             }
+        }
+
+        if (data.funcao !== 'admin' && data.funcao !== 'gerente' && data.funcao !== 'caixa') {
+            throw new Error('Função inválida');
         }
         
         // Se estiver atualizando a senha, fazer o hash
