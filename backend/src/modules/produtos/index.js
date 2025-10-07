@@ -1,2 +1,2 @@
 // esse arquivo serve para exportar as rotas desse módulo
-export { default } from './lojas.routes.js';
+export { default } from './produtos.routes.js';

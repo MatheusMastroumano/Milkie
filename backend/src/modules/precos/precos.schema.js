@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import * as utils from '../../shared/utils/verify.js';
 
-const ProdutosSchema = z.object({
+const PrecosSchema = z.object({
     id: utils.id,
     produto_id: utils.id,
     loja_id: utils.id,
@@ -10,4 +10,4 @@ const ProdutosSchema = z.object({
     valido_ate: z.coerce.date(),
 });
 
-export default ProdutosSchema;
+export default PrecosSchema;

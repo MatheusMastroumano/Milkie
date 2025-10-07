@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 /* -------------------------------------------------------------------------- */
 /*                            Importação de rotas                             */
 /* -------------------------------------------------------------------------- */
-import { funcionariosRoutes, usuariosRoutes, lojasRoutes } from './modules/index.js';
+import { funcionariosRoutes, usuariosRoutes, lojasRoutes, produtosRoutes, precosRoutes } from './modules/index.js';
 
 /* -------------------------------------------------------------------------- */
 /*                         Configurações iniciais                             */
@@ -45,6 +45,9 @@ app.get('/', (req, res) => {
 app.use('/funcionarios', funcionariosRoutes);
 app.use('/usuarios', usuariosRoutes);
 app.use('/lojas', lojasRoutes);
+app.use('/produtos', produtosRoutes);
+app.use('/precos', precosRoutes);
+
 
 /* -------------------------------------------------------------------------- */
 /*                                Inicialização                               */

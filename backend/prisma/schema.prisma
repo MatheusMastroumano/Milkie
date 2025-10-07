@@ -11,19 +11,19 @@ generator client {
  * --------------------------- // matriz e filiais --------------------------
  */
 model lojas {
-  id        Int        @id @default(autoincrement())
-  nome      String
-  tipo      TipoLoja   @default(filial)
-  CEP       String
-  numero    String
+  id          Int        @id @default(autoincrement())
+  nome        String
+  tipo        TipoLoja   @default(filial)
+  CEP         String
+  numero      String
   complemento String
-  ativo     Boolean    @default(true)
-  criado_em DateTime   @default(now())
-  usuarios  usuarios[]
-  precos    precos[]
-  estoque   estoque[]
-  vendas    vendas[]
-  caixa     caixa[]
+  ativo       Boolean    @default(true)
+  criado_em   DateTime   @default(now())
+  usuarios    usuarios[]
+  precos      precos[]
+  estoque     estoque[]
+  vendas      vendas[]
+  caixa       caixa[]
 }
 
 enum TipoLoja {
@@ -38,12 +38,12 @@ enum TipoLoja {
 model funcionarios {
   id        Int        @id @default(autoincrement())
   nome      String
-  cpf       String?    @unique
-  email     String?    @unique
-  telefone  String?
-  idade     Int?
+  cpf       String     @unique
+  email     String     @unique
+  telefone  String
+  idade     Int
   cargo     String
-  salario   Decimal?   @db.Decimal(10, 2)
+  salario   Decimal    @db.Decimal(10, 2)
   ativo     Boolean    @default(true)
   criado_em DateTime   @default(now())
   usuarios  usuarios[]
@@ -79,12 +79,12 @@ enum Funcao {
 model produtos {
   id           Int                   @id @default(autoincrement())
   nome         String
-  marca        String?
-  categoria    String?
-  descricao    String?
-  sku          String?               @unique
-  fabricacao   DateTime?
-  validade     DateTime?
+  marca        String
+  categoria    String
+  descricao    String
+  sku          String                @unique
+  fabricacao   DateTime
+  validade     DateTime
   ativo        Boolean               @default(true)
   criado_em    DateTime              @default(now())
   precos       precos[]

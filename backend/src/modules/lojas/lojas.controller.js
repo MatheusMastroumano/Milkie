@@ -30,9 +30,9 @@ export async function getLojasByIdController(req, res) {
 /* ------------------------------- CRIAR ------------------------------- */
 export async function createLojasController(req, res) {
     try {
-        const { nome, tipo, CEP, ativo } = req.body;
+        const { nome, tipo, CEP, numero, complemento, ativo } = req.body;
 
-        const lojaData = { nome, tipo, CEP, ativo };
+        const lojaData = { nome, tipo, CEP, numero, complemento, ativo };
 
         const loja = await lojasService.createLojas(lojaData);
 
@@ -53,9 +53,9 @@ export async function updateLojasController(req, res) {
             return res.status(404).json({ mensagem: 'Loja nao encontrada' });
         }
 
-        const { nome, tipo, CEP, ativo } = req.body;
+        const { nome, tipo, CEP, numero, complemento, ativo } = req.body;
 
-        const lojaData = { nome, tipo, CEP, ativo };
+        const lojaData = { nome, tipo, CEP, numero, complemento, ativo };
 
         const updatedLoja = await lojasService.updateLojas(lojaId, lojaData);
 
