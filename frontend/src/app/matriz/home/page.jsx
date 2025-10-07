@@ -5,7 +5,6 @@ import Link from "next/link";
 import Header from "@/components/Header/page";
 
 export default function Home() {
-  const [activeCard, setActiveCard] = useState(null);
   const [timeFilter, setTimeFilter] = useState("7d");
   const [animatedValues, setAnimatedValues] = useState({
     lojas: 0,
@@ -124,16 +123,14 @@ export default function Home() {
 
   const StatCard = ({ icon, title, value, change, isPositive, gradient, delay }) => (
     <div 
-      className={`relative overflow-hidden bg-gradient-to-br ${gradient} rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 cursor-pointer group`}
-      style={{ animationDelay: `${delay}ms` }}
-      onMouseEnter={() => setActiveCard(title)}
-      onMouseLeave={() => setActiveCard(null)}
+      className={`relative overflow-hidden bg-gradient-to-br ${gradient} rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 cursor-pointer group ease-in-out`}
+
     >
       <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
       <div className="relative z-10">
         <div className="flex justify-between items-start mb-4">
           <div className="p-3 bg-white bg-opacity-20 rounded-xl backdrop-blur-sm">
-            <Icon name={icon} className="w-6 h-6 text-white" />
+            <Icon name={icon} className="w-6 h-6" />
           </div>
           {change && (
             <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${isPositive ? 'bg-green-400 bg-opacity-30' : 'bg-red-400 bg-opacity-30'} text-white`}>
@@ -144,9 +141,6 @@ export default function Home() {
         </div>
         <h3 className="text-white text-opacity-90 text-sm font-medium mb-2">{title}</h3>
         <p className="text-white text-3xl font-bold">{value}</p>
-      </div>
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-white bg-opacity-30">
-        <div className={`h-full bg-white transition-all duration-1000 ${activeCard === title ? 'w-full' : 'w-0'}`}></div>
       </div>
     </div>
   );
