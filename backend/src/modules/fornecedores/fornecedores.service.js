@@ -7,7 +7,7 @@ export async function getFornecedores() {
     try {
         return await prisma.fornecedores.findMany();
     } catch (err) {
-        console.error("Erro ao buscar funcionarios: ", err);
+        console.error("Erro ao buscar fornecedores: ", err);
         throw new Error(err.message);
     }
 }
@@ -20,39 +20,36 @@ export async function getFornecedoresById(id) {
                 { id: id },
         });
     } catch (err) {
-        console.error("Erro ao buscar funcionarios por id: ", err);
+        console.error("Erro ao buscar fornecedores por id: ", err);
         throw new Error(err.message);
     }
 }
 
 export async function createFornecedores(data) {
     try {
-        // valida os dados recebidos
         const validData = FornecedorSchema.parse(data);
 
-        const endereco = await cep(cepUsuario);
+        const { nome, cnpj_cpf, ativo } = validData;
+
+        if (!cpf.isValid(cnpj_cpf) && !cnpj.isValid(cnpj_cpf)) {
+            throw new Error('CPF ou CNPJ inválido.');
+        }
 
         // cria no banco
         return await prisma.fornecedores.create({
             data: {
                 nome,
                 cnpj_cpf,
-                cep: endereco.cep,
-                estado: endereco.state,
-                cidade: endereco.city,
-                bairro: endereco.neighborhood,
-                rua: endereco.street,
-                numero,
-                complemento,
                 ativo: ativo ?? true,
                 criado_em: new Date(),
             },
         });
     } catch (err) {
-        console.error("Erro ao criar fornecedor: ", err);
+        console.error('Erro ao criar fornecedor:', err);
         throw new Error(err.message);
     }
 }
+
 
 //atualizar fornecedores
 export async function updateFornecedores(id, data) {
@@ -62,7 +59,7 @@ export async function updateFornecedores(id, data) {
             data: data,
         });
     } catch (err) {
-        console.error("Erro ao buscar funcionarios: ", err);
+        console.error("Erro ao atualizar fornecedor: ", err);
         throw new Error(err.message);
     }
 }
@@ -74,7 +71,7 @@ export async function removeFornecedores(id) {
             where: { id: id }
         });
     } catch (err) {
-        console.error("Erro ao deletar fornecedor: ", err);
+        console.error("Erro ao remover fornecedor: ", err);
         throw new Error(err.message);
     }
 }

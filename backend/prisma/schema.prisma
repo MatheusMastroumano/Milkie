@@ -15,6 +15,8 @@ model lojas {
   nome      String
   tipo      TipoLoja   @default(filial)
   CEP       String
+  numero    String
+  complemento String
   ativo     Boolean    @default(true)
   criado_em DateTime   @default(now())
   usuarios  usuarios[]
@@ -127,14 +129,6 @@ model fornecedores {
   id       Int     @id @default(autoincrement())
   nome     String
   cnpj_cpf String?
-
-  cep         String
-  estado      String
-  cidade      String
-  bairro      String
-  rua         String
-  numero      String
-  complemento String?
 
   ativo     Boolean               @default(true)
   criado_em DateTime              @default(now())
