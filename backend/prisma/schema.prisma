@@ -128,8 +128,8 @@ model estoque {
 model fornecedores {
   id       Int     @id @default(autoincrement())
   nome     String
-  cnpj_cpf String?
-
+  cnpj_cpf String
+  produtos_fornecidos String
   ativo     Boolean               @default(true)
   criado_em DateTime              @default(now())
   produtos  fornecedor_produtos[]

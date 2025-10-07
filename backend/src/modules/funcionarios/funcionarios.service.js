@@ -25,7 +25,7 @@ export async function getFuncionariosById(id) {
 
 /* ---------------------------------- CRIAR --------------------------------- */
 export async function createFuncionarios(data) {
-    const { id, nome, cpf, email, telefone, idade, cargo, salario, ativo, criado_em } = data;
+    const { nome, cpf, email, telefone, idade, cargo, salario, ativo } = data;
 
     // VALIDAÇÕES
     if (!nome || nome.trim() === '') {

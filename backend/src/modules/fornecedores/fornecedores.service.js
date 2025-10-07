@@ -1,5 +1,4 @@
 import prisma from '../../shared/config/database.js'
-import cep from "cep-promise";
 import { cpf, cnpj } from "cpf-cnpj-validator";
 
 // mostra todos os fornecedores
@@ -41,6 +40,7 @@ export async function createFornecedores(data) {
                 nome,
                 cnpj_cpf,
                 ativo: ativo ?? true,
+                produtos_fornecidos,
                 criado_em: new Date(),
             },
         });
@@ -52,7 +52,18 @@ export async function createFornecedores(data) {
 
 
 //atualizar fornecedores
-export async function updateFornecedores(id, data) {
+export async function updateFornecedoresById(id, data) {
+
+    const { nome, cnpj_cpf, ativo } = data;
+
+    if (!cpf.isValid(cnpj_cpf) && !cnpj.isValid(cnpj_cpf)) {
+        throw new Error('CPF ou CNPJ inválido.');
+    }
+
+    if (nome !== undefined && nome.trim() === '') {
+        throw new Error('Nome não pode ser vazio.');
+    }
+
     try {
         return await prisma.fornecedores.update({
             where: { id: id },

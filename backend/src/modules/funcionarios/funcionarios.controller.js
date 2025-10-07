@@ -30,9 +30,9 @@ export async function getFuncionariosByIdController(req, res) {
 /* ---------------------------------- CRIAR --------------------------------- */
 export async function createFuncionariosController(req, res) {
     try {
-        const { id, nome, cpf, email, telefone, idade, cargo, salario, ativo, criado_em } = req.body;
+        const { nome, cpf, email, telefone, idade, cargo, salario, ativo } = req.body;
 
-        const funcionarioData = { id, nome, cpf, email, telefone, idade, cargo, salario, ativo, criado_em };
+        const funcionarioData = { nome, cpf, email, telefone, idade, cargo, salario, ativo };
 
         const funcionario = await funcionariosService.createFuncionarios(funcionarioData);
 
@@ -53,9 +53,9 @@ export async function updateFuncionariosController(req, res) {
             res.status(404).json({ mensagem: 'Funcionario nao encontrado' });
         }
 
-        const { id, nome, cpf, email, telefone, idade, cargo, salario, ativo, criado_em } = req.body;
+        const { nome, cpf, email, telefone, idade, cargo, salario, ativo } = req.body;
 
-        const funcionarioData = { id, nome, cpf, email, telefone, idade, cargo, salario, ativo, criado_em };
+        const funcionarioData = { nome, cpf, email, telefone, idade, cargo, salario, ativo };
 
         const updatedFuncionario = await funcionariosService.updateFuncionarios(funcionarioId, funcionarioData);
 
@@ -79,7 +79,7 @@ export async function removeFuncionariosController(req, res) {
         await funcionariosService.removeFuncionarios(funcionarioId);
         res.status(200).json({ mensagem: 'Funcionario removido com sucesso' });
     } catch (err) {
-        console.error('Erro ao criar funcionários: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao criar funcionários: ', err });
+        console.error('Erro ao remover funcionários: ', err.message);
+        res.status(500).json({ mensagem: 'Erro ao remover funcionários: ', err });
     }
 }
