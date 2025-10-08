@@ -57,7 +57,7 @@ export default function Pagamento() {
                     {/* Botão de Retorno e Título */}
                     <div className="flex items-center justify-between mb-6">
                         <button
-                            onClick={() => router.push('/pdv')}
+                            onClick={() => router.back()}
                             className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,7 +167,7 @@ export default function Pagamento() {
                             {/* Botões de Ação */}
                             <div className="mt-6 space-y-3">
                                 <button onClick={finalizarVenda} className="w-full px-4 py-3 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors">Finalizar Venda</button>
-                                <button onClick={() => router.push('/pdv')} className="w-full px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors">Voltar ao PDV</button>
+                                <button onClick={() => router.back()} className="w-full px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors">Voltar ao PDV</button>
                             </div>
                         </div>
                     </div>
