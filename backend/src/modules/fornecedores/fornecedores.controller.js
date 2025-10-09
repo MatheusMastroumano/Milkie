@@ -30,9 +30,9 @@ export async function getFornecedoresByIdController(req, res) {
 // Criar fornecedor
 export async function createFornecedoresController(req, res) {
     try {
-        const { nome, cnpj_cpf, ativo } = req.body;
+        const { nome, cnpj_cpf, produtos_fornecidos, ativo } = req.body;
 
-        const fornecedorData = { nome, cnpj_cpf, ativo };
+        const fornecedorData = { nome, cnpj_cpf, produtos_fornecidos, ativo };
 
         const fornecedor = await fornecedoresService.createFornecedores(fornecedorData);
 
