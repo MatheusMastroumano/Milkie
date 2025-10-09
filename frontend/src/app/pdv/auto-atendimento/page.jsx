@@ -6,9 +6,8 @@ export default function PDVAutoAtendimento() {
     const router = useRouter();
 
     const produtos = [
-        { id: 1, nome: 'Queijo', descricao: 'Queijo Minas', img: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=200&h=150&fit=crop", preco: 10.99 },
-        { id: 2, nome: 'Leite', descricao: 'Leite Integral', img: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=200&h=150&fit=crop", preco: 19.99 },
-        { id: 3, nome: 'Iogurte', descricao: 'Iogurte Natural', img: "https://images.unsplash.com/photo-1571212056062-4fafa40182d9?w=200&h=150&fit=crop", preco: 8.50 }
+        { id: 1, nome: 'Queijo', descricao: 'Queijo Minas', img: "/queijo.jpg", preco: 10.99 },
+        { id: 2, nome: 'Leite', descricao: 'Leite Integral', img: "/leite.jpeg", preco: 19.99 },
     ];
 
     const [listaCompras, setListaCompras] = useState([]);
@@ -189,18 +188,9 @@ export default function PDVAutoAtendimento() {
                                                         src={produto.img} 
                                                         alt={produto.nome}
                                                         className="w-full h-full object-cover"
-                                                        onLoad={() => console.log('✅ Imagem carregada:', produto.nome, produto.img)}
-                                                        onError={(e) => {
-                                                            console.log('❌ Erro ao carregar:', produto.nome, produto.img);
-                                                            console.log('Erro:', e);
-                                                        }}
-                                                        style={{
-                                                            border: '2px solid red',
-                                                            backgroundColor: 'yellow'
-                                                        }}
                                                     />
                                                 </div>
-                                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 rounded-md flex items-center justify-center">
+                                                <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 rounded-md flex items-center justify-center">
                                                     <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                                         <div className="w-8 h-8 bg-[#2A4E73] rounded-full flex items-center justify-center">
                                                             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
