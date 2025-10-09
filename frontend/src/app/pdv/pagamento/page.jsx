@@ -44,7 +44,7 @@ export default function Pagamento() {
                 localStorage.removeItem('pdv_cart');
             }
             alert('Venda finalizada com sucesso!');
-            router.push('/pdv');
+            router.back();
         } else {
             alert('Preencha os dados de pagamento corretamente.');
         }
