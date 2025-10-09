@@ -16,7 +16,7 @@ export async function getFornecedoresById(id) {
     try {
         return await prisma.fornecedores.findUnique({
             where:
-                { id: id },
+                { id: Number(id) },
         });
     } catch (err) {
         console.error("Erro ao buscar fornecedores por id: ", err);
@@ -26,13 +26,20 @@ export async function getFornecedoresById(id) {
 
 export async function createFornecedores(data) {
     try {
-        const validData = FornecedorSchema.parse(data);
 
-        const { nome, cnpj_cpf, ativo } = validData;
+        const { nome, cnpj_cpf, produtos_fornecidos, ativo } = data;
+        const fornecedorExistente = await prisma.fornecedores.findUnique({
+            where: { cnpj_cpf },
+        });
+
+        if (fornecedorExistente) {
+            throw new Error('CPF ou CNPJ já cadastrado.');
+        }
 
         if (!cpf.isValid(cnpj_cpf) && !cnpj.isValid(cnpj_cpf)) {
             throw new Error('CPF ou CNPJ inválido.');
         }
+
 
         // cria no banco
         return await prisma.fornecedores.create({
@@ -54,7 +61,7 @@ export async function createFornecedores(data) {
 //atualizar fornecedores
 export async function updateFornecedoresById(id, data) {
 
-    const { nome, cnpj_cpf, ativo } = data;
+    const { nome, cnpj_cpf, produtos_fornecidos, ativo } = data;
 
     if (!cpf.isValid(cnpj_cpf) && !cnpj.isValid(cnpj_cpf)) {
         throw new Error('CPF ou CNPJ inválido.');
@@ -66,7 +73,7 @@ export async function updateFornecedoresById(id, data) {
 
     try {
         return await prisma.fornecedores.update({
-            where: { id: id },
+            where: { id: Number(id) },
             data: data,
         });
     } catch (err) {
@@ -79,7 +86,7 @@ export async function updateFornecedoresById(id, data) {
 export async function removeFornecedores(id) {
     try {
         return await prisma.fornecedores.delete({
-            where: { id: id }
+            where: { id: Number(id) }
         });
     } catch (err) {
         console.error("Erro ao remover fornecedor: ", err);
