@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from "@/components/Headerfilial/page";
 
-export default function ProdutosFilial() {
-  const [produtos, setProdutos] = useState([
+export default function Produtos() {
+  const router = useRouter();
+  const [fornecedores] = useState([
+    { id: 1, nome: 'Fornecedor A' },
+    { id: 2, nome: 'Fornecedor B' },
+  ]);
+  const [produtos] = useState([
     {
       id: 1,
       sku: 'ABC123',
@@ -16,10 +22,7 @@ export default function ProdutosFilial() {
       validade: '2025-01-01',
       ativo: true,
       preco: 29.99,
-      preco_local: 32.99,
-      estoque_minimo_local: 5,
-      em_promocao_local: false,
-      filial_id: 1,
+      fornecedor_id: 1,
     },
     {
       id: 2,
@@ -32,214 +35,91 @@ export default function ProdutosFilial() {
       validade: null,
       ativo: true,
       preco: 79.99,
-      preco_local: 85.99,
-      estoque_minimo_local: 3,
-      em_promocao_local: true,
-      filial_id: 1,
+      fornecedor_id: 2,
     },
   ]);
-  
-  const [editProduto, setEditProduto] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [notification, setNotification] = useState(null);
-  const [filialId] = useState(1); // ID da filial atual (normalmente viria de autenticação)
 
-  // Função para mostrar notificação e fechar após 3 segundos
-  const showNotification = (message) => {
-    setNotification(message);
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  // Função para validar o formulário
-  const validateForm = (produto) => {
-    const newErrors = {};
-    if (!produto.preco_local) newErrors.preco_local = 'O preço local é obrigatório';
-    else if (isNaN(produto.preco_local) || parseFloat(produto.preco_local) <= 0) {
-      newErrors.preco_local = 'O preço local deve ser um número positivo';
-    }
-    if (!produto.estoque_minimo_local && produto.estoque_minimo_local !== 0) {
-      newErrors.estoque_minimo_local = 'O estoque mínimo local é obrigatório';
-    } else if (isNaN(produto.estoque_minimo_local) || parseInt(produto.estoque_minimo_local) < 0) {
-      newErrors.estoque_minimo_local = 'O estoque mínimo local deve ser um número não negativo';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Função para editar produto local
-  const handleEditProduto = (produto) => {
-    setEditProduto(produto);
-    setIsModalOpen(true);
-  };
-
-  // Função para salvar alterações locais do produto
-  const handleSaveEdit = (e) => {
-    e.preventDefault();
-    if (validateForm(editProduto)) {
-      setProdutos(produtos.map(p => p.id === editProduto.id ? editProduto : p));
-      setIsModalOpen(false);
-      showNotification('Produto atualizado com sucesso!');
-    }
-  };
-
-  // Função para alternar promoção local
-  const togglePromocao = (id) => {
-    setProdutos(produtos.map(p => {
-      if (p.id === id) {
-        return { ...p, em_promocao_local: !p.em_promocao_local };
-      }
-      return p;
+  // Função para navegar para a página de detalhes do produto
+  const handleViewProduct = (produto) => {
+    // Salvar os dados do produto no localStorage temporariamente
+    localStorage.setItem('productDetails', JSON.stringify({
+      ...produto,
+      fornecedor: fornecedores.find(f => f.id === produto.fornecedor_id)?.nome || 'Sem fornecedor'
     }));
-    showNotification('Status de promoção alterado com sucesso!');
+    router.push(`/matriz/produtos/${produto.id}`);
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <>
       <Header />
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Gerenciamento de Produtos - Filial</h1>
-        </div>
+      <main className="min-h-screen bg-[#FFFFFF] pt-14 sm:pt-16 transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6">
+          {/* Título */}
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-6 text-center">
+            Gerenciamento de Produtos
+          </h1>
 
-        {notification && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-            {notification}
-          </div>
-        )}
+          {/* Notificação */}
+          {/* (Removido pois não há ações que gerem notificações) */}
 
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marca</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço Matriz</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço Local</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estoque Mínimo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Promoção</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {produtos.map((produto) => (
-                  <tr key={produto.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{produto.sku}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{produto.nome}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{produto.marca}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">R$ {produto.preco.toFixed(2)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">R$ {produto.preco_local.toFixed(2)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{produto.estoque_minimo_local}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${produto.em_promocao_local ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {produto.em_promocao_local ? 'Sim' : 'Não'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleEditProduto(produto)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-2"
+          {/* Tabela de Produtos */}
+          <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
+              Lista de Produtos
+            </h2>
+            {produtos.length === 0 ? (
+              <p className="text-[#2A4E73] text-center">Nenhum produto cadastrado.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm sm:text-base text-[#2A4E73] border-collapse">
+                  <thead>
+                    <tr className="bg-[#2A4E73] text-[#FFFFFF]">
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left rounded-tl-md">SKU</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Nome</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Marca</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Categoria</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Preço (R$)</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Fornecedor</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-center rounded-tr-md">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {produtos.map((produto) => (
+                      <tr 
+                        key={produto.id} 
+                        className="border-b border-gray-200 hover:bg-[#CFE8F9] cursor-pointer"
+                        onClick={() => handleViewProduct(produto)}
                       >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => togglePromocao(produto.id)}
-                        className="text-yellow-600 hover:text-yellow-900"
-                      >
-                        {produto.em_promocao_local ? 'Remover Promoção' : 'Adicionar Promoção'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.sku}</td>
+                        <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[150px] sm:max-w-[200px]">
+                          {produto.nome}
+                        </td>
+                        <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.marca || '-'}</td>
+                        <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.categoria || '-'}</td>
+                        <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.preco.toFixed(2)}</td>
+                        <td className="px-3 sm:px-4 py-2 sm:py-3">
+                          {fornecedores.find((f) => f.id === produto.fornecedor_id)?.nome || 'Sem fornecedor'}
+                        </td>
+                        <td className="px-3 sm:px-4 py-2 sm:py-3 text-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewProduct(produto);
+                            }}
+                            className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                          >
+                            Ver
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
         </div>
-      </div>
-
-      {/* Modal de Edição */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Editar Informações Locais do Produto</h2>
-            <form onSubmit={handleSaveEdit}>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Nome do Produto
-                </label>
-                <input
-                  type="text"
-                  value={editProduto.nome}
-                  disabled
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100"
-                />
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Preço Local
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={editProduto.preco_local}
-                  onChange={(e) => setEditProduto({...editProduto, preco_local: parseFloat(e.target.value)})}
-                  className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 ${errors.preco_local ? 'border-red-500' : ''}`}
-                />
-                {errors.preco_local && <p className="text-red-500 text-xs italic">{errors.preco_local}</p>}
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Estoque Mínimo Local
-                </label>
-                <input
-                  type="number"
-                  value={editProduto.estoque_minimo_local}
-                  onChange={(e) => setEditProduto({...editProduto, estoque_minimo_local: parseInt(e.target.value)})}
-                  className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 ${errors.estoque_minimo_local ? 'border-red-500' : ''}`}
-                />
-                {errors.estoque_minimo_local && <p className="text-red-500 text-xs italic">{errors.estoque_minimo_local}</p>}
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Em Promoção
-                </label>
-                <div className="mt-2">
-                  <label className="inline-flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={editProduto.em_promocao_local}
-                      onChange={(e) => setEditProduto({...editProduto, em_promocao_local: e.target.checked})}
-                      className="form-checkbox h-5 w-5 text-indigo-600"
-                    />
-                    <span className="ml-2 text-gray-700">Produto em promoção na filial</span>
-                  </label>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded mr-2"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded"
-                >
-                  Salvar Alterações
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+      </main>
+    </>
   );
 }

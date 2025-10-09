@@ -1,29 +1,24 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+
 import Header from "@/components/Header/page";
 
+// Simulação de contexto de autenticação (substituir por sistema real)
+const getCurrentUser = () => ({
+  id: 1,
+  funcao: 'admin', // Ou 'gerente' para teste
+  loja_id: null,   // null para Admin, ID da loja para Gerente
+});
+
+const prisma = new PrismaClient();
+
 export default function GestaoFinanceira() {
-  const router = useRouter();
-  const [lojas, setLojas] = useState([
-    { id: 1, nome: 'Loja Centro', tipo: 'Matriz' },
-    { id: 2, nome: 'Loja Sul', tipo: 'Filial' },
-    { id: 3, nome: 'Loja Norte', tipo: 'Filial' },
-    { id: 4, nome: 'Loja Oeste', tipo: 'Filial' },
-  ]);
-  const [entradas, setEntradas] = useState([
-    { id: 1, loja_id: 1, valor: 5000, data: '2025-10-02', tipo: 'Venda PDV' },
-    { id: 2, loja_id: 2, valor: 3000, data: '2025-10-02', tipo: 'Venda PDV' },
-  ]);
-  const [saidas, setSaidas] = useState([
-    { id: 1, loja_id: 1, descricao: 'Aluguel', valor: 5000, data: '2025-10-02', tipo: 'Despesa' },
-    { id: 2, loja_id: 1, descricao: 'Energia', valor: 1200, data: '2025-10-02', tipo: 'Despesa' },
-    { id: 3, loja_id: 1, fornecedor: 'Fornecedor A', valor: 3000, data: '2025-10-02', tipo: 'Fornecedor', status: 'Pendente' },
-    { id: 4, loja_id: 1, funcionario: 'Ana Silva', valor: 2000, data: '2025-10-02', tipo: 'Salário' },
-  ]);
+  const [lojas, setLojas] = useState([]);
+  const [entradas, setEntradas] = useState([]);
+  const [saidas, setSaidas] = useState([]);
   const [novaEntrada, setNovaEntrada] = useState({ loja_id: '', valor: '', data: new Date().toISOString().split('T')[0] });
-  const [novaSaida, setNovaSaida] = useState({ loja_id: '', descricao: '', valor: '', data: new Date().toISOString().split('T')[0], tipo: 'Despesa' });
+  const [novaSaida, setNovaSaida] = useState({ loja_id: '', tipo: 'Despesa', descricao: '', valor: '', data: new Date().toISOString().split('T')[0] });
   const [editEntrada, setEditEntrada] = useState(null);
   const [editSaida, setEditSaida] = useState(null);
   const [errors, setErrors] = useState({});
@@ -31,6 +26,43 @@ export default function GestaoFinanceira() {
   const [isModalSaidaOpen, setIsModalSaidaOpen] = useState(false);
   const [notification, setNotification] = useState(null);
   const [relatorioPeriodo, setRelatorioPeriodo] = useState('diario');
+  const [loading, setLoading] = useState(true);
+  const user = getCurrentUser();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const fetchedLojas = await prisma.lojas.findMany({ where: { ativo: true } });
+        setLojas(fetchedLojas);
+
+        // Simula entradas a partir de vendas
+        const fetchedVendas = await prisma.vendas.findMany({
+          include: { itens: true },
+          where: user.funcao === 'gerente' ? { loja_id: user.loja_id } : {},
+        });
+        const mappedEntradas = fetchedVendas.map(venda => ({
+          id: venda.id,
+          loja_id: venda.loja_id,
+          valor: venda.valor_total,
+          data: venda.data.toISOString().split('T')[0],
+          tipo: 'Venda PDV',
+        }));
+        setEntradas(mappedEntradas);
+
+        // Simula saídas (pode ser expandido com uma tabela de despesas futura)
+        const fetchedSaidas = await prisma.saidas.findMany({
+          where: user.funcao === 'gerente' ? { loja_id: user.loja_id } : {},
+        }); // Adicione uma tabela 'saidas' se necessário
+        setSaidas(fetchedSaidas || []);
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        setNotification('Erro ao carregar dados. Tente novamente.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [user.funcao, user.loja_id]);
 
   // Função para mostrar notificação
   const showNotification = (message) => {
@@ -42,32 +74,52 @@ export default function GestaoFinanceira() {
   const validateForm = (data, fields) => {
     const newErrors = {};
     fields.forEach(field => {
-      if (!data[field].trim() && field !== 'descricao') newErrors[field] = `O campo ${field} é obrigatório`;
+      if (!data[field]?.trim() && field !== 'descricao' && field !== 'fornecedor' && field !== 'funcionario') {
+        newErrors[field] = `O campo ${field} é obrigatório`;
+      }
     });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // Funções para Entradas
-  const handleAddEntrada = (e) => {
+  const handleAddEntrada = async (e) => {
     e.preventDefault();
-    if (validateForm(novaEntrada, ['loja_id', 'valor'])) {
-      const nextId = Math.max(...entradas.map(e => e.id), 0) + 1;
-      setEntradas([...entradas, { id: nextId, ...novaEntrada, tipo: 'Venda PDV' }]);
+    if (!validateForm(novaEntrada, ['loja_id', 'valor'])) return;
+    try {
+      const newEntrada = await prisma.vendas.create({
+        data: {
+          loja_id: parseInt(novaEntrada.loja_id),
+          usuario_id: user.id,
+          valor_total: parseFloat(novaEntrada.valor),
+          data: new Date(novaEntrada.data),
+          itens: { create: { produto_id: 1, quantidade: 1, preco_unitario: parseFloat(novaEntrada.valor), subtotal: parseFloat(novaEntrada.valor) } },
+        },
+      });
+      setEntradas([...entradas, { id: newEntrada.id, ...novaEntrada, tipo: 'Venda PDV' }]);
       setNovaEntrada({ loja_id: '', valor: '', data: new Date().toISOString().split('T')[0] });
       setErrors({});
       showNotification('Entrada registrada com sucesso! 🎉');
+    } catch (error) {
+      showNotification('Erro ao registrar entrada.');
     }
   };
 
-  const handleEditEntrada = (e) => {
+  const handleEditEntrada = async (e) => {
     e.preventDefault();
-    if (validateForm(editEntrada, ['loja_id', 'valor'])) {
+    if (!validateForm(editEntrada, ['loja_id', 'valor'])) return;
+    try {
+      await prisma.vendas.update({
+        where: { id: editEntrada.id },
+        data: { valor_total: parseFloat(editEntrada.valor), data: new Date(editEntrada.data) },
+      });
       setEntradas(entradas.map(e => e.id === editEntrada.id ? editEntrada : e));
       setIsModalEntradaOpen(false);
       setEditEntrada(null);
       setErrors({});
       showNotification('Entrada atualizada com sucesso! ✅');
+    } catch (error) {
+      showNotification('Erro ao atualizar entrada.');
     }
   };
 
@@ -77,38 +129,53 @@ export default function GestaoFinanceira() {
     setErrors({});
   };
 
-  const handleDeleteEntrada = (id) => {
-    if (window.confirm('Tem certeza que deseja excluir esta entrada?')) {
+  const handleDeleteEntrada = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta entrada?')) return;
+    try {
+      await prisma.vendas.delete({ where: { id } });
       setEntradas(entradas.filter(e => e.id !== id));
       showNotification('Entrada removida com sucesso! 🗑️');
+    } catch (error) {
+      showNotification('Erro ao remover entrada.');
     }
   };
 
-  // Funções para Saídas
-  const handleAddSaida = (e) => {
+  // Funções para Saídas (simulação, adicione tabela 'saidas' para real uso)
+  const handleAddSaida = async (e) => {
     e.preventDefault();
     const dataToValidate = { ...novaSaida, descricao: novaSaida.tipo === 'Despesa' ? novaSaida.descricao : novaSaida.fornecedor || novaSaida.funcionario };
     const fields = ['loja_id', 'valor', novaSaida.tipo === 'Despesa' ? 'descricao' : novaSaida.tipo === 'Fornecedor' ? 'fornecedor' : 'funcionario'];
-    if (validateForm(dataToValidate, fields)) {
-      const nextId = Math.max(...saidas.map(s => s.id), 0) + 1;
-      const saidaData = { id: nextId, ...novaSaida, status: novaSaida.tipo === 'Fornecedor' ? 'Pendente' : undefined };
-      setSaidas([...saidas, saidaData]);
-      setNovaSaida({ loja_id: '', descricao: '', valor: '', data: new Date().toISOString().split('T')[0], tipo: 'Despesa' });
+    if (!validateForm(dataToValidate, fields)) return;
+    try {
+      const newSaida = await prisma.saidas.create({
+        data: { loja_id: parseInt(novaSaida.loja_id), ...novaSaida, valor: parseFloat(novaSaida.valor), data: new Date(novaSaida.data) },
+      });
+      setSaidas([...saidas, newSaida]);
+      setNovaSaida({ loja_id: '', tipo: 'Despesa', descricao: '', valor: '', data: new Date().toISOString().split('T')[0] });
       setErrors({});
       showNotification('Saída registrada com sucesso! 🎉');
+    } catch (error) {
+      showNotification('Erro ao registrar saída.');
     }
   };
 
-  const handleEditSaida = (e) => {
+  const handleEditSaida = async (e) => {
     e.preventDefault();
     const dataToValidate = { ...editSaida, descricao: editSaida.tipo === 'Despesa' ? editSaida.descricao : editSaida.fornecedor || editSaida.funcionario };
     const fields = ['loja_id', 'valor', editSaida.tipo === 'Despesa' ? 'descricao' : editSaida.tipo === 'Fornecedor' ? 'fornecedor' : 'funcionario'];
-    if (validateForm(dataToValidate, fields)) {
+    if (!validateForm(dataToValidate, fields)) return;
+    try {
+      await prisma.saidas.update({
+        where: { id: editSaida.id },
+        data: { ...editSaida, valor: parseFloat(editSaida.valor), data: new Date(editSaida.data) },
+      });
       setSaidas(saidas.map(s => s.id === editSaida.id ? editSaida : s));
       setIsModalSaidaOpen(false);
       setEditSaida(null);
       setErrors({});
       showNotification('Saída atualizada com sucesso! ✅');
+    } catch (error) {
+      showNotification('Erro ao atualizar saída.');
     }
   };
 
@@ -118,10 +185,14 @@ export default function GestaoFinanceira() {
     setErrors({});
   };
 
-  const handleDeleteSaida = (id) => {
-    if (window.confirm('Tem certeza que deseja excluir esta saída?')) {
+  const handleDeleteSaida = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta saída?')) return;
+    try {
+      await prisma.saidas.delete({ where: { id } });
       setSaidas(saidas.filter(s => s.id !== id));
       showNotification('Saída removida com sucesso! 🗑️');
+    } catch (error) {
+      showNotification('Erro ao remover saída.');
     }
   };
 
@@ -152,40 +223,41 @@ export default function GestaoFinanceira() {
     const entradasFiltradas = entradas.filter(filterByPeriod);
     const saidasFiltradas = saidas.filter(filterByPeriod);
 
-    const relatorioPorLoja = lojas.map(loja => ({
-      loja: loja.nome,
-      entradas: entradasFiltradas.filter(e => e.loja_id === loja.id).reduce((sum, e) => sum + parseFloat(e.valor), 0),
-      saidas: saidasFiltradas.filter(s => s.loja_id === loja.id).reduce((sum, s) => sum + parseFloat(s.valor), 0),
-      saldo: entradasFiltradas.filter(e => e.loja_id === loja.id).reduce((sum, e) => sum + parseFloat(e.valor), 0) -
-             saidasFiltradas.filter(s => s.loja_id === loja.id).reduce((sum, s) => sum + parseFloat(s.valor), 0),
-    }));
+    const relatorioPorLoja = lojas
+      .filter(loja => user.funcao === 'admin' || loja.id === user.loja_id)
+      .map(loja => ({
+        loja: loja.nome,
+        entradas: entradasFiltradas.filter(e => e.loja_id === loja.id).reduce((sum, e) => sum + parseFloat(e.valor), 0),
+        saidas: saidasFiltradas.filter(s => s.loja_id === loja.id).reduce((sum, s) => sum + parseFloat(s.valor), 0),
+        saldo: entradasFiltradas.filter(e => e.loja_id === loja.id).reduce((sum, e) => sum + parseFloat(e.valor), 0) -
+               saidasFiltradas.filter(s => s.loja_id === loja.id).reduce((sum, s) => sum + parseFloat(s.valor), 0),
+      }));
 
     return relatorioPorLoja;
   };
 
+  if (loading) return <div className="flex justify-center items-center h-screen">Carregando...</div>;
+
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-[#FFFFFF] pt-14 sm:pt-16 transition-all duration-300">
+      <main className="min-h-screen bg-[#F7FAFC] pt-14 sm:pt-16 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6">
-          {/* Título */}
           <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-6 text-center">
             Gestão Financeira
           </h1>
 
-          {/* Notificação */}
           {notification && (
             <div className="w-full max-w-md mx-auto mb-4 p-4 bg-[#CFE8F9] text-[#2A4E73] rounded-md shadow-md text-center animate-fadeIn">
               {notification}
             </div>
           )}
 
-          {/* Seção de Entradas */}
-          <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6 mb-8">
+          <section className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-8">
             <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
               Registro de Entradas (Vendas PDV)
             </h2>
-            <form onSubmit={handleAddEntrada} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <form onSubmit={handleAddEntrada} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label htmlFor="loja_id_entrada" className="block text-sm font-medium text-[#2A4E73] mb-1">
                   Loja
@@ -195,6 +267,7 @@ export default function GestaoFinanceira() {
                   value={novaEntrada.loja_id}
                   onChange={(e) => setNovaEntrada({ ...novaEntrada, loja_id: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
+                  disabled={user.funcao !== 'admin'}
                 >
                   <option value="">Selecione uma loja</option>
                   {lojas.map((loja) => (
@@ -214,13 +287,15 @@ export default function GestaoFinanceira() {
                   onChange={(e) => setNovaEntrada({ ...novaEntrada, valor: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
                   step="0.01"
+                  min="0"
                 />
                 {errors.valor && <p className="text-[#AD343E] text-sm mt-1">{errors.valor}</p>}
               </div>
               <div className="flex items-end">
                 <button
                   type="submit"
-                  className="w-full px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E]"
+                  className="w-full px-4 py-2 text-sm font-medium text-white bg-[#2A4E73] rounded-md hover:bg-[#AD343E] disabled:bg-gray-400"
+                  disabled={user.funcao !== 'admin'}
                 >
                   Adicionar
                 </button>
@@ -230,7 +305,7 @@ export default function GestaoFinanceira() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-[#2A4E73]">
                 <thead>
-                  <tr className="bg-[#2A4E73] text-[#FFFFFF]">
+                  <tr className="bg-[#2A4E73] text-white">
                     <th className="px-4 py-3">ID</th>
                     <th className="px-4 py-3">Loja</th>
                     <th className="px-4 py-3">Valor (R$)</th>
@@ -242,12 +317,12 @@ export default function GestaoFinanceira() {
                   {entradas.map((entrada) => (
                     <tr key={entrada.id} className="border-b border-gray-200 hover:bg-[#CFE8F9]">
                       <td className="px-4 py-3">{entrada.id}</td>
-                      <td className="px-4 py-3">{lojas.find(l => l.id === parseInt(entrada.loja_id))?.nome || 'Desconhecida'}</td>
+                      <td className="px-4 py-3">{lojas.find(l => l.id === entrada.loja_id)?.nome || 'Desconhecida'}</td>
                       <td className="px-4 py-3">{entrada.valor.toFixed(2)}</td>
                       <td className="px-4 py-3">{entrada.data}</td>
                       <td className="px-4 py-3 text-center">
-                        <button onClick={() => openEditEntrada(entrada)} className="px-2 py-1 bg-[#2A4E73] text-[#FFFFFF] rounded hover:bg-[#AD343E]">Editar</button>
-                        <button onClick={() => handleDeleteEntrada(entrada.id)} className="px-2 py-1 bg-[#AD343E] text-[#FFFFFF] rounded hover:bg-[#2A4E73] ml-2">Excluir</button>
+                        <button onClick={() => openEditEntrada(entrada)} className="px-2 py-1 bg-[#2A4E73] text-white rounded hover:bg-[#AD343E] disabled:bg-gray-400" disabled={user.funcao !== 'admin'}>Editar</button>
+                        <button onClick={() => handleDeleteEntrada(entrada.id)} className="px-2 py-1 bg-[#AD343E] text-white rounded hover:bg-[#2A4E73] ml-2 disabled:bg-gray-400" disabled={user.funcao !== 'admin'}>Excluir</button>
                       </td>
                     </tr>
                   ))}
@@ -256,12 +331,11 @@ export default function GestaoFinanceira() {
             </div>
           </section>
 
-          {/* Seção de Saídas */}
-          <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6 mb-8">
+          <section className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-8">
             <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
               Registro de Saídas (Contas a Pagar)
             </h2>
-            <form onSubmit={handleAddSaida} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <form onSubmit={handleAddSaida} className="grid grid-cols-1 sm:grid-cols-5 gap-4">
               <div>
                 <label htmlFor="loja_id_saida" className="block text-sm font-medium text-[#2A4E73] mb-1">
                   Loja
@@ -271,6 +345,7 @@ export default function GestaoFinanceira() {
                   value={novaSaida.loja_id}
                   onChange={(e) => setNovaSaida({ ...novaSaida, loja_id: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
+                  disabled={user.funcao !== 'admin'}
                 >
                   <option value="">Selecione uma loja</option>
                   {lojas.map((loja) => (
@@ -353,13 +428,15 @@ export default function GestaoFinanceira() {
                   onChange={(e) => setNovaSaida({ ...novaSaida, valor: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
                   step="0.01"
+                  min="0"
                 />
                 {errors.valor && <p className="text-[#AD343E] text-sm mt-1">{errors.valor}</p>}
               </div>
               <div className="flex items-end">
                 <button
                   type="submit"
-                  className="w-full px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E]"
+                  className="w-full px-4 py-2 text-sm font-medium text-white bg-[#2A4E73] rounded-md hover:bg-[#AD343E] disabled:bg-gray-400"
+                  disabled={user.funcao !== 'admin'}
                 >
                   Adicionar
                 </button>
@@ -369,7 +446,7 @@ export default function GestaoFinanceira() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-[#2A4E73]">
                 <thead>
-                  <tr className="bg-[#2A4E73] text-[#FFFFFF]">
+                  <tr className="bg-[#2A4E73] text-white">
                     <th className="px-4 py-3">ID</th>
                     <th className="px-4 py-3">Loja</th>
                     <th className="px-4 py-3">Descrição/Fornecedor/Funcionário</th>
@@ -382,13 +459,13 @@ export default function GestaoFinanceira() {
                   {saidas.map((saida) => (
                     <tr key={saida.id} className="border-b border-gray-200 hover:bg-[#CFE8F9]">
                       <td className="px-4 py-3">{saida.id}</td>
-                      <td className="px-4 py-3">{lojas.find(l => l.id === parseInt(saida.loja_id))?.nome || 'Desconhecida'}</td>
+                      <td className="px-4 py-3">{lojas.find(l => l.id === saida.loja_id)?.nome || 'Desconhecida'}</td>
                       <td className="px-4 py-3">{saida.descricao || saida.fornecedor || saida.funcionario}</td>
                       <td className="px-4 py-3">{saida.valor.toFixed(2)}</td>
                       <td className="px-4 py-3">{saida.data}</td>
                       <td className="px-4 py-3 text-center">
-                        <button onClick={() => openEditSaida(saida)} className="px-2 py-1 bg-[#2A4E73] text-[#FFFFFF] rounded hover:bg-[#AD343E]">Editar</button>
-                        <button onClick={() => handleDeleteSaida(saida.id)} className="px-2 py-1 bg-[#AD343E] text-[#FFFFFF] rounded hover:bg-[#2A4E73] ml-2">Excluir</button>
+                        <button onClick={() => openEditSaida(saida)} className="px-2 py-1 bg-[#2A4E73] text-white rounded hover:bg-[#AD343E] disabled:bg-gray-400" disabled={user.funcao !== 'admin'}>Editar</button>
+                        <button onClick={() => handleDeleteSaida(saida.id)} className="px-2 py-1 bg-[#AD343E] text-white rounded hover:bg-[#2A4E73] ml-2 disabled:bg-gray-400" disabled={user.funcao !== 'admin'}>Excluir</button>
                       </td>
                     </tr>
                   ))}
@@ -397,13 +474,12 @@ export default function GestaoFinanceira() {
             </div>
           </section>
 
-          {/* Seção de Relatório de Fluxo de Caixa */}
-          <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
+          <section className="bg-white rounded-lg shadow-md p-4 sm:p-6">
             <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
               Relatório de Fluxo de Caixa
             </h2>
-            <div className="mb-4">
-              <label htmlFor="periodo" className="block text-sm font-medium text-[#2A4E73] mb-1">
+            <div className="mb-4 flex justify-center">
+              <label htmlFor="periodo" className="block text-sm font-medium text-[#2A4E73] mb-1 mr-2">
                 Período
               </label>
               <select
@@ -420,7 +496,7 @@ export default function GestaoFinanceira() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-[#2A4E73]">
                 <thead>
-                  <tr className="bg-[#2A4E73] text-[#FFFFFF]">
+                  <tr className="bg-[#2A4E73] text-white">
                     <th className="px-4 py-3">Loja</th>
                     <th className="px-4 py-3">Entradas (R$)</th>
                     <th className="px-4 py-3">Saídas (R$)</th>
@@ -441,10 +517,9 @@ export default function GestaoFinanceira() {
             </div>
           </section>
 
-          {/* Modals */}
           {isModalEntradaOpen && editEntrada && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
                 <h2 className="text-xl font-semibold text-[#2A4E73] mb-4">Editar Entrada</h2>
                 <form onSubmit={handleEditEntrada} className="space-y-4">
                   <div>
@@ -456,6 +531,7 @@ export default function GestaoFinanceira() {
                       value={editEntrada.loja_id}
                       onChange={(e) => setEditEntrada({ ...editEntrada, loja_id: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
+                      disabled={user.funcao !== 'admin'}
                     >
                       {lojas.map((loja) => (
                         <option key={loja.id} value={loja.id}>{loja.nome}</option>
@@ -474,12 +550,13 @@ export default function GestaoFinanceira() {
                       onChange={(e) => setEditEntrada({ ...editEntrada, valor: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
                       step="0.01"
+                      min="0"
                     />
                     {errors.valor && <p className="text-[#AD343E] text-sm mt-1">{errors.valor}</p>}
                   </div>
                   <div className="flex gap-3 pt-4">
-                    <button type="submit" className="flex-1 px-4 py-2 text-sm text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E]">Salvar</button>
-                    <button type="button" onClick={closeModal} className="flex-1 px-4 py-2 text-sm text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73]">Cancelar</button>
+                    <button type="submit" className="flex-1 px-4 py-2 text-sm text-white bg-[#2A4E73] rounded-md hover:bg-[#AD343E] disabled:bg-gray-400" disabled={user.funcao !== 'admin'}>Salvar</button>
+                    <button type="button" onClick={closeModal} className="flex-1 px-4 py-2 text-sm text-white bg-[#AD343E] rounded-md hover:bg-[#2A4E73]">Cancelar</button>
                   </div>
                 </form>
               </div>
@@ -488,7 +565,7 @@ export default function GestaoFinanceira() {
 
           {isModalSaidaOpen && editSaida && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
                 <h2 className="text-xl font-semibold text-[#2A4E73] mb-4">Editar Saída</h2>
                 <form onSubmit={handleEditSaida} className="space-y-4">
                   <div>
@@ -500,6 +577,7 @@ export default function GestaoFinanceira() {
                       value={editSaida.loja_id}
                       onChange={(e) => setEditSaida({ ...editSaida, loja_id: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
+                      disabled={user.funcao !== 'admin'}
                     >
                       {lojas.map((loja) => (
                         <option key={loja.id} value={loja.id}>{loja.nome}</option>
@@ -578,12 +656,13 @@ export default function GestaoFinanceira() {
                       onChange={(e) => setEditSaida({ ...editSaida, valor: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
                       step="0.01"
+                      min="0"
                     />
                     {errors.valor && <p className="text-[#AD343E] text-sm mt-1">{errors.valor}</p>}
                   </div>
                   <div className="flex gap-3 pt-4">
-                    <button type="submit" className="flex-1 px-4 py-2 text-sm text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E]">Salvar</button>
-                    <button type="button" onClick={closeModal} className="flex-1 px-4 py-2 text-sm text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73]">Cancelar</button>
+                    <button type="submit" className="flex-1 px-4 py-2 text-sm text-white bg-[#2A4E73] rounded-md hover:bg-[#AD343E] disabled:bg-gray-400" disabled={user.funcao !== 'admin'}>Salvar</button>
+                    <button type="button" onClick={closeModal} className="flex-1 px-4 py-2 text-sm text-white bg-[#AD343E] rounded-md hover:bg-[#2A4E73]">Cancelar</button>
                   </div>
                 </form>
               </div>

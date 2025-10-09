@@ -190,7 +190,7 @@ export default function Navbar() {
           <div className="flex items-center justify-center h-14 sm:h-16">
             {/* Logo and Brand */}
             <div className="flex items-center justify-center space-x-2 sm:space-x-3 min-w-0 flex-shrink-0">
-              <Link href="/matriz/home">
+              <Link href="/filial/home">
                 <img 
                   src="/milkie.svg" 
                   className="h-15 sm:h-18 w-18" 
