@@ -48,7 +48,8 @@ app.use('/lojas', lojasRoutes);
 app.use('/fornecedores', fornecedoresRoutes)
 app.use('/produtos', produtosRoutes);
 app.use('/precos', precosRoutes);
-
+app.use('/precos', precosRoutes);
+app.use('/estoque', estoqueRoutes);
 
 /* -------------------------------------------------------------------------- */
 /*                                Inicialização                               */

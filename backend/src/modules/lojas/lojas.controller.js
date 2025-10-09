@@ -39,7 +39,7 @@ export async function createLojasController(req, res) {
         res.status(201).json({ mensagem: 'Loja criada com sucesso', loja });
     } catch (err) {
         console.error('Erro ao criar lojas: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao criar lojas: ', err });
+        res.status(500).json({ mensagem: 'Erro ao criar lojas: ', erro: err.message });
     }
 }
 
@@ -61,15 +61,15 @@ export async function updateLojasController(req, res) {
 
         res.status(200).json({ mensagem: 'Loja atualizada com sucesso', updatedLoja });
     } catch (err) {
-        console.error('Erro ao criar lojas: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao criar lojas: ', err });
+        console.error('Erro ao atualizar lojas: ', err.message);
+        res.status(500).json({ mensagem: 'Erro ao atualizar lojas: ', erro: err.message });
     }
 }
 
 /* ------------------------------- REMOVER ------------------------------- */
 export async function removeLojasController(req, res) {
     try {
-        const lojaId = req.params.id;
+        const lojaId = parseInt(req.params.id);
         const loja = await lojasService.getLojasById(lojaId);
 
         if (!loja) {
@@ -79,7 +79,7 @@ export async function removeLojasController(req, res) {
         await lojasService.removeLojas(lojaId);
         res.status(200).json({ mensagem: 'Loja removida com sucesso' });
     } catch (err) {
-        console.error('Erro ao criar lojas: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao criar lojas: ', err });
+        console.error('Erro ao remover lojas: ', err.message);
+        res.status(500).json({ mensagem: 'Erro ao remover lojas: ', erro: err.message });
     }
 }

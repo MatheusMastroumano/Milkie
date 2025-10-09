@@ -16,7 +16,7 @@ export async function getLojas() {
 export async function getLojasById(id) {
     try {
         return await prisma.lojas.findUnique({
-            where: { id: id },
+            where: { id: Number(id) },
         });
     } catch (err) {
         console.error('error: ', err);
@@ -26,7 +26,7 @@ export async function getLojasById(id) {
 
 /* ------------------------------- CRIAR ------------------------------- */
 export async function createLojas(data) {
-    const { nome, tipo, CEP, ativo } = data;
+    const { nome, tipo, CEP, numero, ativo } = data;
 
     // VALIDAÇÕES
     if (!nome || nome.trim() === '') {
@@ -39,12 +39,21 @@ export async function createLojas(data) {
         throw new Error('CEP inválido.');
     }
 
-    if (tipo !== 'matriz' || tipo !== 'filial') {
+    if (tipo !== 'matriz' && tipo !== 'filial') {
         throw new Error('Tipo de loja inválido.');
     }
 
-    if (ativo !== true || ativo !== false) {
+    if (ativo !== true && ativo !== false) {
         throw new Error('Ativo inválido.');
+    }
+
+    // validar se CEP existe
+    const cepExiste = await prisma.lojas.findUnique({
+        where: { CEP: CEP },
+    });
+
+    if (cepExiste) {
+        throw new Error('Já existe uma loja cadastrada com esse CEP.');
     }
 
     try {
@@ -72,17 +81,26 @@ export async function updateLojas(id, data) {
         throw new Error('CEP inválido.');
     }
 
-    if (tipo !== 'matriz' || tipo !== 'filial') {
+    if (tipo !== 'matriz' && tipo !== 'filial') {
         throw new Error('Tipo de loja inválido.');
     }
 
-    if (ativo !== true || ativo !== false) {
+    if (ativo !== true && ativo !== false) {
         throw new Error('Ativo inválido.');
+    }
+
+    // validar se CEP existe
+    const cepExiste = await prisma.lojas.findUnique({
+        where: { CEP: CEP },
+    });
+
+    if (cepExiste) {
+        throw new Error('Já existe uma loja cadastrada com esse CEP.');
     }
 
     try {
         return await prisma.lojas.update({
-            where: { id: id },
+            where: { id: Number(id) },
             data: data,
         });
     } catch (err) {
@@ -95,7 +113,7 @@ export async function updateLojas(id, data) {
 export async function removeLojas(id) {
     try {
         return await prisma.lojas.delete({
-            where: { id: id },
+            where: { id: Number(id) },
         });
     } catch (err) {
         console.error('error: ', err);

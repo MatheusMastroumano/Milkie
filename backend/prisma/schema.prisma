@@ -14,8 +14,8 @@ model lojas {
   id          Int        @id @default(autoincrement())
   nome        String
   tipo        TipoLoja   @default(filial)
-  CEP         String
-  numero      String
+  CEP         String     @unique
+  numero      Int
   complemento String
   ativo       Boolean    @default(true)
   criado_em   DateTime   @default(now())
