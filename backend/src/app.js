@@ -18,6 +18,7 @@ import {
     vendasRoutes,
     vendaItensRoutes,
     vendaPagamentosRoutes,
+    caixaRoutes,
 } from './modules/index.js';
 
 /* -------------------------------------------------------------------------- */
@@ -65,6 +66,7 @@ app.use('/fornecedor-produtos', fornecedorProdutosRoutes);
 app.use('/vendas', vendasRoutes);
 app.use('/venda-itens', vendaItensRoutes);
 app.use('/venda-pagamentos', vendaPagamentosRoutes);
+app.use('/caixa', caixaRoutes);
 
 /* -------------------------------------------------------------------------- */
 /*                                Inicialização                               */

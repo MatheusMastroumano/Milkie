@@ -27,3 +27,4 @@ export { default as fornecedorProdutosRoutes} from './fornecedor_produtos/index.
 export { default as vendasRoutes } from './vendas/index.js';
 export { default as vendaItensRoutes } from './venda_itens/index.js';
 export { default as vendaPagamentosRoutes } from './venda_pagamentos/index.js';
+export { default as caixaRoutes } from './caixa/index.js';
