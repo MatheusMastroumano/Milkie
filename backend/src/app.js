@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 /* -------------------------------------------------------------------------- */
 /*                            Importação de rotas                             */
 /* -------------------------------------------------------------------------- */
-import { funcionariosRoutes, usuariosRoutes, lojasRoutes, fornecedoresRoutes, produtosRoutes, precosRoutes, estoqueRoutes } from './modules/index.js';
+import { funcionariosRoutes, usuariosRoutes, lojasRoutes, produtosRoutes, precosRoutes, estoqueRoutes } from './modules/index.js';
 
 /* -------------------------------------------------------------------------- */
 /*                         Configurações iniciais                             */
