@@ -16,6 +16,7 @@ import {
     fornecedoresRoutes,
     fornecedorProdutosRoutes,
     vendasRoutes,
+    vendaItensRoutes,
 } from './modules/index.js';
 
 /* -------------------------------------------------------------------------- */
@@ -61,6 +62,7 @@ app.use('/estoque', estoqueRoutes);
 app.use('/fornecedores', fornecedoresRoutes);
 app.use('/fornecedor-produtos', fornecedorProdutosRoutes);
 app.use('/vendas', vendasRoutes);
+app.use('/venda-itens', vendaItensRoutes);
 
 /* -------------------------------------------------------------------------- */
 /*                                Inicialização                               */

@@ -25,3 +25,4 @@ export { default as estoqueRoutes } from './estoque/index.js';
 export { default as fornecedoresRoutes} from './fornecedores/index.js';
 export { default as fornecedorProdutosRoutes} from './fornecedor_produtos/index.js';
 export { default as vendasRoutes } from './vendas/index.js';
+export { default as vendaItensRoutes } from './venda_itens/index.js';
