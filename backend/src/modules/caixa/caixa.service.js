@@ -3,7 +3,7 @@ import prisma from '../../shared/config/database.js';
 /* ------------------------------ BUSCAR TODOS ----------------------------- */
 export async function getCaixas() {
     try {
-        return await prisma.caixas.findMany({
+        return await prisma.caixa.findMany({
             include: {
                 loja: true,
                 abertoPor: true,
@@ -19,7 +19,7 @@ export async function getCaixas() {
 /* ------------------------------ BUSCAR POR ID ----------------------------- */
 export async function getCaixasById(id) {
     try {
-        return await prisma.caixas.findUnique({
+        return await prisma.caixa.findUnique({
             where: { id: id },
             include: {
                 loja: true,
@@ -42,7 +42,7 @@ export async function createCaixas(data) {
     }
 
     try {
-        return await prisma.caixas.create({
+        return await prisma.caixa.create({
             data: data,
         });
     } catch (err) {
@@ -60,7 +60,7 @@ export async function updateCaixas(id, data) {
     }
 
     try {
-        return await prisma.caixas.update({
+        return await prisma.caixa.update({
             where: { id: id },
             data: data,
         });
@@ -73,7 +73,7 @@ export async function updateCaixas(id, data) {
 /* ------------------------------- REMOVER ------------------------------- */
 export async function removeCaixas(id) {
     try {
-        return await prisma.caixas.delete({
+        return await prisma.caixa.delete({
             where: { id: Number(id) },
         });
     } catch (err) {

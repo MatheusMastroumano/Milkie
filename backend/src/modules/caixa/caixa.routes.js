@@ -1,16 +1,16 @@
 import express from 'express';
-import * as vendaPagamentosController from './vendaPagamentos.controller.js';
-import vendaPagamentosSchema from './vendaPagamentos.schema.js';
+import * as caixaController from './caixa.controller.js';
+import caixaSchema from './caixa.schema.js';
 
 // importação de middlewares
 import validate from '../../shared/middlewares/validate.js';
 
 const router = express.Router();
 
-router.get('/', vendaPagamentosController.getVendaPagamentosController);
-router.get('/:id', vendaPagamentosController.getVendaPagamentosByIdController);
-router.post('/', validate(vendaPagamentosSchema), vendaPagamentosController.createVendaPagamentosController);
-router.put('/:id', validate(vendaPagamentosSchema.partial()), vendaPagamentosController.updateVendaPagamentosController);
-router.delete('/:id', vendaPagamentosController.removeVendaPagamentosController);
+router.get('/', caixaController.getCaixasController);
+router.get('/:id', caixaController.getCaixasByIdController);
+router.post('/', validate(caixaSchema), caixaController.createCaixasController);
+router.put('/:id', validate(caixaSchema.partial()), caixaController.updateCaixasController);
+router.delete('/:id', caixaController.removeCaixasController);
 
 export default router;
