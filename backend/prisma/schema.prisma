@@ -1,34 +1,34 @@
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+    provider = "mysql"
+    url      = env("DATABASE_URL")
 }
 
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 /**
  * --------------------------- // matriz e filiais --------------------------
  */
 model lojas {
-  id          Int        @id @default(autoincrement())
-  nome        String
-  tipo        TipoLoja   @default(filial)
-  CEP         String     @unique
-  numero      Int
-  complemento String
-  ativo       Boolean    @default(true)
-  criado_em   DateTime   @default(now())
-  usuarios    usuarios[]
-  precos      precos[]
-  estoque     estoque[]
-  vendas      vendas[]
-  caixa       caixa[]
+    id          Int        @id @default(autoincrement())
+    nome        String
+    tipo        TipoLoja   @default(filial)
+    CEP         String     @unique
+    numero      Int
+    complemento String
+    ativo       Boolean    @default(true)
+    criado_em   DateTime   @default(now())
+    usuarios    usuarios[]
+    precos      precos[]
+    estoque     estoque[]
+    vendas      vendas[]
+    caixa       caixa[]
 }
 
 enum TipoLoja {
-  matriz
-  filial
+    matriz
+    filial
 }
 
 /**
@@ -36,40 +36,40 @@ enum TipoLoja {
  * acesso ao sistema ou não (inclui faxineiros, zeladores, etc)
  */
 model funcionarios {
-  id        Int        @id @default(autoincrement())
-  nome      String
-  cpf       String     @unique
-  email     String     @unique
-  telefone  String
-  idade     Int
-  cargo     String
-  salario   Decimal    @db.Decimal(10, 2)
-  ativo     Boolean    @default(true)
-  criado_em DateTime   @default(now())
-  usuarios  usuarios[]
+    id        Int        @id @default(autoincrement())
+    nome      String
+    cpf       String     @unique
+    email     String     @unique
+    telefone  String
+    idade     Int
+    cargo     String
+    salario   Decimal    @db.Decimal(10, 2)
+    ativo     Boolean    @default(true)
+    criado_em DateTime   @default(now())
+    usuarios  usuarios[]
 }
 
 // agora sim, só usuários com acesso ao sistema (caixa, gerente e admin)
 model usuarios {
-  id             Int     @id @default(autoincrement())
-  funcionario_id Int
-  loja_id        Int?
-  funcao         Funcao  @default(caixa)
-  username       String  @unique
-  senha_hash     String
-  ativo          Boolean @default(true)
+    id             Int     @id @default(autoincrement())
+    funcionario_id Int
+    loja_id        Int?
+    funcao         Funcao  @default(caixa)
+    username       String  @unique
+    senha_hash     String
+    ativo          Boolean @default(true)
 
-  funcionario  funcionarios @relation(fields: [funcionario_id], references: [id], onDelete: Cascade)
-  loja         lojas?       @relation(fields: [loja_id], references: [id], onDelete: SetNull)
-  vendas       vendas[]
-  caixa_abriu  caixa[]      @relation("CaixaAbertoPor")
-  caixa_fechou caixa[]      @relation("CaixaFechadoPor")
+    funcionario  funcionarios @relation(fields: [funcionario_id], references: [id], onDelete: Cascade)
+    loja         lojas?       @relation(fields: [loja_id], references: [id], onDelete: SetNull)
+    vendas       vendas[]
+    caixa_abriu  caixa[]      @relation("CaixaAbertoPor")
+    caixa_fechou caixa[]      @relation("CaixaFechadoPor")
 }
 
 enum Funcao {
-  admin
-  gerente
-  caixa
+    admin
+    gerente
+    caixa
 }
 
 /**
@@ -77,146 +77,146 @@ enum Funcao {
  * independente de estoque, loja, etc (fica mais modular e escalável)
  */
 model produtos {
-  id           Int                   @id @default(autoincrement())
-  nome         String
-  marca        String
-  categoria    String
-  descricao    String
-  sku          String                @unique
-  fabricacao   DateTime
-  validade     DateTime
-  ativo        Boolean               @default(true)
-  criado_em    DateTime              @default(now())
-  precos       precos[]
-  estoque      estoque[]
-  venda_itens  venda_itens[]
-  fornecedores fornecedor_produtos[]
+    id           Int                   @id @default(autoincrement())
+    nome         String
+    marca        String
+    categoria    String
+    descricao    String
+    sku          String                @unique
+    fabricacao   DateTime
+    validade     DateTime
+    ativo        Boolean               @default(true)
+    criado_em    DateTime              @default(now())
+    precos       precos[]
+    estoque      estoque[]
+    venda_itens  venda_itens[]
+    fornecedores fornecedor_produtos[]
 }
 
 /**
  * ---------------- // especificamente os preços dos produtos ---------------
  */
 model precos {
-  id         Int       @id @default(autoincrement())
-  produto_id Int
-  loja_id    Int?
-  preco      Decimal   @db.Decimal(10, 2)
-  valido_de  DateTime
-  valido_ate DateTime?
+    id         Int       @id @default(autoincrement())
+    produto_id Int
+    loja_id    Int?
+    preco      Decimal   @db.Decimal(10, 2)
+    valido_de  DateTime
+    valido_ate DateTime?
 
-  produto produtos @relation(fields: [produto_id], references: [id], onDelete: Cascade)
-  loja    lojas?   @relation(fields: [loja_id], references: [id], onDelete: SetNull)
+    produto produtos @relation(fields: [produto_id], references: [id], onDelete: Cascade)
+    loja    lojas?   @relation(fields: [loja_id], references: [id], onDelete: SetNull)
 }
 
 /**
  * ---------- // qual produto está em qual loja e quantos dele tem ----------
  */
 model estoque {
-  produto_id Int
-  loja_id    Int
-  quantidade Decimal @default(0) @db.Decimal(10, 2)
+    produto_id Int
+    loja_id    Int
+    quantidade Decimal @default(0) @db.Decimal(10, 2)
 
-  produto produtos @relation(fields: [produto_id], references: [id], onDelete: Cascade)
-  loja    lojas    @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+    produto produtos @relation(fields: [produto_id], references: [id], onDelete: Cascade)
+    loja    lojas    @relation(fields: [loja_id], references: [id], onDelete: Cascade)
 
-  @@id([produto_id, loja_id])
+    @@id([produto_id, loja_id])
 }
 
 /**
  * ---------------------- // fornecedores dos produtos ----------------------
  */
 model fornecedores {
-  id                  Int                   @id @default(autoincrement())
-  nome                String
-  cnpj_cpf            String                @unique
-  produtos_fornecidos String
-  ativo               Boolean               @default(true)
-  criado_em           DateTime              @default(now())
-  produtos            fornecedor_produtos[]
+    id                  Int                   @id @default(autoincrement())
+    nome                String
+    cnpj_cpf            String                @unique
+    produtos_fornecidos String
+    ativo               Boolean               @default(true)
+    criado_em           DateTime              @default(now())
+    produtos            fornecedor_produtos[]
 }
 
 /**
  * ------- // ligação dos fornecedores com qual produto eles fornecem -------
  */
 model fornecedor_produtos {
-  fornecedor_id Int
-  produto_id    Int
+    fornecedor_id Int
+    produto_id    Int
 
-  fornecedor fornecedores @relation(fields: [fornecedor_id], references: [id], onDelete: Cascade)
-  produto    produtos     @relation(fields: [produto_id], references: [id], onDelete: Cascade)
+    fornecedor fornecedores @relation(fields: [fornecedor_id], references: [id], onDelete: Cascade)
+    produto    produtos     @relation(fields: [produto_id], references: [id], onDelete: Cascade)
 
-  @@id([fornecedor_id, produto_id])
+    @@id([fornecedor_id, produto_id])
 }
 
 // "cabeçalho" das vendas, só com informações cruciais, tipo nota fiscal
 model vendas {
-  id            Int      @id @default(autoincrement())
-  loja_id       Int
-  usuario_id    Int
-  comprador_cpf String?
-  valor_total   Decimal  @db.Decimal(10, 2)
-  data          DateTime @default(now())
+    id            Int      @id @default(autoincrement())
+    loja_id       Int
+    usuario_id    Int
+    comprador_cpf String?
+    valor_total   Decimal  @db.Decimal(10, 2)
+    data          DateTime @default(now())
 
-  loja       lojas              @relation(fields: [loja_id], references: [id], onDelete: Cascade)
-  usuario    usuarios           @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
-  itens      venda_itens[]
-  pagamentos venda_pagamentos[]
+    loja       lojas              @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+    usuario    usuarios           @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+    itens      venda_itens[]
+    pagamentos venda_pagamentos[]
 }
 
 /**
  * ---------------------------- // itens vendidos ---------------------------
  */
 model venda_itens {
-  id             Int     @id @default(autoincrement())
-  venda_id       Int
-  produto_id     Int
-  quantidade     Decimal @db.Decimal(10, 2)
-  preco_unitario Decimal @db.Decimal(10, 2)
-  subtotal       Decimal @db.Decimal(10, 2)
+    id             Int     @id @default(autoincrement())
+    venda_id       Int
+    produto_id     Int
+    quantidade     Decimal @db.Decimal(10, 2)
+    preco_unitario Decimal @db.Decimal(10, 2)
+    subtotal       Decimal @db.Decimal(10, 2)
 
-  venda   vendas   @relation(fields: [venda_id], references: [id], onDelete: Cascade)
-  produto produtos @relation(fields: [produto_id], references: [id], onDelete: Cascade)
+    venda   vendas   @relation(fields: [venda_id], references: [id], onDelete: Cascade)
+    produto produtos @relation(fields: [produto_id], references: [id], onDelete: Cascade)
 }
 
 /**
  * -------------------- // valores e métodos de pagamento -------------------
  */
 model venda_pagamentos {
-  id       Int             @id @default(autoincrement())
-  venda_id Int
-  metodo   MetodoPagamento
-  valor    Decimal         @db.Decimal(10, 2)
+    id       Int             @id @default(autoincrement())
+    venda_id Int
+    metodo   MetodoPagamento
+    valor    Decimal         @db.Decimal(10, 2)
 
-  venda vendas @relation(fields: [venda_id], references: [id], onDelete: Cascade)
+    venda vendas @relation(fields: [venda_id], references: [id], onDelete: Cascade)
 }
 
 enum MetodoPagamento {
-  dinheiro
-  cartaocredito
-  cartaodebito
-  pix
+    dinheiro
+    cartaocredito
+    cartaodebito
+    pix
 }
 
 /**
  * ------- // tabela da frente de caixa, onde a venda será registrada -------
  */
 model caixa {
-  id            Int         @id @default(autoincrement())
-  loja_id       Int
-  aberto_por    Int
-  aberto_em     DateTime    @default(now())
-  fechado_por   Int?
-  fechado_em    DateTime?
-  valor_inicial Decimal     @default(0) @db.Decimal(10, 2)
-  valor_final   Decimal?
-  status        StatusCaixa @default(aberto)
+    id            Int         @id @default(autoincrement())
+    loja_id       Int
+    aberto_por    Int
+    aberto_em     DateTime    @default(now())
+    fechado_por   Int?
+    fechado_em    DateTime?
+    valor_inicial Decimal     @default(0) @db.Decimal(10, 2)
+    valor_final   Decimal?
+    status        StatusCaixa @default(aberto)
 
-  loja       lojas     @relation(fields: [loja_id], references: [id], onDelete: Cascade)
-  abertoPor  usuarios  @relation("CaixaAbertoPor", fields: [aberto_por], references: [id], onDelete: Cascade)
-  fechadoPor usuarios? @relation("CaixaFechadoPor", fields: [fechado_por], references: [id], onDelete: SetNull)
+    loja       lojas     @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+    abertoPor  usuarios  @relation("CaixaAbertoPor", fields: [aberto_por], references: [id], onDelete: Cascade)
+    fechadoPor usuarios? @relation("CaixaFechadoPor", fields: [fechado_por], references: [id], onDelete: SetNull)
 }
 
 enum StatusCaixa {
-  aberto
-  fechado
+    aberto
+    fechado
 }

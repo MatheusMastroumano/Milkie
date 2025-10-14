@@ -1,13 +1,12 @@
 import prisma from '../../shared/config/database.js';
-import { cpf as cpfValidator } from 'cpf-cnpj-validator';
 
 /* ------------------------------ BUSCAR TODOS ----------------------------- */
-export async function getVendas() {
+export async function getFornecedorProdutos() {
     try {
-        return await prisma.vendas.findMany({
+        return await prisma.fornecedor_produtos.findMany({
             include: {
-                loja: true,
-                usuario: true,
+                fornecedor: true,
+                produto: true
             }
         });
     } catch (err) {
@@ -17,13 +16,13 @@ export async function getVendas() {
 }
 
 /* ------------------------------ BUSCAR POR ID ----------------------------- */
-export async function getVendasById(id) {
+export async function getFornecedorProdutosById(id) {
     try {
-        return await prisma.vendas.findUnique({
+        return await prisma.fornecedor_produtos.findUnique({
             where: { id: id },
-            include: {
-                loja: true,
-                usuario: true,
+            include :{
+                fornecedor: true,
+                produto: true
             }
         });
     } catch (err) {
@@ -33,16 +32,9 @@ export async function getVendasById(id) {
 }
 
 /* ------------------------------- CRIAR ------------------------------- */
-export async function createVendas(data) {
-    const { comprador_cpf } = data;
-
-    // aqui se usa o import do cpf validator
-    if (comprador_cpf && !cpfValidator.isValid(comprador_cpf)) {
-        throw new Error('CPF inválido. Deve conter 11 dígitos numéricos.');
-    }
-
+export async function createFornecedorProdutos(data) {
     try {
-        return await prisma.vendas.create({
+        return await prisma.fornecedor_produtos.create({
             data: data,
         });
     } catch (err) {
@@ -52,16 +44,9 @@ export async function createVendas(data) {
 }
 
 /* ------------------------------- ATUALIZAR ------------------------------- */
-export async function updateVendas(id, data) {
-    const { comprador_cpf } = data;
-
-    // aqui se usa o import do cpf validator
-    if (comprador_cpf && !cpfValidator.isValid(comprador_cpf)) {
-        throw new Error('CPF inválido. Deve conter 11 dígitos numéricos.');
-    }
-
+export async function updateFornecedorProdutos(id, data) {
     try {
-        return await prisma.vendas.update({
+        return await prisma.fornecedor_produtos.update({
             where: { id: id },
             data: data,
         });
@@ -72,9 +57,9 @@ export async function updateVendas(id, data) {
 }
 
 /* ------------------------------- REMOVER ------------------------------- */
-export async function deleteVendas(id) {
+export async function removeFornecedorProdutos(id) {
     try {
-        return await prisma.vendas.delete({
+        return await prisma.fornecedor_produtos.delete({
             where: { id: id },
         });
     } catch (err) {
