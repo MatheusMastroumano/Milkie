@@ -14,7 +14,8 @@ import {
     precosRoutes,
     estoqueRoutes,
     fornecedoresRoutes,
-    fornecedorProdutosRoutes
+    fornecedorProdutosRoutes,
+    vendasRoutes,
 } from './modules/index.js';
 
 /* -------------------------------------------------------------------------- */
@@ -59,6 +60,7 @@ app.use('/precos', precosRoutes);
 app.use('/estoque', estoqueRoutes);
 app.use('/fornecedores', fornecedoresRoutes);
 app.use('/fornecedor-produtos', fornecedorProdutosRoutes);
+app.use('/vendas', vendasRoutes);
 
 /* -------------------------------------------------------------------------- */
 /*                                Inicialização                               */

@@ -33,7 +33,7 @@ export async function createFuncionarios(data) {
     }
 
     // aqui se usa o import do cpf validator
-    if (cpf && !cpfValidator.isValid(CPF)) {
+    if (cpf && !cpfValidator.isValid(cpf)) {
         throw new Error('CPF inválido. Deve conter 11 dígitos numéricos.');
     }
 
