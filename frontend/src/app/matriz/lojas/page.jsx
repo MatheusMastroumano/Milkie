@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Header from "@/components/Header/page";
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CheckCircle, XCircle } from 'lucide-react';
 
 export default function Lojas() {
   const [lojas, setLojas] = useState([
@@ -12,6 +14,15 @@ export default function Lojas() {
   const [editLoja, setEditLoja] = useState(null);
   const [errors, setErrors] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+
+  // Função para mostrar alert
+  const showAlert = (type, message) => {
+    setAlert({ show: true, type, message });
+    setTimeout(() => {
+      setAlert({ show: false, type: '', message: '' });
+    }, 5000);
+  };
 
   // Função para validar o formulário
   const validateForm = (loja, isEdit = false) => {
@@ -30,6 +41,7 @@ export default function Lojas() {
     e.preventDefault();
     if (validateForm(novaLoja)) {
       setLojas([...lojas, { id: lojas.length + 1, ...novaLoja }]);
+      showAlert('success', `Loja "${novaLoja.nome}" cadastrada com sucesso!`);
       setNovaLoja({ nome: '', tipo: 'Filial', endereco: '' });
       setErrors({});
     }
@@ -40,6 +52,7 @@ export default function Lojas() {
     e.preventDefault();
     if (validateForm(editLoja, true)) {
       setLojas(lojas.map((loja) => (loja.id === editLoja.id ? { ...editLoja } : loja)));
+      showAlert('success', `Loja "${editLoja.nome}" editada com sucesso!`);
       setIsModalOpen(false);
       setEditLoja(null);
       setErrors({});
@@ -62,8 +75,10 @@ export default function Lojas() {
 
   // Função para excluir loja
   const handleDeleteLoja = (id) => {
+    const lojaToDelete = lojas.find((loja) => loja.id === id);
     if (window.confirm('Tem certeza que deseja excluir esta loja?')) {
       setLojas(lojas.filter((loja) => loja.id !== id));
+      showAlert('success', `Loja "${lojaToDelete.nome}" excluída com sucesso!`);
       if (editLoja && editLoja.id === id) {
         closeModal();
       }
@@ -75,6 +90,21 @@ export default function Lojas() {
       <Header />
       <main className="min-h-screen bg-[#FFFFFF] pt-14 sm:pt-16 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6">
+          {/* Alert de Feedback */}
+          {alert.show && (
+            <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+              <Alert variant={alert.type === 'success' ? 'default' : 'destructive'}>
+                {alert.type === 'success' ? (
+                  <CheckCircle className="h-4 w-4" />
+                ) : (
+                  <XCircle className="h-4 w-4" />
+                )}
+                <AlertTitle>{alert.type === 'success' ? 'Sucesso!' : 'Erro!'}</AlertTitle>
+                <AlertDescription>{alert.message}</AlertDescription>
+              </Alert>
+            </div>
+          )}
+
           {/* Título */}
           <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-6 text-center">
             Gerenciamento de Lojas
