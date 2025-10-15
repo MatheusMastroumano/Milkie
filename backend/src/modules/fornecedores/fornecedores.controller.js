@@ -39,7 +39,7 @@ export async function createFornecedoresController(req, res) {
         res.status(201).json({ mensagem: 'Fornecedor criado com sucesso: ', fornecedor });
     } catch (err) {
         console.error('Erro ao criar fornecedor: ', err.message);
-        res.status(500).json({ mensagem: 'erro ao criar fornecedor:', err })
+        res.status(500).json({ mensagem: 'erro ao criar fornecedor:', erro: err.message });
     }
 }
 

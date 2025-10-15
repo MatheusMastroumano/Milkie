@@ -28,8 +28,8 @@ export async function createFornecedores(data) {
     try {
 
         const { nome, cnpj_cpf, produtos_fornecidos, ativo } = data;
-        const fornecedorExistente = await prisma.fornecedores.findUnique({
-            where: { cnpj_cpf },
+        const fornecedorExistente = await prisma.fornecedores.findFirst({
+            where: { cnpj_cpf: cnpj_cpf },
         });
 
         if (fornecedorExistente) {
