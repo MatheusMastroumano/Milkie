@@ -3,7 +3,6 @@ import * as utils from '../../shared/utils/verify.js';
 import { Decimal } from "@prisma/client/runtime/library";
 
 const VendasSchema = z.object({
-    id: utils.id,
     loja_id: z.number().int().positive(),
     usuario_id: z.number().int().positive(),
     comprador_cpf: z.number().int().positive(),

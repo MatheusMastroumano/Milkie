@@ -35,7 +35,7 @@ export async function createProdutos(data) {
         throw new Error('Data de validade inválida.');
     }
 
-    if (ativo !== true || ativo !== false) {
+    if (ativo !== true && ativo !== false) {
         throw new Error('Ativo inválido.');
     }
 

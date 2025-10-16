@@ -5,7 +5,6 @@ import { Decimal } from "@prisma/client/runtime/library";
 const StatusCaixa = z.enum(["aberto", "fechado"]);
 
 const CaixaSchema = z.object({
-    id: utils.id,
     loja_id: z.number().int().positive(),
     aberto_por: z.coerce.date(),
     aberto_em: z.coerce.date(),

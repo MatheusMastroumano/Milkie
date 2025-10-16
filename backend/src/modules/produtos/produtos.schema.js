@@ -2,7 +2,6 @@ import { z } from 'zod';
 import * as utils from '../../shared/utils/verify.js';
 
 const ProdutosSchema = z.object({
-    id: utils.id,
     nome: utils.nome,
     marca: z.string(),
     categoria: z.string(),

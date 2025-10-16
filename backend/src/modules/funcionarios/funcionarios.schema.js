@@ -2,7 +2,6 @@ import { z } from 'zod';
 import * as utils from '../../shared/utils/verify.js';
 
 const FuncionariosSchema = z.object({
-    id: utils.id,
     nome: utils.nome,
     cpf: z.string(),
     email: z.string().email(),

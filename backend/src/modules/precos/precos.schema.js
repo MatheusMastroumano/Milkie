@@ -2,7 +2,6 @@ import { z } from 'zod';
 import * as utils from '../../shared/utils/verify.js';
 
 const PrecosSchema = z.object({
-    id: utils.id,
     produto_id: utils.id,
     loja_id: utils.id,
     preco: z.number().positive(),
