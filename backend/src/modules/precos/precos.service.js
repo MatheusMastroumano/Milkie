@@ -3,7 +3,12 @@ import prisma from '../../shared/config/database.js';
 /* ------------------------------ BUSCAR TODOS ----------------------------- */
 export async function getPrecos() {
     try {
-        return await prisma.precos.findMany();
+        return await prisma.precos.findMany({
+            include: {
+                loja: true,
+                produto: true,
+            }
+        });
     } catch (err) {
         console.error('error: ', err);
         throw new Error(err.message);
@@ -14,7 +19,11 @@ export async function getPrecos() {
 export async function getPrecosById(id) {
     try {
         return await prisma.precos.findUnique({
-            where: { id: id },
+            where: { id: Number(id) },
+            include: {
+                loja: true,
+                produto: true,
+            }
         });
     } catch (err) {
         console.error('error: ', err);
@@ -26,25 +35,19 @@ export async function getPrecosById(id) {
 export async function createPrecos(data) {
     const { preco, valido_de, valido_ate } = data;
 
-    if (valido_de > valido_ate) {
-        throw new Error('Datas inválidas.');
-    }
-
     if (preco < 0) {
         throw new Error('Preço inválido.');
     }
 
-    if (valido_de < new Date()) {
-        throw new Error('Datas inválidas.');
+    if (valido_de > valido_ate) {
+        throw new Error('A data de início não pode ser posterior à data final.');
     }
 
+    // opcional: não deixar validade já expirada
     if (valido_ate < new Date()) {
-        throw new Error('Datas inválidas.');
+        throw new Error('Período de validade expirado.');
     }
 
-    if (valido_ate < valido_de) {
-        throw new Error('Datas inválidas.');
-    }
 
     try {
         return await prisma.precos.create({
@@ -95,7 +98,7 @@ export async function updatePrecos(id, data) {
 export async function removePrecos(id) {
     try {
         return await prisma.precos.delete({
-            where: { id: id },
+            where: { id: Number(id) },
         });
     } catch (err) {
         console.error('error: ', err);

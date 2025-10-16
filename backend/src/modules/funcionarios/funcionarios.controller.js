@@ -23,7 +23,7 @@ export async function getFuncionariosByIdController(req, res) {
         res.status(200).json({ funcionario });
     } catch (err) {
         console.error('Erro ao listar funcionários por id: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao listar funcionários por id: ', err });
+        res.status(500).json({ mensagem: 'Erro ao listar funcionários por id: ', erro: err.message });
     }
 }
 
@@ -39,7 +39,7 @@ export async function createFuncionariosController(req, res) {
         res.status(201).json({ mensagem: 'Funcionario criado com sucesso', funcionario });
     } catch (err) {
         console.error('Erro ao criar funcionários: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao criar funcionários: ', err });
+        res.status(500).json({ mensagem: 'Erro ao criar funcionários: ', erro: err.message });
     }
 }
 
@@ -80,6 +80,6 @@ export async function removeFuncionariosController(req, res) {
         res.status(200).json({ mensagem: 'Funcionario removido com sucesso' });
     } catch (err) {
         console.error('Erro ao remover funcionários: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao remover funcionários: ', err });
+        res.status(500).json({ mensagem: 'Erro ao remover funcionários: ', erro: err.message });
     }
 }

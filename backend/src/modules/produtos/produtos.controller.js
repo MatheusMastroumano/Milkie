@@ -61,8 +61,8 @@ export async function updateProdutosController(req, res) {
 
         res.status(200).json({ mensagem: 'Produto atualizado com sucesso', updatedProduto });
     } catch (err) {
-        console.error('Erro ao criar produto: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao criar produto: ', err });
+        console.error('Erro ao atualizar produto: ', err.message);
+        res.status(500).json({ mensagem: 'Erro ao atualizar produto: ', erro: err.message });
     }
 }
 
@@ -79,7 +79,7 @@ export async function removeProdutosController(req, res) {
         await produtosService.removeProdutos(produtoId);
         res.status(200).json({ mensagem: 'Produto removido com sucesso' });
     } catch (err) {
-        console.error('Erro ao criar produto: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao criar produto: ', err });
+        console.error('Erro ao remover produto: ', err.message);
+        res.status(500).json({ mensagem: 'Erro ao remover produto: ', erro: err.message });
     }
 }

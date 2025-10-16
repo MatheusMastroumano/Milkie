@@ -16,10 +16,15 @@ export async function getEstoque() {
 }
 
 /* ------------------------------ BUSCAR POT ID ----------------------------- */
-export async function getEstoqueById(id) {
+export async function getEstoqueById(produto_id, loja_id) {
     try {
         return await prisma.estoque.findUnique({
-            where: { id: id },
+            where: {
+                produto_id_loja_id: {  // Prisma cria esse nome automaticamente para a chave composta
+                    produto_id: Number(produto_id),
+                    loja_id: Number(loja_id)
+                }
+            },
             include: {
                 produto: true,
                 loja: true
@@ -50,11 +55,24 @@ export async function createEstoque(data) {
 }
 
 /* ------------------------------- ATUALIZAR ------------------------------- */
-export async function updateEstoque(id, data) {
+export async function updateEstoque(produto_id, loja_id, data) {
+    const { quantidade } = data;
+
+    if (quantidade < 0) {
+        throw new Error('Quantidade inválida.');
+    }
+
     try {
         return await prisma.estoque.update({
-            where: { id: id },
-            data: data,
+            where: {
+                produto_id_loja_id: {
+                    produto_id: Number(produto_id),
+                    loja_id: Number(loja_id),
+                },
+            },
+            data: {
+                quantidade,
+            },
         });
     } catch (err) {
         console.error('error: ', err);
@@ -62,11 +80,17 @@ export async function updateEstoque(id, data) {
     }
 }
 
+
 /* ------------------------------- DELETAR ------------------------------- */
-export async function deleteEstoque(id) {
+export async function deleteEstoque(produto_id, loja_id) {
     try {
         return await prisma.estoque.delete({
-            where: { id: id },
+            where: {
+                produto_id_loja_id: {
+                    produto_id: Number(produto_id),
+                    loja_id: Number(loja_id),
+                },
+            },
         });
     } catch (err) {
         console.error('error: ', err);

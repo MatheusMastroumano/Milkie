@@ -14,16 +14,18 @@ export async function getEstoqueController(req, res) {
 /* ------------------------------ BUSCAR POR ID ----------------------------- */
 export async function getEstoqueByIdController(req, res) {
     try {
-        const estoque = await estoqueService.getEstoqueById(req.params.id);
+        const { produtoId, lojaId } = req.params;
+
+        const estoque = await estoqueService.getEstoqueById(produtoId, lojaId);
 
         if (!estoque) {
-            return res.status(404).json({ mensagem: 'Estoque nao encontrado' });
+            return res.status(404).json({ mensagem: 'Estoque não encontrado' });
         }
 
         res.status(200).json({ estoque });
     } catch (err) {
-        console.error('Erro ao buscar estoque por id: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao buscar estoque por id', erro: err.message });
+        console.error('Erro ao buscar estoque: ', err.message);
+        res.status(500).json({ mensagem: 'Erro ao buscar estoque', erro: err.message });
     }
 }
 
@@ -46,20 +48,16 @@ export async function createEstoqueController(req, res) {
 /* ------------------------------- ATUALIZAR ------------------------------- */
 export async function updateEstoqueController(req, res) {
     try {
-        const estoqueId = parseInt(req.params.id);
-        const estoque = await estoqueService.getEstoqueById(estoqueId);
+        const { produtoId, lojaId } = req.params;
+        const { quantidade } = req.body;
 
-        if (!estoque) {
-            return res.status(404).json({ mensagem: 'Estoque nao encontrado' });
+        const estoqueAtualizado = await estoqueService.updateEstoque(produtoId, lojaId, { quantidade });
+
+        if (!estoqueAtualizado) {
+            return res.status(404).json({ mensagem: 'Estoque não encontrado' });
         }
 
-        const { produto_id, loja_id, quantidade } = req.body;
-
-        const estoqueData = { produto_id, loja_id, quantidade };
-
-        const updatedEstoque = await estoqueService.updateEstoque(estoqueId, estoqueData);
-
-        res.status(200).json({ mensagem: 'Estoque atualizado com sucesso', updatedEstoque });
+        res.status(200).json({ mensagem: 'Estoque atualizado com sucesso', estoqueAtualizado });
     } catch (err) {
         console.error('Erro ao atualizar estoque: ', err.message);
         res.status(500).json({ mensagem: 'Erro ao atualizar estoque', erro: err.message });
@@ -69,14 +67,14 @@ export async function updateEstoqueController(req, res) {
 /* ------------------------------- REMOVER ------------------------------- */
 export async function removeEstoqueController(req, res) {
     try {
-        const estoqueId = parseInt(req.params.id);
-        const estoque = await estoqueService.getEstoqueById(estoqueId);
+        const { produtoId, lojaId } = req.params;
 
-        if (!estoque) {
-            return res.status(404).json({ mensagem: 'Estoque nao encontrado' });
+        const estoqueRemovido = await estoqueService.deleteEstoque(produtoId, lojaId);
+
+        if (!estoqueRemovido) {
+            return res.status(404).json({ mensagem: 'Estoque não encontrado' });
         }
 
-        await estoqueService.removeEstoque(estoqueId);
         res.status(200).json({ mensagem: 'Estoque removido com sucesso' });
     } catch (err) {
         console.error('Erro ao remover estoque: ', err.message);

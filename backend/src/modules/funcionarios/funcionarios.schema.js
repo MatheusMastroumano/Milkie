@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import * as utils from '../../shared/utils/verify.js';
 
+import pkg from '@prisma/client';
+const { Decimal } = pkg;
+
 const FuncionariosSchema = z.object({
     nome: utils.nome,
     cpf: z.string(),

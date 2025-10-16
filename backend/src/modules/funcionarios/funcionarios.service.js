@@ -15,7 +15,7 @@ export async function getFuncionarios() {
 export async function getFuncionariosById(id) {
     try {
         return await prisma.funcionarios.findUnique({
-            where: { id: id },
+            where: { id: Number(id) },
         });
     } catch (err) {
         console.error('error: ', err);
@@ -114,7 +114,7 @@ export async function updateFuncionarios(id, data) {
 export async function removeFuncionarios(id) {
     try {
         return await prisma.funcionarios.delete({
-            where: { id: id }
+            where: { id: Number(id) }
         });
     } catch (err) {
         console.error('error: ', err);

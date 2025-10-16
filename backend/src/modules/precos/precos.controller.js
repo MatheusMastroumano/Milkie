@@ -30,16 +30,16 @@ export async function getPrecosByIdController(req, res) {
 /* ------------------------------- CRIAR ------------------------------- */
 export async function createPrecosController(req, res) {
     try {
-        const { lojaId, produtoId, preco, valido_de, valido_ate } = req.body;
+        const { loja_id, produto_id, preco, valido_de, valido_ate } = req.body;
 
-        const precoData = { lojaId, produtoId, preco, valido_de, valido_ate };
+        const precoData = { loja_id, produto_id, preco, valido_de, valido_ate };
 
         const precoCriado = await precosService.createPrecos(precoData);
 
         res.status(201).json({ mensagem: 'Preço criado com sucesso', precoCriado });
     } catch (err) {
         console.error('Erro ao criar preços: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao criar preços: ', err });
+        res.status(500).json({ mensagem: 'Erro ao criar preços: ', erro: err.message });
     }
 }
 
@@ -53,16 +53,16 @@ export async function updatePrecosController(req, res) {
             return res.status(404).json({ mensagem: 'Preço nao encontrado' });
         }
 
-        const { lojaId, produtoId, preco: novoPreco } = req.body;
+        const { loja_id, produto_id, preco: novoPreco } = req.body;
 
-        const precoData = { lojaId, produtoId, preco: novoPreco };
+        const precoData = { loja_id, produto_id, preco: novoPreco };
 
         const precoAtualizado = await precosService.updatePrecos(precoId, precoData);
 
         res.status(200).json({ mensagem: 'Preço atualizado com sucesso', precoAtualizado });
     } catch (err) {
         console.error('Erro ao atualizar preços: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao atualizar preços: ', err });
+        res.status(500).json({ mensagem: 'Erro ao atualizar preços: ', erro: err.message });
     }
 }
 
@@ -80,6 +80,6 @@ export async function removePrecosController(req, res) {
         res.status(200).json({ mensagem: 'Preço removido com sucesso' });
     } catch (err) {
         console.error('Erro ao remover preços: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao remover preços: ', err });
+        res.status(500).json({ mensagem: 'Erro ao remover preços: ', erro: err.message });
     }
 }

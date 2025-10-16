@@ -20,7 +20,7 @@ export async function getUsuarios() {
 export async function getUsuariosById(id) {
     try {
         return await prisma.usuarios.findUnique({
-            where: { id: id },
+            where: { id: Number(id) },
             include: {
                 funcionario: true,
                 loja: true
@@ -94,7 +94,7 @@ export async function updateUsuarios(id, data) {
     try {
         // Verificar se o usuário existe
         const usuarioExiste = await prisma.usuarios.findUnique({
-            where: { id: id }
+            where: { id: Number(id) }
         });
         
         if (!usuarioExiste) {
@@ -165,7 +165,7 @@ export async function removeUsuarios(id) {
     try {
         // Verificar se o usuário existe
         const usuarioExiste = await prisma.usuarios.findUnique({
-            where: { id: id }
+            where: { id: Number(id) }
         });
         
         if (!usuarioExiste) {

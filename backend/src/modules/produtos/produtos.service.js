@@ -15,7 +15,7 @@ export async function getProdutos() {
 export async function getProdutosById(id) {
     try {
         return await prisma.produtos.findUnique({
-            where: { id: id },
+            where: { id: Number(id) },
         });
     } catch (err) {
         console.error('error: ', err);
@@ -53,13 +53,13 @@ export async function createProdutos(data) {
 export async function updateProdutos(id, data) {
     const { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo } = data;
 
-    if (ativo !== true || ativo !== false) {
+    if (ativo !== true && ativo !== false) {
         throw new Error('Ativo inválido.');
     }
 
     try {
         return await prisma.produtos.update({
-            where: { id: id },
+            where: { id: Number(id) },
             data: data,
         });
     } catch (err) {
@@ -72,7 +72,7 @@ export async function updateProdutos(id, data) {
 export async function removeProdutos(id) {
     try {
         return await prisma.produtos.delete({
-            where: { id: id },
+            where: { id: Number(id) },
         });
     } catch (err) {
         console.error('error: ', err);
