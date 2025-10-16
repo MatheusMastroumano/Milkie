@@ -7,18 +7,9 @@ import dotenv from 'dotenv';
 /*                            Importação de rotas                             */
 /* -------------------------------------------------------------------------- */
 import {
-    lojasRoutes,
-    funcionariosRoutes,
-    usuariosRoutes,
-    produtosRoutes,
-    precosRoutes,
-    estoqueRoutes,
-    fornecedoresRoutes,
-    fornecedorProdutosRoutes,
-    vendasRoutes,
-    vendaItensRoutes,
-    vendaPagamentosRoutes,
-    caixaRoutes,
+    lojasRoutes, funcionariosRoutes, usuariosRoutes, produtosRoutes,
+    precosRoutes, estoqueRoutes, fornecedoresRoutes, fornecedorProdutosRoutes,
+    vendasRoutes, vendaItensRoutes, vendaPagamentosRoutes, caixaRoutes,
 } from './modules/index.js';
 
 /* -------------------------------------------------------------------------- */
