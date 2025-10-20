@@ -1,11 +1,11 @@
-import exress from 'express';
+import express from 'express';
 import * as vendaItensController from './vendaItens.controller.js';
 import vendaItensSchema from './vendaItens.schema.js';
 
 // importação de middlewares
 import validate from '../../shared/middlewares/validate.js';
 
-const router = exress.Router();
+const router = express.Router();
 
 router.get('/', vendaItensController.getVendaItensController);
 router.get('/:id', vendaItensController.getVendaItensByIdController);

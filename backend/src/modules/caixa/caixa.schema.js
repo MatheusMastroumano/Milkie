@@ -6,7 +6,7 @@ const StatusCaixa = z.enum(["aberto", "fechado"]);
 
 const CaixaSchema = z.object({
     loja_id: z.number().int().positive(),
-    aberto_por: z.coerce.date(),
+    aberto_por: z.number().int().positive(),
     aberto_em: z.coerce.date(),
     fechado_por: z.number().int().positive(),
     fechado_em: z.coerce.date(),

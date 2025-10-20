@@ -72,7 +72,7 @@ export async function updateVendas(id, data) {
 }
 
 /* ------------------------------- REMOVER ------------------------------- */
-export async function deleteVendas(id) {
+export async function removeVendas(id) {
     try {
         return await prisma.vendas.delete({
             where: { id: id },

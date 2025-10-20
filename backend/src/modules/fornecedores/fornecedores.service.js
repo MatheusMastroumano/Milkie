@@ -24,6 +24,7 @@ export async function getFornecedoresById(id) {
     }
 }
 
+//criar fornecedor
 export async function createFornecedores(data) {
     try {
 

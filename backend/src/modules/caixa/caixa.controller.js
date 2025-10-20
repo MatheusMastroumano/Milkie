@@ -60,6 +60,8 @@ export async function updateCaixasController(req, res) {
         const caixaId = parseInt(req.params.id);
         const caixa = await caixaService.getCaixasById(caixaId);
 
+        const { loja_id, aberto_por, aberto_em, fechado_por, fechado_em, valor_inicial, valor_final, status } = req.body;
+
         if (!caixa) {
             return res.status(404).json({ mensagem: 'Caixa nao encontrada' });
         }
@@ -76,9 +78,8 @@ export async function updateCaixasController(req, res) {
             return res.status(400).json({ mensagem: 'Fechado por nao informado' });
         }
 
-        const { loja_id, aberto_por, aberto_em, fechado_por, fechado_em, valor_inicial, valor_final, status } = req.body;
-
         const caixaData = { loja_id, aberto_por, aberto_em, fechado_por, fechado_em, valor_inicial, valor_final, status };
+
 
         const updatedCaixa = await caixaService.updateCaixas(caixaId, caixaData);
         res.status(200).json({ caixa: updatedCaixa });

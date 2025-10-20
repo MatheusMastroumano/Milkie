@@ -69,7 +69,7 @@ export async function updateVendaPagamentosController(req, res) {
 export async function removeVendaPagamentosController(req, res) {
     try {
         const vendaPagamentosId = parseInt(req.params.id);
-        await vendaPagamentosService.deleteVendaPagamentos(vendaPagamentosId);
+        const vendaPagamentos = await vendaPagamentosService.removeVendaPagamentos(vendaPagamentosId);
 
         if (!vendaPagamentos) {
             return res.status(404).json({ mensagem: 'Venda_pagamentos nao encontrada' });

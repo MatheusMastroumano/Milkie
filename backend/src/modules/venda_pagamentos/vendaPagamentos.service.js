@@ -67,7 +67,7 @@ export async function updateVendaPagamentos(id, data) {
 }
 
 /* ------------------------------ DELETAR ----------------------------- */
-export async function deleteVendaPagamentos(id) {
+export async function removeVendaPagamentos(id) {
     try {
         return await prisma.venda_pagamentos.delete({
             where: { id: id },
