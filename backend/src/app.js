@@ -10,6 +10,8 @@ import {
     lojasRoutes, funcionariosRoutes, usuariosRoutes, produtosRoutes,
     precosRoutes, estoqueRoutes, fornecedoresRoutes, fornecedorProdutosRoutes,
     vendasRoutes, vendaItensRoutes, vendaPagamentosRoutes, caixaRoutes,
+
+    authRotas
 } from './modules/index.js';
 
 /* -------------------------------------------------------------------------- */
@@ -58,6 +60,9 @@ app.use('/vendas', vendasRoutes);
 app.use('/venda-itens', vendaItensRoutes);
 app.use('/venda-pagamentos', vendaPagamentosRoutes);
 app.use('/caixa', caixaRoutes);
+
+// auth
+app.use('/auth', authRotas);
 
 /* -------------------------------------------------------------------------- */
 /*                                Inicialização                               */
