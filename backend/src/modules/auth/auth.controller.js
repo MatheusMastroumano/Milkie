@@ -1,6 +1,7 @@
 import JWT_SECRET from '../../shared/config/jwt.js';
 import jwt from 'jsonwebtoken';
-import prisma from '../../shared/config/database.js';
+import bcrypt from 'bcrypt';
+import { prisma } from '../../shared/config/database.js';
 
 /* ---------------------------------- LOGIN --------------------------------- */
 export async function loginController(req, res) {
@@ -22,7 +23,7 @@ export async function loginController(req, res) {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? strict : lax,
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
             maxAge: 8 * 60 * 60 * 1000 // 8 horas
         });
 
@@ -45,14 +46,14 @@ export async function logoutController(req, res) {
     res.clearCookie('token', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? strict : lax
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
     });
 
     return res.status(200).json({ mensagem: 'Logout realizado com sucesso' });
 }
 
 /* --------------------------------- CHECK AUTH --------------------------------- */
-export async function ckeckAuthController(req, res) {
+export async function checkAuthController(req, res) {
     const token = req.cookies?.token;
 
     if (!token) return res.status(401).json({ authenticated: false });
@@ -69,6 +70,6 @@ export async function ckeckAuthController(req, res) {
             }
         });
     } catch (err) {
-        return res.status(401).json({ authenticated: false, erro: 'token inválido ou expirado' })
+        return res.status(401).json({ authenticated: false, erro: 'token inválido ou expirado' });
     }
 }

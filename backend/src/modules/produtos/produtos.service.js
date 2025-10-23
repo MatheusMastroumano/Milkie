@@ -1,4 +1,3 @@
-import { fa } from 'zod/locales';
 import prisma from '../../shared/config/database.js';
 
 /* ------------------------------ BUSCAR TODOS ----------------------------- */
