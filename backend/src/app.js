@@ -7,9 +7,9 @@ import dotenv from 'dotenv';
 /*                            Importação de rotas                             */
 /* -------------------------------------------------------------------------- */
 import {
-    lojasRoutes, funcionariosRoutes, usuariosRoutes, produtosRoutes,
-    precosRoutes, estoqueRoutes, fornecedoresRoutes, fornecedorProdutosRoutes,
-    vendasRoutes, vendaItensRoutes, vendaPagamentosRoutes, caixaRoutes,
+    lojasRoutes,  funcionariosRoutes, usuariosRoutes,        produtosRoutes,
+    precosRoutes, estoqueRoutes,      fornecedoresRoutes,    fornecedorProdutosRoutes,
+    vendasRoutes, vendaItensRoutes,   vendaPagamentosRoutes, caixaRoutes,
 
     authRotas
 } from './modules/index.js';

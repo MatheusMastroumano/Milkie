@@ -1,7 +1,7 @@
 import JWT_SECRET from '../../shared/config/jwt.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { prisma } from '../../shared/config/database.js';
+import prisma from '../../shared/config/database.js';
 
 /* ---------------------------------- LOGIN --------------------------------- */
 export async function loginController(req, res) {
