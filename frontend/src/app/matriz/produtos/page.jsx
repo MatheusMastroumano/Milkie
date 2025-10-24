@@ -1,43 +1,19 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from "@/components/Header/page";
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import Header from '@/components/Header/page';
+import Footer from '@/components/Footer/page';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export default function Produtos() {
   const router = useRouter();
-  const [fornecedores] = useState([
-    { id: 1, nome: 'Fornecedor A' },
-    { id: 2, nome: 'Fornecedor B' },
-  ]);
-  const [produtos, setProdutos] = useState([
-    {
-      id: 1,
-      sku: 'ABC123',
-      nome: 'Camiseta Básica',
-      marca: 'Marca X',
-      categoria: 'Roupas',
-      descricao: 'Camiseta de algodão',
-      fabricacao: '2023-01-01',
-      validade: '2025-01-01',
-      ativo: true,
-      preco: 29.99,
-      fornecedor_id: 1,
-    },
-    {
-      id: 2,
-      sku: 'XYZ789',
-      nome: 'Calça Jeans',
-      marca: 'Marca Y',
-      categoria: 'Roupas',
-      descricao: 'Calça jeans azul',
-      fabricacao: '2023-06-01',
-      validade: null,
-      ativo: true,
-      preco: 79.99,
-      fornecedor_id: 2,
-    },
-  ]);
+  const [produtos, setProdutos] = useState([]);
+  const [fornecedores, setFornecedores] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [novoProduto, setNovoProduto] = useState({
     nome: '',
     marca: '',
@@ -53,25 +29,37 @@ export default function Produtos() {
   const [editProduto, setEditProduto] = useState(null);
   const [errors, setErrors] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [notification, setNotification] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
-  // Função para navegar para a página de detalhes do produto
-  const handleViewProduct = (produto) => {
-    // Salvar os dados do produto no localStorage temporariamente
-    localStorage.setItem('productDetails', JSON.stringify({
-      ...produto,
-      fornecedor: fornecedores.find(f => f.id === produto.fornecedor_id)?.nome || 'Sem fornecedor'
-    }));
-    router.push(`/matriz/produtos/${produto.id}`);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [produtosRes, fornecedoresRes] = await Promise.all([
+          fetch(`${API_URL}/produtos`),
+          fetch(`${API_URL}/fornecedores`),
+        ]);
+        if (!produtosRes.ok) throw new Error('Erro ao buscar produtos');
+        if (!fornecedoresRes.ok) throw new Error('Erro ao buscar fornecedores');
+        const produtosData = await produtosRes.json();
+        const fornecedoresData = await fornecedoresRes.json();
+        setProdutos(produtosData.produtos || []);
+        setFornecedores(fornecedoresData.fornecedores || []);
+      } catch (error) {
+        showAlert('error', `Erro ao carregar dados: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const showAlert = (type, message) => {
+    setAlert({ show: true, type, message });
+    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 5000);
   };
 
-  // Função para mostrar notificação e fechar após 3 segundos
-  const showNotification = (message) => {
-    setNotification(message);
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  // Função para validar o formulário
   const validateForm = (produto) => {
     const newErrors = {};
     if (!produto.nome.trim()) newErrors.nome = 'O nome do produto é obrigatório';
@@ -94,267 +82,223 @@ export default function Produtos() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Função para adicionar produto
-  const handleAddProduto = (e) => {
+  const handleAddProduto = async (e) => {
     e.preventDefault();
     if (validateForm(novoProduto)) {
-      setProdutos([
-        ...produtos,
-        {
-          id: produtos.length + 1,
-          ...novoProduto,
-          preco: parseFloat(novoProduto.preco),
-          fornecedor_id: parseInt(novoProduto.fornecedor_id),
-          fabricacao: novoProduto.fabricacao || null,
-          validade: novoProduto.validade || null,
-        },
-      ]);
-      setNovoProduto({
-        nome: '',
-        marca: '',
-        categoria: '',
-        descricao: '',
-        sku: '',
-        fabricacao: '',
-        validade: '',
-        ativo: true,
-        preco: '',
-        fornecedor_id: '',
-      });
-      setErrors({});
-      showNotification('Produto criado com sucesso! 🎉');
+      try {
+        // Criar o produto
+        const produtoResponse = await fetch(`${API_URL}/produtos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nome: novoProduto.nome,
+            marca: novoProduto.marca,
+            categoria: novoProduto.categoria,
+            descricao: novoProduto.descricao,
+            sku: novoProduto.sku,
+            fabricacao: novoProduto.fabricacao || null,
+            validade: novoProduto.validade || null,
+            ativo: novoProduto.ativo,
+          }),
+        });
+        if (!produtoResponse.ok) throw new Error('Erro ao adicionar produto');
+        const newProduto = await produtoResponse.json();
+
+        // Criar o preço associado
+        const precoResponse = await fetch(`${API_URL}/precos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            produto_id: newProduto.id,
+            preco: parseFloat(novoProduto.preco),
+            valido_de: new Date().toISOString(),
+          }),
+        });
+        if (!precoResponse.ok) throw new Error('Erro ao adicionar preço');
+
+        // Associar fornecedor
+        const fornecedorResponse = await fetch(`${API_URL}/fornecedor_produtos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fornecedor_id: parseInt(novoProduto.fornecedor_id),
+            produto_id: newProduto.id,
+          }),
+        });
+        if (!fornecedorResponse.ok) throw new Error('Erro ao associar fornecedor');
+
+        setProdutos([...produtos, { ...newProduto, precos: [{ preco: parseFloat(novoProduto.preco) }] }]);
+        setNovoProduto({
+          nome: '',
+          marca: '',
+          categoria: '',
+          descricao: '',
+          sku: '',
+          fabricacao: '',
+          validade: '',
+          ativo: true,
+          preco: '',
+          fornecedor_id: '',
+        });
+        setErrors({});
+        setIsAddModalOpen(false);
+        showAlert('success', 'Produto criado com sucesso! 🎉');
+      } catch (error) {
+        showAlert('error', `Erro ao adicionar produto: ${error.message}`);
+      }
     }
   };
 
-  // Função para editar produto no modal
-  const handleEditProduto = (e) => {
+  const handleEditProduto = async (e) => {
     e.preventDefault();
     if (validateForm(editProduto)) {
-      setProdutos(
-        produtos.map((produto) =>
-          produto.id === editProduto.id
-            ? {
-                ...editProduto,
-                preco: parseFloat(editProduto.preco),
-                fornecedor_id: parseInt(editProduto.fornecedor_id),
-                fabricacao: editProduto.fabricacao || null,
-                validade: editProduto.validade || null,
-              }
-            : produto
-        )
-      );
-      setIsModalOpen(false);
-      setEditProduto(null);
-      setErrors({});
-      showNotification('Produto atualizado com sucesso! ✅');
+      try {
+        // Atualizar o produto
+        const produtoResponse = await fetch(`${API_URL}/produtos/${editProduto.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nome: editProduto.nome,
+            marca: editProduto.marca,
+            categoria: editProduto.categoria,
+            descricao: editProduto.descricao,
+            sku: editProduto.sku,
+            fabricacao: editProduto.fabricacao || null,
+            validade: editProduto.validade || null,
+            ativo: editProduto.ativo,
+          }),
+        });
+        if (!produtoResponse.ok) throw new Error('Erro ao atualizar produto');
+        const updatedProduto = await produtoResponse.json();
+
+        // Atualizar o preço (assumindo que editamos o preço mais recente)
+        const precoResponse = await fetch(`${API_URL}/precos`, {
+          method: 'POST', // Criar novo preço em vez de atualizar, para manter histórico
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            produto_id: editProduto.id,
+            preco: parseFloat(editProduto.preco),
+            valido_de: new Date().toISOString(),
+          }),
+        });
+        if (!precoResponse.ok) throw new Error('Erro ao atualizar preço');
+
+        setProdutos(produtos.map((p) => (p.id === updatedProduto.id ? { ...updatedProduto, precos: [{ preco: parseFloat(editProduto.preco) }] } : p)));
+        setIsModalOpen(false);
+        setEditProduto(null);
+        setErrors({});
+        showAlert('success', 'Produto atualizado com sucesso! ✅');
+      } catch (error) {
+        showAlert('error', `Erro ao atualizar produto: ${error.message}`);
+      }
     }
   };
 
-  // Função para abrir modal de edição
   const openEditProduto = (produto) => {
-    setEditProduto({ ...produto, fornecedor_id: produto.fornecedor_id.toString() });
+    setEditProduto({
+      ...produto,
+      fornecedor_id: produto.fornecedores?.[0]?.fornecedor_id?.toString() || '',
+      preco: produto.precos?.[0]?.preco?.toString() || '',
+    });
     setIsModalOpen(true);
     setErrors({});
   };
 
-  // Função para fechar modal
   const closeModal = () => {
     setIsModalOpen(false);
+    setIsAddModalOpen(false);
     setEditProduto(null);
+    setNovoProduto({
+      nome: '',
+      marca: '',
+      categoria: '',
+      descricao: '',
+      sku: '',
+      fabricacao: '',
+      validade: '',
+      ativo: true,
+      preco: '',
+      fornecedor_id: '',
+    });
     setErrors({});
   };
 
-  // Função para excluir produto
-  const handleDeleteProduto = (id) => {
+  const handleDeleteProduto = async (id) => {
     if (window.confirm('Tem certeza que deseja excluir este produto?')) {
-      setProdutos(produtos.filter((produto) => produto.id !== id));
-      if (editProduto && editProduto.id === id) {
-        closeModal();
+      try {
+        const response = await fetch(`${API_URL}/produtos/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Erro ao excluir produto');
+        setProdutos(produtos.filter((produto) => produto.id !== id));
+        if (editProduto && editProduto.id === id) {
+          closeModal();
+        }
+        showAlert('success', 'Produto removido com sucesso! 🗑️');
+      } catch (error) {
+        showAlert('error', `Erro ao excluir produto: ${error.message}`);
       }
-      showNotification('Produto removido com sucesso! 🗑️');
     }
   };
 
+  const handleViewProduct = (produto) => {
+    localStorage.setItem('productDetails', JSON.stringify({
+      ...produto,
+      fornecedor: fornecedores.find(f => f.id === produto.fornecedores?.[0]?.fornecedor_id)?.nome || 'Sem fornecedor',
+      preco: produto.precos?.[0]?.preco?.toFixed(2) || 'N/A',
+    }));
+    router.push(`/matriz/produtos/${produto.id}`);
+  };
+
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-[#FFFFFF] pt-14 sm:pt-16 transition-all duration-300">
+    <div className="flex flex-col min-h-screen">
+      <main className="flex-1 bg-[#FFFFFF] pt-14 sm:pt-16 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6">
-          {/* Título */}
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-6 text-center">
-            Gerenciamento de Produtos
-          </h1>
-
-          {/* Formulário para Adicionar Novo Produto */}
-          <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6 mb-8">
-            <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
-              Adicionar Novo Produto
-            </h2>
-            <form onSubmit={handleAddProduto} className="flex flex-col sm:flex-row gap-4 sm:gap-6 flex-wrap">
-              <div className="flex-1 min-w-[200px]">
-                <label htmlFor="nome" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Nome do Produto
-                </label>
-                <input
-                  type="text"
-                  id="nome"
-                  value={novoProduto.nome}
-                  onChange={(e) => setNovoProduto({ ...novoProduto, nome: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Ex.: Camiseta Básica"
-                />
-                {errors.nome && <p className="text-[#AD343E] text-sm mt-1">{errors.nome}</p>}
-              </div>
-              <div className="flex-1 min-w-[200px]">
-                <label htmlFor="sku" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  SKU
-                </label>
-                <input
-                  type="text"
-                  id="sku"
-                  value={novoProduto.sku}
-                  onChange={(e) => setNovoProduto({ ...novoProduto, sku: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Ex.: ABC123"
-                />
-                {errors.sku && <p className="text-[#AD343E] text-sm mt-1">{errors.sku}</p>}
-              </div>
-              <div className="flex-1 min-w-[200px]">
-                <label htmlFor="marca" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Marca
-                </label>
-                <input
-                  type="text"
-                  id="marca"
-                  value={novoProduto.marca}
-                  onChange={(e) => setNovoProduto({ ...novoProduto, marca: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Ex.: Marca X"
-                />
-              </div>
-              <div className="flex-1 min-w-[200px]">
-                <label htmlFor="categoria" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Categoria
-                </label>
-                <input
-                  type="text"
-                  id="categoria"
-                  value={novoProduto.categoria}
-                  onChange={(e) => setNovoProduto({ ...novoProduto, categoria: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Ex.: Roupas"
-                />
-              </div>
-              <div className="flex-1 min-w-[200px]">
-                <label htmlFor="descricao" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Descrição
-                </label>
-                <input
-                  type="text"
-                  id="descricao"
-                  value={novoProduto.descricao}
-                  onChange={(e) => setNovoProduto({ ...novoProduto, descricao: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Ex.: Camiseta de algodão"
-                />
-              </div>
-              <div className="flex-1 min-w-[200px]">
-                <label htmlFor="preco" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Preço (R$)
-                </label>
-                <input
-                  type="number"
-                  id="preco"
-                  value={novoProduto.preco}
-                  onChange={(e) => setNovoProduto({ ...novoProduto, preco: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Ex.: 29.99"
-                  step="0.01"
-                />
-                {errors.preco && <p className="text-[#AD343E] text-sm mt-1">{errors.preco}</p>}
-              </div>
-              <div className="flex-1 min-w-[200px]">
-                <label htmlFor="fornecedor_id" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Fornecedor
-                </label>
-                <select
-                  id="fornecedor_id"
-                  value={novoProduto.fornecedor_id}
-                  onChange={(e) => setNovoProduto({ ...novoProduto, fornecedor_id: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                >
-                  <option value="">Selecione um fornecedor</option>
-                  {fornecedores.map((fornecedor) => (
-                    <option key={fornecedor.id} value={fornecedor.id}>
-                      {fornecedor.nome}
-                    </option>
-                  ))}
-                </select>
-                {errors.fornecedor_id && <p className="text-[#AD343E] text-sm mt-1">{errors.fornecedor_id}</p>}
-              </div>
-              <div className="flex-1 min-w-[200px]">
-                <label htmlFor="fabricacao" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Data de Fabricação
-                </label>
-                <input
-                  type="date"
-                  id="fabricacao"
-                  value={novoProduto.fabricacao}
-                  onChange={(e) => setNovoProduto({ ...novoProduto, fabricacao: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                />
-                {errors.fabricacao && <p className="text-[#AD343E] text-sm mt-1">{errors.fabricacao}</p>}
-              </div>
-              <div className="flex-1 min-w-[200px]">
-                <label htmlFor="validade" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Data de Validade
-                </label>
-                <input
-                  type="date"
-                  id="validade"
-                  value={novoProduto.validade}
-                  onChange={(e) => setNovoProduto({ ...novoProduto, validade: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                />
-                {errors.validade && <p className="text-[#AD343E] text-sm mt-1">{errors.validade}</p>}
-              </div>
-              <div className="flex items-center min-w-[200px]">
-                <label htmlFor="ativo" className="block text-sm font-medium text-[#2A4E73] mr-2">
-                  Ativo
-                </label>
-                <input
-                  type="checkbox"
-                  id="ativo"
-                  checked={novoProduto.ativo}
-                  onChange={(e) => setNovoProduto({ ...novoProduto, ativo: e.target.checked })}
-                  className="h-4 w-4 text-[#2A4E73] border-gray-300 rounded focus:ring-[#CFE8F9]"
-                />
-              </div>
-              <div className="flex items-end min-w-[200px]">
-                <button
-                  type="submit"
-                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                >
-                  Adicionar
-                </button>
-              </div>
-            </form>
-          </section>
-
-          {/* Notificação */}
-          {notification && (
-            <div className="w-full max-w-md mx-auto mb-4 p-4 px-4 py-2 bg-[#CFE8F9] text-[#2A4E73] rounded-md shadow-md text-sm sm:text-base font-medium text-center animate-fadeIn">
-              {notification}
+          <Header />
+          {alert.show && (
+            <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+              <Alert variant={alert.type === 'success' ? 'default' : 'destructive'}>
+                {alert.type === 'success' ? (
+                  <CheckCircle className="h-4 w-4" />
+                ) : (
+                  <XCircle className="h-4 w-4" />
+                )}
+                <AlertTitle>{alert.type === 'success' ? 'Sucesso!' : 'Erro!'}</AlertTitle>
+                <AlertDescription>{alert.message}</AlertDescription>
+              </Alert>
             </div>
           )}
 
-          {/* Tabela de Produtos */}
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-4 text-center">
+            Gerenciamento de Produtos
+          </h1>
+          <p className="text-sm text-[#2A4E73] mb-6 text-center max-w-2xl mx-auto">
+            Aqui você pode gerenciar todos os produtos da sua rede. Adicione novos produtos, edite informações existentes ou remova produtos inativos com facilidade.
+          </p>
+
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+              aria-label="Abrir formulário para adicionar novo produto"
+            >
+              Adicionar Novo Produto
+            </button>
+          </div>
+
           <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
+            <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-2 text-center">
               Lista de Produtos
             </h2>
-            {produtos.length === 0 ? (
-              <p className="text-[#2A4E73] text-center">Nenhum produto cadastrado.</p>
+            <p className="text-sm text-[#2A4E73] mb-4 text-center">
+              Visualize todos os produtos cadastrados, incluindo seus detalhes e status.
+            </p>
+            {loading ? (
+              <div className="flex justify-center items-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-[#2A4E73]" />
+              </div>
+            ) : produtos.length === 0 ? (
+              <p className="text-[#2A4E73] text-center py-8">Nenhum produto cadastrado.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm sm:text-base text-[#2A4E73] border-collapse">
@@ -371,8 +315,8 @@ export default function Produtos() {
                   </thead>
                   <tbody>
                     {produtos.map((produto) => (
-                      <tr 
-                        key={produto.id} 
+                      <tr
+                        key={produto.id}
                         className="border-b border-gray-200 hover:bg-[#CFE8F9] cursor-pointer"
                         onClick={() => handleViewProduct(produto)}
                       >
@@ -382,9 +326,9 @@ export default function Produtos() {
                         </td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.marca || '-'}</td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.categoria || '-'}</td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.preco.toFixed(2)}</td>
+                        <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.precos?.[0]?.preco?.toFixed(2) || 'N/A'}</td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3">
-                          {fornecedores.find((f) => f.id === produto.fornecedor_id)?.nome || 'Sem fornecedor'}
+                          {fornecedores.find((f) => f.id === produto.fornecedores?.[0]?.fornecedor_id)?.nome || 'Sem fornecedor'}
                         </td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3 text-center space-x-2">
                           <button
@@ -393,6 +337,7 @@ export default function Produtos() {
                               openEditProduto(produto);
                             }}
                             className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                            aria-label={`Editar produto ${produto.nome}`}
                           >
                             Editar
                           </button>
@@ -402,6 +347,7 @@ export default function Produtos() {
                               handleDeleteProduto(produto.id);
                             }}
                             className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                            aria-label={`Excluir produto ${produto.nome}`}
                           >
                             Excluir
                           </button>
@@ -414,124 +360,164 @@ export default function Produtos() {
             )}
           </section>
 
-          {/* Modal de Edição de Produto */}
-          {isModalOpen && editProduto && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-[#2A4E73]">Editar Produto</h2>
+          {(isAddModalOpen || isModalOpen) && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-labelledby={isAddModalOpen ? "add-modal-title" : "edit-modal-title"} aria-modal="true">
+              <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 id={isAddModalOpen ? "add-modal-title" : "edit-modal-title"} className="text-lg sm:text-xl font-semibold text-[#2A4E73]">
+                      {isAddModalOpen ? 'Adicionar Novo Produto' : 'Editar Produto'}
+                    </h2>
                     <button
                       onClick={closeModal}
                       className="text-[#2A4E73] hover:text-[#AD343E] text-2xl font-bold"
+                      aria-label="Fechar modal"
                     >
                       ×
                     </button>
                   </div>
-                  <form onSubmit={handleEditProduto} className="space-y-4">
+                  <form onSubmit={isAddModalOpen ? handleAddProduto : handleEditProduto} className="space-y-3">
                     <div>
-                      <label htmlFor="edit-id" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        ID
+                      <label htmlFor={isAddModalOpen ? "add-nome" : "edit-nome"} className="block text-sm font-medium text-[#2A4E73] mb-1">
+                        Nome do Produto *
                       </label>
                       <input
                         type="text"
-                        id="edit-id"
-                        value={editProduto.id}
-                        disabled
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] bg-gray-100 border border-gray-300 rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="edit-nome" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Nome do Produto
-                      </label>
-                      <input
-                        type="text"
-                        id="edit-nome"
-                        value={editProduto.nome}
-                        onChange={(e) => setEditProduto({ ...editProduto, nome: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        id={isAddModalOpen ? "add-nome" : "edit-nome"}
+                        value={isAddModalOpen ? novoProduto.nome : editProduto?.nome}
+                        onChange={(e) => {
+                          if (isAddModalOpen) {
+                            setNovoProduto({ ...novoProduto, nome: e.target.value });
+                          } else {
+                            setEditProduto({ ...editProduto, nome: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                         placeholder="Ex.: Camiseta Básica"
+                        aria-invalid={errors.nome ? 'true' : 'false'}
+                        aria-describedby={errors.nome ? (isAddModalOpen ? 'add-nome-error' : 'edit-nome-error') : undefined}
                       />
-                      {errors.nome && <p className="text-[#AD343E] text-sm mt-1">{errors.nome}</p>}
+                      {errors.nome && <p id={isAddModalOpen ? "add-nome-error" : "edit-nome-error"} className="text-[#AD343E] text-xs mt-1">{errors.nome}</p>}
                     </div>
                     <div>
-                      <label htmlFor="edit-sku" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        SKU
+                      <label htmlFor={isAddModalOpen ? "add-sku" : "edit-sku"} className="block text-sm font-medium text-[#2A4E73] mb-1">
+                        SKU *
                       </label>
                       <input
                         type="text"
-                        id="edit-sku"
-                        value={editProduto.sku}
-                        onChange={(e) => setEditProduto({ ...editProduto, sku: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        id={isAddModalOpen ? "add-sku" : "edit-sku"}
+                        value={isAddModalOpen ? novoProduto.sku : editProduto?.sku}
+                        onChange={(e) => {
+                          if (isAddModalOpen) {
+                            setNovoProduto({ ...novoProduto, sku: e.target.value });
+                          } else {
+                            setEditProduto({ ...editProduto, sku: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                         placeholder="Ex.: ABC123"
+                        aria-invalid={errors.sku ? 'true' : 'false'}
+                        aria-describedby={errors.sku ? (isAddModalOpen ? 'add-sku-error' : 'edit-sku-error') : undefined}
                       />
-                      {errors.sku && <p className="text-[#AD343E] text-sm mt-1">{errors.sku}</p>}
+                      {errors.sku && <p id={isAddModalOpen ? "add-sku-error" : "edit-sku-error"} className="text-[#AD343E] text-xs mt-1">{errors.sku}</p>}
                     </div>
                     <div>
-                      <label htmlFor="edit-marca" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      <label htmlFor={isAddModalOpen ? "add-marca" : "edit-marca"} className="block text-sm font-medium text-[#2A4E73] mb-1">
                         Marca
                       </label>
                       <input
                         type="text"
-                        id="edit-marca"
-                        value={editProduto.marca}
-                        onChange={(e) => setEditProduto({ ...editProduto, marca: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        id={isAddModalOpen ? "add-marca" : "edit-marca"}
+                        value={isAddModalOpen ? novoProduto.marca : editProduto?.marca}
+                        onChange={(e) => {
+                          if (isAddModalOpen) {
+                            setNovoProduto({ ...novoProduto, marca: e.target.value });
+                          } else {
+                            setEditProduto({ ...editProduto, marca: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                         placeholder="Ex.: Marca X"
                       />
                     </div>
                     <div>
-                      <label htmlFor="edit-categoria" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      <label htmlFor={isAddModalOpen ? "add-categoria" : "edit-categoria"} className="block text-sm font-medium text-[#2A4E73] mb-1">
                         Categoria
                       </label>
                       <input
                         type="text"
-                        id="edit-categoria"
-                        value={editProduto.categoria}
-                        onChange={(e) => setEditProduto({ ...editProduto, categoria: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        id={isAddModalOpen ? "add-categoria" : "edit-categoria"}
+                        value={isAddModalOpen ? novoProduto.categoria : editProduto?.categoria}
+                        onChange={(e) => {
+                          if (isAddModalOpen) {
+                            setNovoProduto({ ...novoProduto, categoria: e.target.value });
+                          } else {
+                            setEditProduto({ ...editProduto, categoria: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                         placeholder="Ex.: Roupas"
                       />
                     </div>
                     <div>
-                      <label htmlFor="edit-descricao" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      <label htmlFor={isAddModalOpen ? "add-descricao" : "edit-descricao"} className="block text-sm font-medium text-[#2A4E73] mb-1">
                         Descrição
                       </label>
                       <input
                         type="text"
-                        id="edit-descricao"
-                        value={editProduto.descricao}
-                        onChange={(e) => setEditProduto({ ...editProduto, descricao: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        id={isAddModalOpen ? "add-descricao" : "edit-descricao"}
+                        value={isAddModalOpen ? novoProduto.descricao : editProduto?.descricao}
+                        onChange={(e) => {
+                          if (isAddModalOpen) {
+                            setNovoProduto({ ...novoProduto, descricao: e.target.value });
+                          } else {
+                            setEditProduto({ ...editProduto, descricao: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                         placeholder="Ex.: Camiseta de algodão"
                       />
                     </div>
                     <div>
-                      <label htmlFor="edit-preco" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Preço (R$)
+                      <label htmlFor={isAddModalOpen ? "add-preco" : "edit-preco"} className="block text-sm font-medium text-[#2A4E73] mb-1">
+                        Preço (R$) *
                       </label>
                       <input
                         type="number"
-                        id="edit-preco"
-                        value={editProduto.preco}
-                        onChange={(e) => setEditProduto({ ...editProduto, preco: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        id={isAddModalOpen ? "add-preco" : "edit-preco"}
+                        value={isAddModalOpen ? novoProduto.preco : editProduto?.preco}
+                        onChange={(e) => {
+                          if (isAddModalOpen) {
+                            setNovoProduto({ ...novoProduto, preco: e.target.value });
+                          } else {
+                            setEditProduto({ ...editProduto, preco: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                         placeholder="Ex.: 29.99"
                         step="0.01"
+                        aria-invalid={errors.preco ? 'true' : 'false'}
+                        aria-describedby={errors.preco ? (isAddModalOpen ? 'add-preco-error' : 'edit-preco-error') : undefined}
                       />
-                      {errors.preco && <p className="text-[#AD343E] text-sm mt-1">{errors.preco}</p>}
+                      {errors.preco && <p id={isAddModalOpen ? "add-preco-error" : "edit-preco-error"} className="text-[#AD343E] text-xs mt-1">{errors.preco}</p>}
                     </div>
                     <div>
-                      <label htmlFor="edit-fornecedor_id" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Fornecedor
+                      <label htmlFor={isAddModalOpen ? "add-fornecedor_id" : "edit-fornecedor_id"} className="block text-sm font-medium text-[#2A4E73] mb-1">
+                        Fornecedor *
                       </label>
                       <select
-                        id="edit-fornecedor_id"
-                        value={editProduto.fornecedor_id}
-                        onChange={(e) => setEditProduto({ ...editProduto, fornecedor_id: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        id={isAddModalOpen ? "add-fornecedor_id" : "edit-fornecedor_id"}
+                        value={isAddModalOpen ? novoProduto.fornecedor_id : editProduto?.fornecedor_id}
+                        onChange={(e) => {
+                          if (isAddModalOpen) {
+                            setNovoProduto({ ...novoProduto, fornecedor_id: e.target.value });
+                          } else {
+                            setEditProduto({ ...editProduto, fornecedor_id: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        aria-invalid={errors.fornecedor_id ? 'true' : 'false'}
+                        aria-describedby={errors.fornecedor_id ? (isAddModalOpen ? 'add-fornecedor_id-error' : 'edit-fornecedor_id-error') : undefined}
                       >
                         <option value="">Selecione um fornecedor</option>
                         {fornecedores.map((fornecedor) => (
@@ -540,57 +526,82 @@ export default function Produtos() {
                           </option>
                         ))}
                       </select>
-                      {errors.fornecedor_id && <p className="text-[#AD343E] text-sm mt-1">{errors.fornecedor_id}</p>}
+                      {errors.fornecedor_id && <p id={isAddModalOpen ? "add-fornecedor_id-error" : "edit-fornecedor_id-error"} className="text-[#AD343E] text-xs mt-1">{errors.fornecedor_id}</p>}
                     </div>
                     <div>
-                      <label htmlFor="edit-fabricacao" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      <label htmlFor={isAddModalOpen ? "add-fabricacao" : "edit-fabricacao"} className="block text-sm font-medium text-[#2A4E73] mb-1">
                         Data de Fabricação
                       </label>
                       <input
                         type="date"
-                        id="edit-fabricacao"
-                        value={editProduto.fabricacao || ''}
-                        onChange={(e) => setEditProduto({ ...editProduto, fabricacao: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        id={isAddModalOpen ? "add-fabricacao" : "edit-fabricacao"}
+                        value={isAddModalOpen ? novoProduto.fabricacao : editProduto?.fabricacao || ''}
+                        onChange={(e) => {
+                          if (isAddModalOpen) {
+                            setNovoProduto({ ...novoProduto, fabricacao: e.target.value });
+                          } else {
+                            setEditProduto({ ...editProduto, fabricacao: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        aria-invalid={errors.fabricacao ? 'true' : 'false'}
+                        aria-describedby={errors.fabricacao ? (isAddModalOpen ? 'add-fabricacao-error' : 'edit-fabricacao-error') : undefined}
                       />
-                      {errors.fabricacao && <p className="text-[#AD343E] text-sm mt-1">{errors.fabricacao}</p>}
+                      {errors.fabricacao && <p id={isAddModalOpen ? "add-fabricacao-error" : "edit-fabricacao-error"} className="text-[#AD343E] text-xs mt-1">{errors.fabricacao}</p>}
                     </div>
                     <div>
-                      <label htmlFor="edit-validade" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      <label htmlFor={isAddModalOpen ? "add-validade" : "edit-validade"} className="block text-sm font-medium text-[#2A4E73] mb-1">
                         Data de Validade
                       </label>
                       <input
                         type="date"
-                        id="edit-validade"
-                        value={editProduto.validade || ''}
-                        onChange={(e) => setEditProduto({ ...editProduto, validade: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        id={isAddModalOpen ? "add-validade" : "edit-validade"}
+                        value={isAddModalOpen ? novoProduto.validade : editProduto?.validade || ''}
+                        onChange={(e) => {
+                          if (isAddModalOpen) {
+                            setNovoProduto({ ...novoProduto, validade: e.target.value });
+                          } else {
+                            setEditProduto({ ...editProduto, validade: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        aria-invalid={errors.validade ? 'true' : 'false'}
+                        aria-describedby={errors.validade ? (isAddModalOpen ? 'add-validade-error' : 'edit-validade-error') : undefined}
                       />
-                      {errors.validade && <p className="text-[#AD343E] text-sm mt-1">{errors.validade}</p>}
+                      {errors.validade && <p id={isAddModalOpen ? "add-validade-error" : "edit-validade-error"} className="text-[#AD343E] text-xs mt-1">{errors.validade}</p>}
                     </div>
                     <div className="flex items-center">
-                      <label htmlFor="edit-ativo" className="block text-sm font-medium text-[#2A4E73] mr-2">
+                      <label htmlFor={isAddModalOpen ? "add-ativo" : "edit-ativo"} className="block text-sm font-medium text-[#2A4E73] mr-2">
                         Ativo
                       </label>
                       <input
                         type="checkbox"
-                        id="edit-ativo"
-                        checked={editProduto.ativo}
-                        onChange={(e) => setEditProduto({ ...editProduto, ativo: e.target.checked })}
+                        id={isAddModalOpen ? "add-ativo" : "edit-ativo"}
+                        checked={isAddModalOpen ? novoProduto.ativo : editProduto?.ativo}
+                        onChange={(e) => {
+                          if (isAddModalOpen) {
+                            setNovoProduto({ ...novoProduto, ativo: e.target.checked });
+                          } else {
+                            setEditProduto({ ...editProduto, ativo: e.target.checked });
+                          }
+                        }}
                         className="h-4 w-4 text-[#2A4E73] border-gray-300 rounded focus:ring-[#CFE8F9]"
+                        aria-label="Produto ativo"
                       />
                     </div>
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex gap-3 pt-3">
                       <button
                         type="submit"
-                        className="flex-1 px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        aria-label={isAddModalOpen ? "Adicionar produto" : "Salvar alterações"}
                       >
-                        Salvar
+                        {isAddModalOpen ? 'Adicionar' : 'Salvar'}
                       </button>
                       <button
                         type="button"
                         onClick={closeModal}
-                        className="flex-1 px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        aria-label="Cancelar"
                       >
                         Cancelar
                       </button>
@@ -602,6 +613,7 @@ export default function Produtos() {
           )}
         </div>
       </main>
-    </>
+      <Footer />
+    </div>
   );
 }

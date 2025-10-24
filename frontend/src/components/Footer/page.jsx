@@ -6,8 +6,8 @@ export default function Footer() {
           {/* Logo da Empresa */}
           <div className="flex flex-col items-center sm:items-start gap-3">
             <img
-              src="/MEDGO_logo.png"
-              alt="Logo MEDGO"
+              src="/logomilkie.svg"
+              alt="Logo milkie"
               className="h-16 w-auto object-contain"
             />
             <p className="text-sm max-w-xs">Cuidando da sua saúde com tecnologia.</p>
