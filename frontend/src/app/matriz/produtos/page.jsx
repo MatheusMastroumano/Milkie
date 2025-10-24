@@ -8,6 +8,8 @@ import Header from '@/components/Header/page';
 import Footer from '@/components/Footer/page';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+// Suponha que o loja_id da filial atual esteja disponível (ex.: via contexto ou autenticação)
+const LOJA_ID = 1; // Substitua por lógica para obter o loja_id dinamicamente
 
 export default function Produtos() {
   const router = useRouter();
@@ -23,13 +25,14 @@ export default function Produtos() {
     fabricacao: '',
     validade: '',
     ativo: true,
-    preco: '',
     fornecedor_id: '',
   });
   const [editProduto, setEditProduto] = useState(null);
+  const [estoqueProduto, setEstoqueProduto] = useState({ produto_id: null, quantidade: '', preco: '' });
   const [errors, setErrors] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEstoqueModalOpen, setIsEstoqueModalOpen] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
   useEffect(() => {
@@ -60,16 +63,12 @@ export default function Produtos() {
     setTimeout(() => setAlert({ show: false, type: '', message: '' }), 5000);
   };
 
-  const validateForm = (produto) => {
+  const validateProdutoForm = (produto) => {
     const newErrors = {};
     if (!produto.nome.trim()) newErrors.nome = 'O nome do produto é obrigatório';
     if (!produto.sku.trim()) newErrors.sku = 'O SKU é obrigatório';
     else if (produtos.some((p) => p.sku === produto.sku && (!editProduto || p.id !== editProduto.id))) {
       newErrors.sku = 'O SKU deve ser único';
-    }
-    if (!produto.preco) newErrors.preco = 'O preço é obrigatório';
-    else if (isNaN(produto.preco) || parseFloat(produto.preco) <= 0) {
-      newErrors.preco = 'O preço deve ser um número positivo';
     }
     if (produto.fabricacao && isNaN(new Date(produto.fabricacao))) {
       newErrors.fabricacao = 'Data de fabricação inválida';
@@ -82,9 +81,21 @@ export default function Produtos() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateEstoqueForm = (estoque) => {
+    const newErrors = {};
+    if (!estoque.quantidade || isNaN(estoque.quantidade) || parseFloat(estoque.quantidade) <= 0) {
+      newErrors.quantidade = 'A quantidade deve ser um número positivo';
+    }
+    if (!estoque.preco || isNaN(estoque.preco) || parseFloat(estoque.preco) <= 0) {
+      newErrors.preco = 'O preço deve ser um número positivo';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleAddProduto = async (e) => {
     e.preventDefault();
-    if (validateForm(novoProduto)) {
+    if (validateProdutoForm(novoProduto)) {
       try {
         // Criar o produto
         const produtoResponse = await fetch(`${API_URL}/produtos`, {
@@ -104,18 +115,6 @@ export default function Produtos() {
         if (!produtoResponse.ok) throw new Error('Erro ao adicionar produto');
         const newProduto = await produtoResponse.json();
 
-        // Criar o preço associado
-        const precoResponse = await fetch(`${API_URL}/precos`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            produto_id: newProduto.id,
-            preco: parseFloat(novoProduto.preco),
-            valido_de: new Date().toISOString(),
-          }),
-        });
-        if (!precoResponse.ok) throw new Error('Erro ao adicionar preço');
-
         // Associar fornecedor
         const fornecedorResponse = await fetch(`${API_URL}/fornecedor_produtos`, {
           method: 'POST',
@@ -127,7 +126,7 @@ export default function Produtos() {
         });
         if (!fornecedorResponse.ok) throw new Error('Erro ao associar fornecedor');
 
-        setProdutos([...produtos, { ...newProduto, precos: [{ preco: parseFloat(novoProduto.preco) }] }]);
+        setProdutos([...produtos, { ...newProduto, fornecedores: [{ fornecedor_id: parseInt(novoProduto.fornecedor_id) }] }]);
         setNovoProduto({
           nome: '',
           marca: '',
@@ -137,7 +136,6 @@ export default function Produtos() {
           fabricacao: '',
           validade: '',
           ativo: true,
-          preco: '',
           fornecedor_id: '',
         });
         setErrors({});
@@ -151,7 +149,7 @@ export default function Produtos() {
 
   const handleEditProduto = async (e) => {
     e.preventDefault();
-    if (validateForm(editProduto)) {
+    if (validateProdutoForm(editProduto)) {
       try {
         // Atualizar o produto
         const produtoResponse = await fetch(`${API_URL}/produtos/${editProduto.id}`, {
@@ -169,21 +167,19 @@ export default function Produtos() {
           }),
         });
         if (!produtoResponse.ok) throw new Error('Erro ao atualizar produto');
-        const updatedProduto = await produtoResponse.json();
 
-        // Atualizar o preço (assumindo que editamos o preço mais recente)
-        const precoResponse = await fetch(`${API_URL}/precos`, {
-          method: 'POST', // Criar novo preço em vez de atualizar, para manter histórico
+        // Atualizar associação com fornecedor
+        const fornecedorResponse = await fetch(`${API_URL}/fornecedor_produtos`, {
+          method: 'PUT', // Assumindo endpoint para atualizar fornecedor_produtos
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            fornecedor_id: parseInt(editProduto.fornecedor_id),
             produto_id: editProduto.id,
-            preco: parseFloat(editProduto.preco),
-            valido_de: new Date().toISOString(),
           }),
         });
-        if (!precoResponse.ok) throw new Error('Erro ao atualizar preço');
+        if (!fornecedorResponse.ok) throw new Error('Erro ao atualizar fornecedor');
 
-        setProdutos(produtos.map((p) => (p.id === updatedProduto.id ? { ...updatedProduto, precos: [{ preco: parseFloat(editProduto.preco) }] } : p)));
+        setProdutos(produtos.map((p) => (p.id === editProduto.id ? { ...editProduto, fornecedores: [{ fornecedor_id: parseInt(editProduto.fornecedor_id) }] } : p)));
         setIsModalOpen(false);
         setEditProduto(null);
         setErrors({});
@@ -194,20 +190,65 @@ export default function Produtos() {
     }
   };
 
+  const handleAddEstoque = async (e) => {
+    e.preventDefault();
+    if (validateEstoqueForm(estoqueProduto)) {
+      try {
+        // Adicionar ao estoque
+        const estoqueResponse = await fetch(`${API_URL}/estoque`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            produto_id: estoqueProduto.produto_id,
+            loja_id: LOJA_ID,
+            quantidade: parseFloat(estoqueProduto.quantidade),
+          }),
+        });
+        if (!estoqueResponse.ok) throw new Error('Erro ao adicionar ao estoque');
+
+        // Adicionar preço na tabela precos
+        const precoResponse = await fetch(`${API_URL}/precos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            produto_id: estoqueProduto.produto_id,
+            loja_id: LOJA_ID,
+            preco: parseFloat(estoqueProduto.preco),
+            valido_de: new Date().toISOString(),
+          }),
+        });
+        if (!precoResponse.ok) throw new Error('Erro ao adicionar preço');
+
+        setEstoqueProduto({ produto_id: null, quantidade: '', preco: '' });
+        setIsEstoqueModalOpen(false);
+        showAlert('success', 'Produto adicionado ao estoque com sucesso! 📦');
+      } catch (error) {
+        showAlert('error', `Erro ao adicionar ao estoque: ${error.message}`);
+      }
+    }
+  };
+
   const openEditProduto = (produto) => {
     setEditProduto({
       ...produto,
       fornecedor_id: produto.fornecedores?.[0]?.fornecedor_id?.toString() || '',
-      preco: produto.precos?.[0]?.preco?.toString() || '',
     });
     setIsModalOpen(true);
+    setErrors({});
+  };
+
+  const openEstoqueModal = (produto) => {
+    setEstoqueProduto({ produto_id: produto.id, quantidade: '', preco: '' });
+    setIsEstoqueModalOpen(true);
     setErrors({});
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setIsAddModalOpen(false);
+    setIsEstoqueModalOpen(false);
     setEditProduto(null);
+    setEstoqueProduto({ produto_id: null, quantidade: '', preco: '' });
     setNovoProduto({
       nome: '',
       marca: '',
@@ -217,7 +258,6 @@ export default function Produtos() {
       fabricacao: '',
       validade: '',
       ativo: true,
-      preco: '',
       fornecedor_id: '',
     });
     setErrors({});
@@ -245,9 +285,8 @@ export default function Produtos() {
     localStorage.setItem('productDetails', JSON.stringify({
       ...produto,
       fornecedor: fornecedores.find(f => f.id === produto.fornecedores?.[0]?.fornecedor_id)?.nome || 'Sem fornecedor',
-      preco: produto.precos?.[0]?.preco?.toFixed(2) || 'N/A',
     }));
-    router.push(`/matriz/produtos/${produto.id}`);
+    router.push(`/filial/produtos/${produto.id}`);
   };
 
   return (
@@ -273,7 +312,7 @@ export default function Produtos() {
             Gerenciamento de Produtos
           </h1>
           <p className="text-sm text-[#2A4E73] mb-6 text-center max-w-2xl mx-auto">
-            Aqui você pode gerenciar todos os produtos da sua rede. Adicione novos produtos, edite informações existentes ou remova produtos inativos com facilidade.
+            Aqui você pode gerenciar todos os produtos da sua filial. Adicione novos produtos ou edite informações existentes. O preço é definido ao adicionar ao estoque.
           </p>
 
           <div className="flex justify-end mb-4">
@@ -308,7 +347,6 @@ export default function Produtos() {
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Nome</th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Marca</th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Categoria</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Preço (R$)</th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Fornecedor</th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-center rounded-tr-md">Ações</th>
                     </tr>
@@ -326,7 +364,6 @@ export default function Produtos() {
                         </td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.marca || '-'}</td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.categoria || '-'}</td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.precos?.[0]?.preco?.toFixed(2) || 'N/A'}</td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3">
                           {fornecedores.find((f) => f.id === produto.fornecedores?.[0]?.fornecedor_id)?.nome || 'Sem fornecedor'}
                         </td>
@@ -340,6 +377,16 @@ export default function Produtos() {
                             aria-label={`Editar produto ${produto.nome}`}
                           >
                             Editar
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEstoqueModal(produto);
+                            }}
+                            className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                            aria-label={`Adicionar ${produto.nome} ao estoque`}
+                          >
+                            Adicionar ao Estoque
                           </button>
                           <button
                             onClick={(e) => {
@@ -479,29 +526,6 @@ export default function Produtos() {
                       />
                     </div>
                     <div>
-                      <label htmlFor={isAddModalOpen ? "add-preco" : "edit-preco"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Preço (R$) *
-                      </label>
-                      <input
-                        type="number"
-                        id={isAddModalOpen ? "add-preco" : "edit-preco"}
-                        value={isAddModalOpen ? novoProduto.preco : editProduto?.preco}
-                        onChange={(e) => {
-                          if (isAddModalOpen) {
-                            setNovoProduto({ ...novoProduto, preco: e.target.value });
-                          } else {
-                            setEditProduto({ ...editProduto, preco: e.target.value });
-                          }
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: 29.99"
-                        step="0.01"
-                        aria-invalid={errors.preco ? 'true' : 'false'}
-                        aria-describedby={errors.preco ? (isAddModalOpen ? 'add-preco-error' : 'edit-preco-error') : undefined}
-                      />
-                      {errors.preco && <p id={isAddModalOpen ? "add-preco-error" : "edit-preco-error"} className="text-[#AD343E] text-xs mt-1">{errors.preco}</p>}
-                    </div>
-                    <div>
                       <label htmlFor={isAddModalOpen ? "add-fornecedor_id" : "edit-fornecedor_id"} className="block text-sm font-medium text-[#2A4E73] mb-1">
                         Fornecedor *
                       </label>
@@ -596,6 +620,80 @@ export default function Produtos() {
                         aria-label={isAddModalOpen ? "Adicionar produto" : "Salvar alterações"}
                       >
                         {isAddModalOpen ? 'Adicionar' : 'Salvar'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={closeModal}
+                        className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        aria-label="Cancelar"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isEstoqueModalOpen && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-labelledby="estoque-modal-title" aria-modal="true">
+              <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 id="estoque-modal-title" className="text-lg sm:text-xl font-semibold text-[#2A4E73]">
+                      Adicionar ao Estoque
+                    </h2>
+                    <button
+                      onClick={closeModal}
+                      className="text-[#2A4E73] hover:text-[#AD343E] text-2xl font-bold"
+                      aria-label="Fechar modal"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <form onSubmit={handleAddEstoque} className="space-y-3">
+                    <div>
+                      <label htmlFor="estoque-quantidade" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                        Quantidade *
+                      </label>
+                      <input
+                        type="number"
+                        id="estoque-quantidade"
+                        value={estoqueProduto.quantidade}
+                        onChange={(e) => setEstoqueProduto({ ...estoqueProduto, quantidade: e.target.value })}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        placeholder="Ex.: 100"
+                        step="0.01"
+                        aria-invalid={errors.quantidade ? 'true' : 'false'}
+                        aria-describedby={errors.quantidade ? 'estoque-quantidade-error' : undefined}
+                      />
+                      {errors.quantidade && <p id="estoque-quantidade-error" className="text-[#AD343E] text-xs mt-1">{errors.quantidade}</p>}
+                    </div>
+                    <div>
+                      <label htmlFor="estoque-preco" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                        Preço (R$) *
+                      </label>
+                      <input
+                        type="number"
+                        id="estoque-preco"
+                        value={estoqueProduto.preco}
+                        onChange={(e) => setEstoqueProduto({ ...estoqueProduto, preco: e.target.value })}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        placeholder="Ex.: 29.99"
+                        step="0.01"
+                        aria-invalid={errors.preco ? 'true' : 'false'}
+                        aria-describedby={errors.preco ? 'estoque-preco-error' : undefined}
+                      />
+                      {errors.preco && <p id="estoque-preco-error" className="text-[#AD343E] text-xs mt-1">{errors.preco}</p>}
+                    </div>
+                    <div className="flex gap-3 pt-3">
+                      <button
+                        type="submit"
+                        className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        aria-label="Adicionar ao estoque"
+                      >
+                        Adicionar
                       </button>
                       <button
                         type="button"
