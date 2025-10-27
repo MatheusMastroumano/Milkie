@@ -1,4 +1,4 @@
-// DOCUMENT filename="page.jsx"
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -46,7 +46,7 @@ export default function Funcionarios() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Lojas fetched:', data); // Debug log
+      console.log('Lojas fetched:', data);
       setLojas(data.lojas || []);
     } catch (error) {
       console.error('Error fetching lojas:', error);
@@ -61,7 +61,7 @@ export default function Funcionarios() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Funcionarios fetched:', data); // Debug log
+      console.log('Funcionarios fetched:', data);
       setFuncionarios(data.funcionarios || []);
     } catch (error) {
       console.error('Error fetching funcionarios:', error);
@@ -142,10 +142,10 @@ export default function Funcionarios() {
         idade: parseInt(novoFuncionario.idade),
         salario: parseFloat(novoFuncionario.salario),
         loja_id: parseInt(novoFuncionario.loja_id),
-        telefone: novoFuncionario.telefone.replace(/\D/g, ''), // Remove qualquer não-dígito
+        telefone: novoFuncionario.telefone.replace(/\D/g, ''),
       };
 
-      console.log('Sending funcionarioData:', funcionarioData); // Debug log
+      console.log('Sending funcionarioData:', funcionarioData);
 
       const response = await fetch(`${API_URL}/funcionarios`, {
         method: 'POST',
@@ -155,13 +155,13 @@ export default function Funcionarios() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('POST response error:', errorText); // Debug log
+        console.error('POST response error:', errorText);
         const errorData = JSON.parse(errorText || '{}');
         throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('POST success:', data); // Debug log
+      console.log('POST success:', data);
 
       showAlert('success', `Funcionário "${novoFuncionario.nome}" cadastrado com sucesso!`);
       setNovoFuncionario({
@@ -177,9 +177,10 @@ export default function Funcionarios() {
       });
       setErrors({});
       setIsAddModalOpen(false);
+      setSelectedLojaId(novoFuncionario.loja_id); // Show added funcionario in selected loja
       await fetchFuncionarios();
     } catch (error) {
-      console.error('Error adding funcionario:', error); // Debug log
+      console.error('Error adding funcionario:', error);
       if (error.message.includes('Foreign key constraint violated')) {
         showAlert('error', 'Erro: A loja selecionada não existe no banco de dados.');
       } else {
@@ -199,10 +200,10 @@ export default function Funcionarios() {
         idade: parseInt(editFuncionario.idade),
         salario: parseFloat(editFuncionario.salario),
         loja_id: parseInt(editFuncionario.loja_id),
-        telefone: editFuncionario.telefone.replace(/\D/g, ''), // Remove qualquer não-dígito
+        telefone: editFuncionario.telefone.replace(/\D/g, ''),
       };
 
-      console.log('Updating funcionarioData:', funcionarioData); // Debug log
+      console.log('Updating funcionarioData:', funcionarioData);
 
       const response = await fetch(`${API_URL}/funcionarios/${editFuncionario.id}`, {
         method: 'PUT',
@@ -212,21 +213,22 @@ export default function Funcionarios() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('PUT response error:', errorText); // Debug log
+        console.error('PUT response error:', errorText);
         const errorData = JSON.parse(errorText || '{}');
         throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('PUT success:', data); // Debug log
+      console.log('PUT success:', data);
 
       showAlert('success', `Funcionário "${editFuncionario.nome}" editado com sucesso!`);
       setIsModalOpen(false);
       setEditFuncionario(null);
       setErrors({});
+      setSelectedLojaId(editFuncionario.loja_id); // Show edited funcionario in selected loja
       await fetchFuncionarios();
     } catch (error) {
-      console.error('Error editing funcionario:', error); // Debug log
+      console.error('Error editing funcionario:', error);
       if (error.message.includes('Foreign key constraint violated')) {
         showAlert('error', 'Erro: A loja selecionada não existe no banco de dados.');
       } else {
@@ -273,13 +275,13 @@ export default function Funcionarios() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('DELETE response error:', errorText); // Debug log
+        console.error('DELETE response error:', errorText);
         const errorData = JSON.parse(errorText || '{}');
         throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('DELETE success:', data); // Debug log
+      console.log('DELETE success:', data);
 
       showAlert('success', `Funcionário "${funcionarioToDelete.nome}" excluído com sucesso!`);
       if (editFuncionario && editFuncionario.id === id) {
@@ -287,7 +289,7 @@ export default function Funcionarios() {
       }
       await fetchFuncionarios();
     } catch (error) {
-      console.error('Error deleting funcionario:', error); // Debug log
+      console.error('Error deleting funcionario:', error);
       showAlert('error', `Erro ao excluir funcionário: ${error.message}`);
     }
   };
@@ -313,7 +315,10 @@ export default function Funcionarios() {
     : [];
 
   return (
-    <main className="min-h-screen bg-[#FFFFFF] pt-14 sm:pt-16 transition-all duration-300 flex flex-col">
+    <main className="min-h-screen bg-[#FFFFFF] flex flex-col">
+      <br></br>
+       <br></br>
+        <br></br>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6 flex-grow">
         <Header />
         {alert.show && (
@@ -339,7 +344,10 @@ export default function Funcionarios() {
 
         <div className="flex justify-end mb-4">
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => {
+              setIsAddModalOpen(true);
+              setNovoFuncionario({ ...novoFuncionario, loja_id: selectedLojaId });
+            }}
             className="px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
             aria-label="Abrir formulário para adicionar novo funcionário"
           >
@@ -610,7 +618,7 @@ export default function Funcionarios() {
                           setEditFuncionario({ ...editFuncionario, email: e.target.value });
                         }
                       }}
-                      className="w-content px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                       placeholder="Ex.: rob.lox@game.com"
                       aria-invalid={!!errors.email}
                       aria-describedby={errors.email ? (isAddModalOpen ? 'add-email-error' : 'edit-email-error') : undefined}
