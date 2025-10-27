@@ -1,6 +1,6 @@
 datasource db {
     provider = "mysql"
-    url = env("DATABASE_URL")
+    url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -11,19 +11,20 @@ generator client {
  * --------------------------- // matriz e filiais --------------------------
  */
 model lojas {
-    id          Int        @id @default(autoincrement())
-    nome        String
-    tipo        TipoLoja   @default(filial)
-    CEP         String     @unique
-    numero      Int
-    complemento String
-    ativo       Boolean    @default(true)
-    criado_em   DateTime   @default(now())
-    usuarios    usuarios[]
-    precos      precos[]
-    estoque     estoque[]
-    vendas      vendas[]
-    caixa       caixa[]
+    id           Int            @id @default(autoincrement())
+    nome         String
+    tipo         TipoLoja       @default(filial)
+    CEP          String         @unique
+    numero       Int
+    complemento  String
+    ativo        Boolean        @default(true)
+    criado_em    DateTime       @default(now())
+    usuarios     usuarios[]
+    precos       precos[]
+    estoque      estoque[]
+    vendas       vendas[]
+    caixa        caixa[]
+    funcionarios funcionarios[]
 }
 
 enum TipoLoja {
@@ -37,6 +38,7 @@ enum TipoLoja {
  */
 model funcionarios {
     id        Int        @id @default(autoincrement())
+    loja_id   Int
     nome      String
     cpf       String     @unique
     email     String     @unique
@@ -46,6 +48,8 @@ model funcionarios {
     salario   Decimal    @db.Decimal(10, 2)
     ativo     Boolean    @default(true)
     criado_em DateTime   @default(now())
+    
+    loja      lojas      @relation(fields: [loja_id], references: [id], onDelete: Cascade)
     usuarios  usuarios[]
 }
 

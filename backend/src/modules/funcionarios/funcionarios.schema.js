@@ -5,6 +5,7 @@ import pkg from '@prisma/client';
 const { Decimal } = pkg;
 
 const FuncionariosSchema = z.object({
+    loja_id: utils.id,
     nome: utils.nome,
     cpf: z.string(),
     email: z.string().email(),

@@ -30,9 +30,11 @@ export async function getFuncionariosByIdController(req, res) {
 /* ---------------------------------- CRIAR --------------------------------- */
 export async function createFuncionariosController(req, res) {
     try {
-        const { nome, cpf, email, telefone, idade, cargo, salario, ativo } = req.body;
+        const { loja_id, nome, cpf, email, telefone, idade, cargo, salario, ativo } = req.body;
 
-        const funcionarioData = { nome, cpf, email, telefone, idade, cargo, salario, ativo };
+        if (!loja_id) return res.status(400).json({ mensagem: 'Loja não informada' });
+
+        const funcionarioData = { loja_id, nome, cpf, email, telefone, idade, cargo, salario, ativo };
 
         const funcionario = await funcionariosService.createFuncionarios(funcionarioData);
 
@@ -53,9 +55,11 @@ export async function updateFuncionariosController(req, res) {
             res.status(404).json({ mensagem: 'Funcionario nao encontrado' });
         }
 
-        const { nome, cpf, email, telefone, idade, cargo, salario, ativo } = req.body;
+        if (!loja_id) return res.status(400).json({ mensagem: 'Loja não informada' });
 
-        const funcionarioData = { nome, cpf, email, telefone, idade, cargo, salario, ativo };
+        const { loja_id, nome, cpf, email, telefone, idade, cargo, salario, ativo } = req.body;
+
+        const funcionarioData = { loja_id, nome, cpf, email, telefone, idade, cargo, salario, ativo };
 
         const updatedFuncionario = await funcionariosService.updateFuncionarios(funcionarioId, funcionarioData);
 

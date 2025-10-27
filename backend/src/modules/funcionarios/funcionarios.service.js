@@ -4,7 +4,11 @@ import { cpf as cpfValidator } from 'cpf-cnpj-validator';
 /* ------------------------------ BUSCAR TODOS ----------------------------- */
 export async function getFuncionarios() {
     try {
-        return await prisma.funcionarios.findMany();
+        return await prisma.funcionarios.findMany({
+            include: {
+                loja: true
+            }
+        });
     } catch (err) {
         console.error('error: ', err);
         throw new Error(err.message);
@@ -16,6 +20,9 @@ export async function getFuncionariosById(id) {
     try {
         return await prisma.funcionarios.findUnique({
             where: { id: Number(id) },
+            include: {
+                loja: true
+            }
         });
     } catch (err) {
         console.error('error: ', err);
@@ -61,6 +68,9 @@ export async function createFuncionarios(data) {
     try {
         return await prisma.funcionarios.create({
             data: data,
+            include: {
+                loja: true
+            }
         });
     } catch (err) {
         console.error('error: ', err);
@@ -102,6 +112,9 @@ export async function updateFuncionarios(id, data) {
         return await prisma.funcionarios.update({
             where: { id: id },
             data: data,
+            include: {
+                loja: true
+            }
         });
     } catch (err) {
         console.error('error: ', err);
