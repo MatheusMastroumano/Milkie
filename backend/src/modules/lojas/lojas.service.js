@@ -102,15 +102,6 @@ export async function updateLojas(id, data) {
         throw new Error('Ativo inválido.');
     }
 
-    // validar se CEP existe
-    const cepExiste = await prisma.lojas.findUnique({
-        where: { CEP: CEP },
-    });
-
-    if (cepExiste) {
-        throw new Error('Já existe uma loja cadastrada com esse CEP.');
-    }
-
     try {
         return await prisma.lojas.update({
             where: { id: Number(id) },
