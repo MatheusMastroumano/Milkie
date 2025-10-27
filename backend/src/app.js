@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import auth from './shared/middlewares/auth.js';
 
 /* -------------------------------------------------------------------------- */
 /*                            Importação de rotas                             */
@@ -28,6 +29,13 @@ const port = process.env.PORT || 3001;
 /* -------------------------------------------------------------------------- */
 app.use(express.json());
 app.use(cookieParser());
+
+/* TODO:
+    fazer esse middleware funcionar com diferentes acessos pra cada usuário
+    (admin, gerente e caixa)
+
+    app.use(auth);
+*/
 
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
