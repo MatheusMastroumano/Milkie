@@ -7,7 +7,7 @@ const LojasSchema = z.object({
     nome: utils.nome,
     tipo: TipoLojaEnum.default('filial'),
     CEP: z.string() // aceita CEP com ou sem hífen:
-        .regex(/^\d{5}-?\d{3}$/, "CEP inválido. Use o formato 00000-000 ou 00000000."),
+        .regex(/^\d{5}-?\d{3}$/, "CEP inválido. Use o formato 00000-000 ou 00000000.").optional(),
     numero: z.number().int().positive().min(1, "Número do endereço é obrigatório"),
     complemento: z.string(),
     ativo: z.boolean().default(true),

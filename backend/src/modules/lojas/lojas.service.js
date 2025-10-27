@@ -81,21 +81,25 @@ export async function updateLojas(id, data) {
         throw new Error('CEP inválido.');
     }
 
+
+    // isso faz com que o CEP não precise mudar na rota PUT
+    const lojaAtual = await prisma.lojas.findUnique({
+        where: { id: Number(id) },
+    });
+
+    if (CEP && CEP !== lojaAtual.CEP) {
+        data.CEP = CEP;
+    }
+    // -----------------------------------------------------
+
+
+
     if (tipo !== 'matriz' && tipo !== 'filial') {
         throw new Error('Tipo de loja inválido.');
     }
 
     if (ativo !== true && ativo !== false) {
         throw new Error('Ativo inválido.');
-    }
-
-    // validar se CEP existe
-    const cepExiste = await prisma.lojas.findUnique({
-        where: { CEP: CEP },
-    });
-
-    if (cepExiste) {
-        throw new Error('Já existe uma loja cadastrada com esse CEP.');
     }
 
     try {
