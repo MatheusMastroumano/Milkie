@@ -30,7 +30,7 @@ export async function getFornecedoresByIdController(req, res) {
 // Criar fornecedor
 export async function createFornecedoresController(req, res) {
     try {
-        const { nome, cnpj_cpf, produtos_fornecidos, ativo } = req.body;
+        const { nome, cnpj_cpf, ativo } = req.body;
 
         const fornecedorData = { nome, cnpj_cpf, produtos_fornecidos, ativo };
 
@@ -53,7 +53,7 @@ export async function updateFornecedoresController(req, res) {
             res.status(404).json({ mensagem: 'Fornecedor não encontrado' });
         }
 
-        const { nome, cnpj_cpf, produtos_fornecidos, ativo, } = req.body;
+        const { nome, cnpj_cpf, ativo, } = req.body;
 
         const fornecedorData = { nome, cnpj_cpf, produtos_fornecidos, ativo };
 

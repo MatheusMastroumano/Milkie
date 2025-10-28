@@ -1,9 +1,15 @@
-import 'dotenv/config';
+import 'dotenv/config.js';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
 import auth from './shared/middlewares/auth.js';
+
+/* -------------------------------------------------------------------------- */
+/*                         Configurações iniciais                             */
+/* -------------------------------------------------------------------------- */
+
+const app = express();
+const port = process.env.PORT || 3001;
 
 /* -------------------------------------------------------------------------- */
 /*                            Importação de rotas                             */
@@ -15,18 +21,6 @@ import {
 
     authRotas
 } from './modules/index.js';
-
-/* -------------------------------------------------------------------------- */
-/*                         Configurações iniciais                             */
-/* -------------------------------------------------------------------------- */
-dotenv.config();
-
-// TESTE
-console.log('caminho: ', process.cwd());
-console.log('jwt secret: ',);
-
-const app = express();
-const port = process.env.PORT || 3001;
 
 /* -------------------------------------------------------------------------- */
 /*                               Middlewares                                  */
