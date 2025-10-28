@@ -1,74 +1,165 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from "@/components/Header/page";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 export default function Fornecedores() {
-  const [fornecedores, setFornecedores] = useState([
-    { id: 1, nome: 'Fornecedor A', cnpj_cpf: '12.345.678/0001-90', endereco: 'Rua A, 100', ativo: true },
-    { id: 2, nome: 'Fornecedor B', cnpj_cpf: '98.765.432/0001-00', endereco: 'Av. B, 200', ativo: false },
-  ]);
-  const [novoFornecedor, setNovoFornecedor] = useState({ nome: '', cnpj_cpf: '', endereco: '', ativo: true });
+  const [fornecedores, setFornecedores] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [novoFornecedor, setNovoFornecedor] = useState({ 
+    nome: '', 
+    cnpj_cpf: '', 
+    produtos_fornecidos: '', 
+    ativo: true 
+  });
   const [editFornecedor, setEditFornecedor] = useState(null);
   const [errors, setErrors] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Função para validar o formulário
+  // Buscar fornecedores da API
+  useEffect(() => {
+    fetchFornecedores();
+  }, []);
+
+  const fetchFornecedores = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/fornecedores`);
+      if (!response.ok) throw new Error('Erro ao buscar fornecedores');
+      const data = await response.json();
+      setFornecedores(data.fornecedores || []);
+    } catch (error) {
+      console.error('Erro ao carregar fornecedores:', error);
+      alert(`Erro ao carregar fornecedores: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Validação do formulário
   const validateForm = (fornecedor, isEdit = false) => {
     const newErrors = {};
-    if (!fornecedor.nome.trim()) newErrors.nome = 'O nome do fornecedor é obrigatório';
-    if (!isEdit && fornecedores.some((f) => f.nome === fornecedor.nome)) {
-      newErrors.nome = 'Já existe um fornecedor com esse nome';
+    
+    if (!fornecedor.nome.trim()) {
+      newErrors.nome = 'O nome do fornecedor é obrigatório';
     }
-    if (fornecedor.cnpj_cpf && !/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$|^\d{11}$/.test(fornecedor.cnpj_cpf.replace(/[^\d]/g, ''))) {
-      newErrors.cnpj_cpf = 'CNPJ/CPF inválido (formato: 12.345.678/0001-90 ou 12345678901)';
+    
+    if (!fornecedor.cnpj_cpf.trim()) {
+      newErrors.cnpj_cpf = 'CNPJ/CPF é obrigatório';
+    } else {
+      const cnpjCpfLimpo = fornecedor.cnpj_cpf.replace(/[^\d]/g, '');
+      if (cnpjCpfLimpo.length !== 11 && cnpjCpfLimpo.length !== 14) {
+        newErrors.cnpj_cpf = 'CNPJ deve ter 14 dígitos ou CPF deve ter 11 dígitos';
+      }
     }
-    if (!fornecedor.endereco.trim()) newErrors.endereco = 'O endereço é obrigatório';
+
+    if (!fornecedor.produtos_fornecidos.trim()) {
+      newErrors.produtos_fornecidos = 'Produtos fornecidos é obrigatório';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Função para adicionar fornecedor
-  const handleAddFornecedor = (e) => {
+  // Adicionar fornecedor
+  const handleAddFornecedor = async (e) => {
     e.preventDefault();
     if (validateForm(novoFornecedor)) {
-      setFornecedores([...fornecedores, { id: fornecedores.length + 1, ...novoFornecedor }]);
-      setNovoFornecedor({ nome: '', cnpj_cpf: '', endereco: '', ativo: true });
-      setErrors({});
+      try {
+        const response = await fetch(`${API_URL}/fornecedores`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nome: novoFornecedor.nome,
+            cnpj_cpf: novoFornecedor.cnpj_cpf,
+            produtos_fornecidos: novoFornecedor.produtos_fornecidos,
+            ativo: novoFornecedor.ativo,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Erro ao adicionar fornecedor');
+        }
+
+        await fetchFornecedores();
+        setNovoFornecedor({ nome: '', cnpj_cpf: '', produtos_fornecidos: '', ativo: true });
+        setErrors({});
+        alert('Fornecedor adicionado com sucesso!');
+      } catch (error) {
+        alert(`Erro ao adicionar fornecedor: ${error.message}`);
+      }
     }
   };
 
-  // Função para editar fornecedor no modal
-  const handleEditFornecedor = (e) => {
+  // Editar fornecedor
+  const handleEditFornecedor = async (e) => {
     e.preventDefault();
     if (validateForm(editFornecedor, true)) {
-      setFornecedores(fornecedores.map((forn) => (forn.id === editFornecedor.id ? { ...editFornecedor } : forn)));
-      setIsModalOpen(false);
-      setEditFornecedor(null);
-      setErrors({});
+      try {
+        const response = await fetch(`${API_URL}/fornecedores/${editFornecedor.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nome: editFornecedor.nome,
+            cnpj_cpf: editFornecedor.cnpj_cpf,
+            produtos_fornecidos: editFornecedor.produtos_fornecidos,
+            ativo: editFornecedor.ativo,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Erro ao atualizar fornecedor');
+        }
+
+        await fetchFornecedores();
+        setIsModalOpen(false);
+        setEditFornecedor(null);
+        setErrors({});
+        alert('Fornecedor atualizado com sucesso!');
+      } catch (error) {
+        alert(`Erro ao atualizar fornecedor: ${error.message}`);
+      }
     }
   };
 
-  // Função para abrir modal de edição
+  // Abrir modal de edição
   const openEditFornecedor = (forn) => {
     setEditFornecedor({ ...forn });
     setIsModalOpen(true);
     setErrors({});
   };
 
-  // Função para fechar modal
+  // Fechar modal
   const closeModal = () => {
     setIsModalOpen(false);
     setEditFornecedor(null);
     setErrors({});
   };
 
-  // Função para excluir fornecedor
-  const handleDeleteFornecedor = (id) => {
+  // Excluir fornecedor
+  const handleDeleteFornecedor = async (id) => {
     if (window.confirm('Tem certeza que deseja excluir este fornecedor?')) {
-      setFornecedores(fornecedores.filter((forn) => forn.id !== id));
-      if (editFornecedor && editFornecedor.id === id) {
-        closeModal();
+      try {
+        const response = await fetch(`${API_URL}/fornecedores/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Erro ao excluir fornecedor');
+        }
+
+        await fetchFornecedores();
+        if (editFornecedor && editFornecedor.id === id) {
+          closeModal();
+        }
+        alert('Fornecedor excluído com sucesso!');
+      } catch (error) {
+        alert(`Erro ao excluir fornecedor: ${error.message}`);
       }
     }
   };
@@ -78,81 +169,78 @@ export default function Fornecedores() {
       <Header />
       <main className="min-h-screen bg-[#FFFFFF] pt-14 sm:pt-16 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6">
-          {/* Título */}
           <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-6 text-center">
             Gerenciamento de Fornecedores
           </h1>
 
-          {/* Formulário para Adicionar Novo Fornecedor */}
+          {/* Formulário para Adicionar */}
           <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6 mb-8">
             <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
               Adicionar Novo Fornecedor
             </h2>
-            <form onSubmit={handleAddFornecedor} className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-              <div className="flex-1">
-                <label htmlFor="nome" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Nome do Fornecedor
+            <form onSubmit={handleAddFornecedor} className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="nome" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                    Nome do Fornecedor *
+                  </label>
+                  <input
+                    type="text"
+                    id="nome"
+                    value={novoFornecedor.nome}
+                    onChange={(e) => setNovoFornecedor({ ...novoFornecedor, nome: e.target.value })}
+                    className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                    placeholder="Ex.: Distribuidora ABC"
+                  />
+                  {errors.nome && <p className="text-[#AD343E] text-sm mt-1">{errors.nome}</p>}
+                </div>
+                <div>
+                  <label htmlFor="cnpj_cpf" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                    CNPJ/CPF *
+                  </label>
+                  <input
+                    type="text"
+                    id="cnpj_cpf"
+                    value={novoFornecedor.cnpj_cpf}
+                    onChange={(e) => setNovoFornecedor({ ...novoFornecedor, cnpj_cpf: e.target.value })}
+                    className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                    placeholder="Ex.: 12.345.678/0001-90"
+                  />
+                  {errors.cnpj_cpf && <p className="text-[#AD343E] text-sm mt-1">{errors.cnpj_cpf}</p>}
+                </div>
+              </div>
+              <div>
+                <label htmlFor="produtos_fornecidos" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                  Produtos Fornecidos *
                 </label>
                 <input
                   type="text"
-                  id="nome"
-                  value={novoFornecedor.nome}
-                  onChange={(e) => setNovoFornecedor({ ...novoFornecedor, nome: e.target.value })}
+                  id="produtos_fornecidos"
+                  value={novoFornecedor.produtos_fornecidos}
+                  onChange={(e) => setNovoFornecedor({ ...novoFornecedor, produtos_fornecidos: e.target.value })}
                   className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Ex.: Fornecedor A"
+                  placeholder="Ex.: Alimentos, Bebidas, Material de limpeza"
                 />
-                {errors.nome && <p className="text-[#AD343E] text-sm mt-1">{errors.nome}</p>}
+                {errors.produtos_fornecidos && <p className="text-[#AD343E] text-sm mt-1">{errors.produtos_fornecidos}</p>}
               </div>
-              <div className="flex-1">
-                <label htmlFor="cnpj_cpf" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  CNPJ/CPF
-                </label>
-                <input
-                  type="text"
-                  id="cnpj_cpf"
-                  value={novoFornecedor.cnpj_cpf}
-                  onChange={(e) => setNovoFornecedor({ ...novoFornecedor, cnpj_cpf: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Ex.: 12.345.678/0001-90 ou 12345678901"
-                />
-                {errors.cnpj_cpf && <p className="text-[#AD343E] text-sm mt-1">{errors.cnpj_cpf}</p>}
-              </div>
-              <div className="flex-1">
-                <label htmlFor="endereco" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Endereço
-                </label>
-                <input
-                  type="text"
-                  id="endereco"
-                  value={novoFornecedor.endereco}
-                  onChange={(e) => setNovoFornecedor({ ...novoFornecedor, endereco: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Ex.: Rua A, 100"
-                />
-                {errors.endereco && <p className="text-[#AD343E] text-sm mt-1">{errors.endereco}</p>}
-              </div>
-              <div className="flex-1">
-                <label htmlFor="ativo" className="block text-sm font-medium text-[#2A4E73] mb-1">
+              <div className="flex items-center gap-4">
+                <label htmlFor="ativo" className="text-sm font-medium text-[#2A4E73]">
                   Ativo
                 </label>
-                <select
+                <input
+                  type="checkbox"
                   id="ativo"
-                  value={novoFornecedor.ativo}
-                  onChange={(e) => setNovoFornecedor({ ...novoFornecedor, ativo: e.target.value === 'true' })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                >
-                  <option value={true}>Sim</option>
-                  <option value={false}>Não</option>
-                </select>
+                  checked={novoFornecedor.ativo}
+                  onChange={(e) => setNovoFornecedor({ ...novoFornecedor, ativo: e.target.checked })}
+                  className="h-4 w-4 text-[#2A4E73] border-gray-300 rounded focus:ring-[#CFE8F9]"
+                />
               </div>
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                >
-                  Adicionar
-                </button>
-              </div>
+              <button
+                type="submit"
+                className="w-full sm:w-auto px-6 py-3 text-sm sm:text-base font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+              >
+                Adicionar
+              </button>
             </form>
           </section>
 
@@ -161,7 +249,9 @@ export default function Fornecedores() {
             <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
               Lista de Fornecedores
             </h2>
-            {fornecedores.length === 0 ? (
+            {loading ? (
+              <p className="text-[#2A4E73] text-center">Carregando...</p>
+            ) : fornecedores.length === 0 ? (
               <p className="text-[#2A4E73] text-center">Nenhum fornecedor cadastrado.</p>
             ) : (
               <div className="overflow-x-auto">
@@ -171,7 +261,7 @@ export default function Fornecedores() {
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left rounded-tl-md">ID</th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Nome</th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">CNPJ/CPF</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Endereço</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Produtos Fornecidos</th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Ativo</th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-center rounded-tr-md">Ações</th>
                     </tr>
@@ -180,26 +270,22 @@ export default function Fornecedores() {
                     {fornecedores.map((forn) => (
                       <tr key={forn.id} className="border-b border-gray-200 hover:bg-[#CFE8F9]">
                         <td className="px-3 sm:px-4 py-2 sm:py-3">{forn.id}</td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[150px] sm:max-w-[200px]">
-                          {forn.nome}
-                        </td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[150px] sm:max-w-[200px]">
-                          {forn.cnpj_cpf || 'Não informado'}
-                        </td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[200px] sm:max-w-[300px]">
-                          {forn.endereco}
+                        <td className="px-3 sm:px-4 py-2 sm:py-3">{forn.nome}</td>
+                        <td className="px-3 sm:px-4 py-2 sm:py-3">{forn.cnpj_cpf}</td>
+                        <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[200px]">
+                          {forn.produtos_fornecidos}
                         </td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3">{forn.ativo ? 'Sim' : 'Não'}</td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3 text-center space-x-2">
                           <button
                             onClick={() => openEditFornecedor(forn)}
-                            className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                            className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] transition-colors"
                           >
                             Editar
                           </button>
                           <button
                             onClick={() => handleDeleteFornecedor(forn.id)}
-                            className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                            className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] transition-colors"
                           >
                             Excluir
                           </button>
@@ -228,84 +314,64 @@ export default function Fornecedores() {
                   </div>
                   <form onSubmit={handleEditFornecedor} className="space-y-4">
                     <div>
-                      <label htmlFor="edit-id" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        ID
-                      </label>
+                      <label className="block text-sm font-medium text-[#2A4E73] mb-1">ID</label>
                       <input
                         type="text"
-                        id="edit-id"
                         value={editFornecedor.id}
                         disabled
                         className="w-full px-3 py-2 text-sm text-[#2A4E73] bg-gray-100 border border-gray-300 rounded-md"
                       />
                     </div>
                     <div>
-                      <label htmlFor="edit-nome" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Nome do Fornecedor
-                      </label>
+                      <label className="block text-sm font-medium text-[#2A4E73] mb-1">Nome *</label>
                       <input
                         type="text"
-                        id="edit-nome"
                         value={editFornecedor.nome}
                         onChange={(e) => setEditFornecedor({ ...editFornecedor, nome: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: Fornecedor A"
+                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
                       />
                       {errors.nome && <p className="text-[#AD343E] text-sm mt-1">{errors.nome}</p>}
                     </div>
                     <div>
-                      <label htmlFor="edit-cnpj_cpf" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        CNPJ/CPF
-                      </label>
+                      <label className="block text-sm font-medium text-[#2A4E73] mb-1">CNPJ/CPF *</label>
                       <input
                         type="text"
-                        id="edit-cnpj_cpf"
                         value={editFornecedor.cnpj_cpf}
                         onChange={(e) => setEditFornecedor({ ...editFornecedor, cnpj_cpf: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: 12.345.678/0001-90 ou 12345678901"
+                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
                       />
                       {errors.cnpj_cpf && <p className="text-[#AD343E] text-sm mt-1">{errors.cnpj_cpf}</p>}
                     </div>
                     <div>
-                      <label htmlFor="edit-endereco" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Endereço
-                      </label>
+                      <label className="block text-sm font-medium text-[#2A4E73] mb-1">Produtos Fornecidos *</label>
                       <input
                         type="text"
-                        id="edit-endereco"
-                        value={editFornecedor.endereco}
-                        onChange={(e) => setEditFornecedor({ ...editFornecedor, endereco: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: Rua A, 100"
+                        value={editFornecedor.produtos_fornecidos}
+                        onChange={(e) => setEditFornecedor({ ...editFornecedor, produtos_fornecidos: e.target.value })}
+                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
                       />
-                      {errors.endereco && <p className="text-[#AD343E] text-sm mt-1">{errors.endereco}</p>}
+                      {errors.produtos_fornecidos && <p className="text-[#AD343E] text-sm mt-1">{errors.produtos_fornecidos}</p>}
                     </div>
-                    <div>
-                      <label htmlFor="edit-ativo" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Ativo
-                      </label>
-                      <select
-                        id="edit-ativo"
-                        value={editFornecedor.ativo}
-                        onChange={(e) => setEditFornecedor({ ...editFornecedor, ativo: e.target.value === 'true' })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      >
-                        <option value={true}>Sim</option>
-                        <option value={false}>Não</option>
-                      </select>
+                    <div className="flex items-center gap-4">
+                      <label className="text-sm font-medium text-[#2A4E73]">Ativo</label>
+                      <input
+                        type="checkbox"
+                        checked={editFornecedor.ativo}
+                        onChange={(e) => setEditFornecedor({ ...editFornecedor, ativo: e.target.checked })}
+                        className="h-4 w-4 text-[#2A4E73] border-gray-300 rounded focus:ring-[#CFE8F9]"
+                      />
                     </div>
                     <div className="flex gap-3 pt-4">
                       <button
                         type="submit"
-                        className="flex-1 px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        className="flex-1 px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] transition-colors"
                       >
                         Salvar
                       </button>
                       <button
                         type="button"
                         onClick={closeModal}
-                        className="flex-1 px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        className="flex-1 px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] transition-colors"
                       >
                         Cancelar
                       </button>
