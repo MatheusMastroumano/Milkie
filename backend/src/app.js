@@ -21,6 +21,10 @@ import {
 /* -------------------------------------------------------------------------- */
 dotenv.config();
 
+// TESTE
+console.log('caminho: ', process.cwd());
+console.log('jwt secret: ',);
+
 const app = express();
 const port = process.env.PORT || 3001;
 
