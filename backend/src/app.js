@@ -15,9 +15,9 @@ const port = process.env.PORT || 3001;
 /*                            Importação de rotas                             */
 /* -------------------------------------------------------------------------- */
 import {
-    lojasRoutes,  funcionariosRoutes, usuariosRoutes,        produtosRoutes,
-    precosRoutes, estoqueRoutes,      fornecedoresRoutes,    fornecedorProdutosRoutes,
-    vendasRoutes, vendaItensRoutes,   vendaPagamentosRoutes, caixaRoutes,
+    lojasRoutes, funcionariosRoutes, usuariosRoutes, produtosRoutes,
+    precosRoutes, estoqueRoutes, fornecedoresRoutes, fornecedorProdutosRoutes,
+    vendasRoutes, vendaItensRoutes, vendaPagamentosRoutes, caixaRoutes,
 
     authRotas
 } from './modules/index.js';
@@ -32,8 +32,8 @@ app.use(cookieParser());
     fazer esse middleware funcionar com diferentes acessos pra cada usuário
     (admin, gerente e caixa)
 
-    app.use(auth);
-*/
+    */
+app.use(auth);
 
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
