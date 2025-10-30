@@ -32,9 +32,9 @@ export async function getEstoqueByIdController(req, res) {
 /* ------------------------------- CRIAR ------------------------------- */
 export async function createEstoqueController(req, res) {
     try {
-        const { produto_id, loja_id, quantidade } = req.body;
+        const { produto_id, preco ,loja_id, quantidade, valido_ate } = req.body;
 
-        const estoqueData = { produto_id, loja_id, quantidade };
+        const estoqueData = { produto_id, preco ,loja_id, quantidade, valido_ate };
 
         const estoque = await estoqueService.createEstoque(estoqueData);
 
@@ -49,9 +49,9 @@ export async function createEstoqueController(req, res) {
 export async function updateEstoqueController(req, res) {
     try {
         const { produtoId, lojaId } = req.params;
-        const { quantidade } = req.body;
+        const { quantidade, preco, valido_ate } = req.body;
 
-        const estoqueAtualizado = await estoqueService.updateEstoque(produtoId, lojaId, { quantidade });
+        const estoqueAtualizado = await estoqueService.updateEstoque(produtoId, lojaId, { quantidade , preco, valido_ate});
 
         if (!estoqueAtualizado) {
             return res.status(404).json({ mensagem: 'Estoque não encontrado' });

@@ -8,14 +8,12 @@ import Header from '@/components/Header/page';
 import Footer from '@/components/Footer/page';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-// Suponha que o loja_id da filial atual esteja disponível (ex.: via contexto ou autenticação)
-const LOJA_ID = 1; // Substitua por lógica para obter o loja_id dinamicamente
 
 export default function Produtos() {
   const router = useRouter();
   const [produtos, setProdutos] = useState([]);
-  const [fornecedores, setFornecedores] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lojaId, setLojaId] = useState(null);
   const [novoProduto, setNovoProduto] = useState({
     nome: '',
     marca: '',
@@ -25,7 +23,6 @@ export default function Produtos() {
     fabricacao: '',
     validade: '',
     ativo: true,
-    fornecedor_id: '',
   });
   const [editProduto, setEditProduto] = useState(null);
   const [estoqueProduto, setEstoqueProduto] = useState({ produto_id: null, quantidade: '', preco: '' });
@@ -35,28 +32,31 @@ export default function Produtos() {
   const [isEstoqueModalOpen, setIsEstoqueModalOpen] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
+  // Obter loja_id dinamicamente (ex: do localStorage ou contexto)
   useEffect(() => {
-    const fetchData = async () => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setLojaId(user.loja_id || 1);
+  }, []);
+
+  // Carregar produtos com estoque da loja atual
+  useEffect(() => {
+    if (!lojaId) return;
+
+    const fetchProdutos = async () => {
       try {
         setLoading(true);
-        const [produtosRes, fornecedoresRes] = await Promise.all([
-          fetch(`${API_URL}/produtos`),
-          fetch(`${API_URL}/fornecedores`),
-        ]);
-        if (!produtosRes.ok) throw new Error('Erro ao buscar produtos');
-        if (!fornecedoresRes.ok) throw new Error('Erro ao buscar fornecedores');
-        const produtosData = await produtosRes.json();
-        const fornecedoresData = await fornecedoresRes.json();
-        setProdutos(produtosData.produtos || []);
-        setFornecedores(fornecedoresData.fornecedores || []);
+        const res = await fetch(`${API_URL}/produtos?loja_id=${lojaId}`);
+        if (!res.ok) throw new Error('Erro ao carregar produtos');
+        const { produtos: data } = await res.json();
+        setProdutos(data || []);
       } catch (error) {
-        showAlert('error', `Erro ao carregar dados: ${error.message}`);
+        showAlert('error', error.message);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
+    fetchProdutos();
+  }, [lojaId]);
 
   const showAlert = (type, message) => {
     setAlert({ show: true, type, message });
@@ -65,180 +65,125 @@ export default function Produtos() {
 
   const validateProdutoForm = (produto) => {
     const newErrors = {};
-    if (!produto.nome.trim()) newErrors.nome = 'O nome do produto é obrigatório';
-    if (!produto.sku.trim()) newErrors.sku = 'O SKU é obrigatório';
-    else if (produtos.some((p) => p.sku === produto.sku && (!editProduto || p.id !== editProduto.id))) {
-      newErrors.sku = 'O SKU deve ser único';
+    if (!produto.nome.trim()) newErrors.nome = 'Nome obrigatório';
+    if (!produto.sku.trim()) newErrors.sku = 'SKU obrigatório';
+    else if (produtos.some(p => p.sku === produto.sku && (!editProduto || p.id !== editProduto.id))) {
+      newErrors.sku = 'SKU já existe';
     }
     if (produto.fabricacao && isNaN(new Date(produto.fabricacao))) {
-      newErrors.fabricacao = 'Data de fabricação inválida';
+      newErrors.fabricacao = 'Data inválida';
     }
     if (produto.validade && isNaN(new Date(produto.validade))) {
-      newErrors.validade = 'Data de validade inválida';
+      newErrors.validade = 'Data inválida';
     }
-    if (!produto.fornecedor_id) newErrors.fornecedor_id = 'Selecione um fornecedor';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validateEstoqueForm = (estoque) => {
     const newErrors = {};
-    if (!estoque.quantidade || isNaN(estoque.quantidade) || parseFloat(estoque.quantidade) <= 0) {
-      newErrors.quantidade = 'A quantidade deve ser um número positivo';
-    }
-    if (!estoque.preco || isNaN(estoque.preco) || parseFloat(estoque.preco) <= 0) {
-      newErrors.preco = 'O preço deve ser um número positivo';
-    }
+    const qtd = parseFloat(estoque.quantidade);
+    const preco = parseFloat(estoque.preco);
+    if (isNaN(qtd) || qtd <= 0) newErrors.quantidade = 'Quantidade inválida';
+    if (isNaN(preco) || preco <= 0) newErrors.preco = 'Preço inválido';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleAddProduto = async (e) => {
     e.preventDefault();
-    if (validateProdutoForm(novoProduto)) {
-      try {
-        // Criar o produto
-        const produtoResponse = await fetch(`${API_URL}/produtos`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nome: novoProduto.nome,
-            marca: novoProduto.marca,
-            categoria: novoProduto.categoria,
-            descricao: novoProduto.descricao,
-            sku: novoProduto.sku,
-            fabricacao: novoProduto.fabricacao || null,
-            validade: novoProduto.validade || null,
-            ativo: novoProduto.ativo,
-          }),
-        });
-        if (!produtoResponse.ok) throw new Error('Erro ao adicionar produto');
-        const newProduto = await produtoResponse.json();
+    if (!validateProdutoForm(novoProduto)) return;
 
-        // Associar fornecedor
-        const fornecedorResponse = await fetch(`${API_URL}/fornecedor_produtos`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fornecedor_id: parseInt(novoProduto.fornecedor_id),
-            produto_id: newProduto.id,
-          }),
-        });
-        if (!fornecedorResponse.ok) throw new Error('Erro ao associar fornecedor');
+    try {
+      const res = await fetch(`${API_URL}/produtos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...novoProduto,
+          fabricacao: novoProduto.fabricacao || null,
+          validade: novoProduto.validade || null,
+        }),
+      });
+      if (!res.ok) throw new Error('Falha ao criar produto');
+      const { produto: novo } = await res.json();
 
-        setProdutos([...produtos, { ...newProduto, fornecedores: [{ fornecedor_id: parseInt(novoProduto.fornecedor_id) }] }]);
-        setNovoProduto({
-          nome: '',
-          marca: '',
-          categoria: '',
-          descricao: '',
-          sku: '',
-          fabricacao: '',
-          validade: '',
-          ativo: true,
-          fornecedor_id: '',
-        });
-        setErrors({});
-        setIsAddModalOpen(false);
-        showAlert('success', 'Produto criado com sucesso! 🎉');
-      } catch (error) {
-        showAlert('error', `Erro ao adicionar produto: ${error.message}`);
-      }
+      setProdutos(prev => [...prev, novo]);
+      closeModal();
+      showAlert('success', 'Produto criado com sucesso!');
+    } catch (error) {
+      showAlert('error', error.message);
     }
   };
 
   const handleEditProduto = async (e) => {
     e.preventDefault();
-    if (validateProdutoForm(editProduto)) {
-      try {
-        // Atualizar o produto
-        const produtoResponse = await fetch(`${API_URL}/produtos/${editProduto.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nome: editProduto.nome,
-            marca: editProduto.marca,
-            categoria: editProduto.categoria,
-            descricao: editProduto.descricao,
-            sku: editProduto.sku,
-            fabricacao: editProduto.fabricacao || null,
-            validade: editProduto.validade || null,
-            ativo: editProduto.ativo,
-          }),
-        });
-        if (!produtoResponse.ok) throw new Error('Erro ao atualizar produto');
+    if (!validateProdutoForm(editProduto)) return;
 
-        // Atualizar associação com fornecedor
-        const fornecedorResponse = await fetch(`${API_URL}/fornecedor_produtos`, {
-          method: 'PUT', // Assumindo endpoint para atualizar fornecedor_produtos
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fornecedor_id: parseInt(editProduto.fornecedor_id),
-            produto_id: editProduto.id,
-          }),
-        });
-        if (!fornecedorResponse.ok) throw new Error('Erro ao atualizar fornecedor');
+    try {
+      await fetch(`${API_URL}/produtos/${editProduto.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...editProduto,
+          fabricacao: editProduto.fabricacao || null,
+          validade: editProduto.validade || null,
+        }),
+      });
 
-        setProdutos(produtos.map((p) => (p.id === editProduto.id ? { ...editProduto, fornecedores: [{ fornecedor_id: parseInt(editProduto.fornecedor_id) }] } : p)));
-        setIsModalOpen(false);
-        setEditProduto(null);
-        setErrors({});
-        showAlert('success', 'Produto atualizado com sucesso! ✅');
-      } catch (error) {
-        showAlert('error', `Erro ao atualizar produto: ${error.message}`);
-      }
+      setProdutos(prev => prev.map(p => p.id === editProduto.id ? editProduto : p));
+      closeModal();
+      showAlert('success', 'Produto atualizado!');
+    } catch (error) {
+      showAlert('error', error.message);
     }
   };
 
   const handleAddEstoque = async (e) => {
     e.preventDefault();
-    if (validateEstoqueForm(estoqueProduto)) {
-      try {
-        // Adicionar ao estoque
-        const estoqueResponse = await fetch(`${API_URL}/estoque`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            produto_id: estoqueProduto.produto_id,
-            loja_id: LOJA_ID,
-            quantidade: parseFloat(estoqueProduto.quantidade),
-          }),
-        });
-        if (!estoqueResponse.ok) throw new Error('Erro ao adicionar ao estoque');
+    if (!validateEstoqueForm(estoqueProduto)) return;
 
-        // Adicionar preço na tabela precos
-        const precoResponse = await fetch(`${API_URL}/precos`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            produto_id: estoqueProduto.produto_id,
-            loja_id: LOJA_ID,
-            preco: parseFloat(estoqueProduto.preco),
-            valido_de: new Date().toISOString(),
-          }),
-        });
-        if (!precoResponse.ok) throw new Error('Erro ao adicionar preço');
+    try {
+      const res = await fetch(`${API_URL}/estoque`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          produto_id: estoqueProduto.produto_id,
+          loja_id: lojaId,
+          quantidade: parseFloat(estoqueProduto.quantidade),
+          preco: parseFloat(estoqueProduto.preco),
+        }),
+      });
+      if (!res.ok) throw new Error('Erro ao atualizar estoque');
 
-        setEstoqueProduto({ produto_id: null, quantidade: '', preco: '' });
-        setIsEstoqueModalOpen(false);
-        showAlert('success', 'Produto adicionado ao estoque com sucesso! 📦');
-      } catch (error) {
-        showAlert('error', `Erro ao adicionar ao estoque: ${error.message}`);
-      }
+      setProdutos(prev => prev.map(p =>
+        p.id === estoqueProduto.produto_id
+          ? { ...p, estoque: [{ ...p.estoque?.[0], quantidade: parseFloat(estoqueProduto.quantidade), preco: parseFloat(estoqueProduto.preco) }] }
+          : p
+      ));
+
+      closeModal();
+      showAlert('success', 'Estoque atualizado!');
+    } catch (error) {
+      showAlert('error', error.message);
     }
   };
 
   const openEditProduto = (produto) => {
     setEditProduto({
       ...produto,
-      fornecedor_id: produto.fornecedores?.[0]?.fornecedor_id?.toString() || '',
+      fabricacao: produto.fabricacao?.split('T')[0] || '',
+      validade: produto.validade?.split('T')[0] || '',
     });
     setIsModalOpen(true);
     setErrors({});
   };
 
   const openEstoqueModal = (produto) => {
-    setEstoqueProduto({ produto_id: produto.id, quantidade: '', preco: '' });
+    setEstoqueProduto({
+      produto_id: produto.id,
+      quantidade: '',
+      preco: produto.estoque?.[0]?.preco?.toString() || '',
+    });
     setIsEstoqueModalOpen(true);
     setErrors({});
   };
@@ -250,42 +195,25 @@ export default function Produtos() {
     setEditProduto(null);
     setEstoqueProduto({ produto_id: null, quantidade: '', preco: '' });
     setNovoProduto({
-      nome: '',
-      marca: '',
-      categoria: '',
-      descricao: '',
-      sku: '',
-      fabricacao: '',
-      validade: '',
-      ativo: true,
-      fornecedor_id: '',
+      nome: '', marca: '', categoria: '', descricao: '', sku: '',
+      fabricacao: '', validade: '', ativo: true,
     });
     setErrors({});
   };
 
   const handleDeleteProduto = async (id) => {
-    if (window.confirm('Tem certeza que deseja excluir este produto?')) {
-      try {
-        const response = await fetch(`${API_URL}/produtos/${id}`, {
-          method: 'DELETE',
-        });
-        if (!response.ok) throw new Error('Erro ao excluir produto');
-        setProdutos(produtos.filter((produto) => produto.id !== id));
-        if (editProduto && editProduto.id === id) {
-          closeModal();
-        }
-        showAlert('success', 'Produto removido com sucesso! 🗑️');
-      } catch (error) {
-        showAlert('error', `Erro ao excluir produto: ${error.message}`);
-      }
+    if (!window.confirm('Excluir este produto?')) return;
+    try {
+      await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' });
+      setProdutos(prev => prev.filter(p => p.id !== id));
+      showAlert('success', 'Produto removido!');
+    } catch (error) {
+      showAlert('error', error.message);
     }
   };
 
   const handleViewProduct = (produto) => {
-    localStorage.setItem('productDetails', JSON.stringify({
-      ...produto,
-      fornecedor: fornecedores.find(f => f.id === produto.fornecedores?.[0]?.fornecedor_id)?.nome || 'Sem fornecedor',
-    }));
+    localStorage.setItem('productDetails', JSON.stringify(produto));
     router.push(`/filial/produtos/${produto.id}`);
   };
 
@@ -297,11 +225,7 @@ export default function Produtos() {
           {alert.show && (
             <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
               <Alert variant={alert.type === 'success' ? 'default' : 'destructive'}>
-                {alert.type === 'success' ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <XCircle className="h-4 w-4" />
-                )}
+                {alert.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                 <AlertTitle>{alert.type === 'success' ? 'Sucesso!' : 'Erro!'}</AlertTitle>
                 <AlertDescription>{alert.message}</AlertDescription>
               </Alert>
@@ -312,16 +236,15 @@ export default function Produtos() {
             Gerenciamento de Produtos
           </h1>
           <p className="text-sm text-[#2A4E73] mb-6 text-center max-w-2xl mx-auto">
-            Aqui você pode gerenciar todos os produtos da sua filial. Adicione novos produtos ou edite informações existentes. O preço é definido ao adicionar ao estoque.
+            Gerencie produtos e estoque da filial. Preço é definido ao adicionar ao estoque.
           </p>
 
           <div className="flex justify-end mb-4">
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-              aria-label="Abrir formulário para adicionar novo produto"
+              className="px-4 py-2 text-sm font-medium text-white bg-[#2A4E73] rounded-md hover:bg-[#AD343E] transition-colors"
             >
-              Adicionar Novo Produto
+              Adicionar Produto
             </button>
           </div>
 
@@ -329,72 +252,51 @@ export default function Produtos() {
             <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-2 text-center">
               Lista de Produtos
             </h2>
-            <p className="text-sm text-[#2A4E73] mb-4 text-center">
-              Visualize todos os produtos cadastrados, incluindo seus detalhes e status.
-            </p>
             {loading ? (
-              <div className="flex justify-center items-center py-8">
+              <div className="flex justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-[#2A4E73]" />
               </div>
             ) : produtos.length === 0 ? (
-              <p className="text-[#2A4E73] text-center py-8">Nenhum produto cadastrado.</p>
+              <p className="text-center py-8 text-[#2A4E73]">Nenhum produto cadastrado.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm sm:text-base text-[#2A4E73] border-collapse">
                   <thead>
-                    <tr className="bg-[#2A4E73] text-[#FFFFFF]">
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left rounded-tl-md">SKU</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Nome</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Marca</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Categoria</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Fornecedor</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-center rounded-tr-md">Ações</th>
+                    <tr className="bg-[#2A4E73] text-white">
+                      <th className="px-3 sm:px-4 py-3 text-left rounded-tl-md">SKU</th>
+                      <th className="px-3 sm:px-4 py-3 text-left">Nome</th>
+                      <th className="px-3 sm:px-4 py-3 text-left">Marca</th>
+                      <th className="px-3 sm:px-4 py-3 text-left">Categoria</th>
+                      <th className="px-3 sm:px-4 py-3 text-center rounded-tr-md">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {produtos.map((produto) => (
+                    {produtos.map((p) => (
                       <tr
-                        key={produto.id}
-                        className="border-b border-gray-200 hover:bg-[#CFE8F9] cursor-pointer"
-                        onClick={() => handleViewProduct(produto)}
+                        key={p.id}
+                        className="border-b hover:bg-[#CFE8F9] cursor-pointer"
+                        onClick={() => handleViewProduct(p)}
                       >
-                        <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.sku}</td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[150px] sm:max-w-[200px]">
-                          {produto.nome}
-                        </td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.marca || '-'}</td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3">{produto.categoria || '-'}</td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3">
-                          {fornecedores.find((f) => f.id === produto.fornecedores?.[0]?.fornecedor_id)?.nome || 'Sem fornecedor'}
-                        </td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3 text-center space-x-2">
+                        <td className="px-3 sm:px-4 py-3">{p.sku}</td>
+                        <td className="px-3 sm:px-4 py-3 truncate max-w-[180px]">{p.nome}</td>
+                        <td className="px-3 sm:px-4 py-3">{p.marca || '-'}</td>
+                        <td className="px-3 sm:px-4 py-3">{p.categoria || '-'}</td>
+                        <td className="px-3 sm:px-4 py-3 text-center space-x-1">
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditProduto(produto);
-                            }}
-                            className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                            aria-label={`Editar produto ${produto.nome}`}
+                            onClick={(e) => { e.stopPropagation(); openEditProduto(p); }}
+                            className="px-2 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]"
                           >
                             Editar
                           </button>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEstoqueModal(produto);
-                            }}
-                            className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                            aria-label={`Adicionar ${produto.nome} ao estoque`}
+                            onClick={(e) => { e.stopPropagation(); openEstoqueModal(p); }}
+                            className="px-2 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]"
                           >
-                            Adicionar ao Estoque
+                            Estoque
                           </button>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteProduto(produto.id);
-                            }}
-                            className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                            aria-label={`Excluir produto ${produto.nome}`}
+                            onClick={(e) => { e.stopPropagation(); handleDeleteProduto(p.id); }}
+                            className="px-2 py-1 text-xs bg-[#AD343E] text-white rounded hover:bg-[#2A4E73]"
                           >
                             Excluir
                           </button>
@@ -407,305 +309,169 @@ export default function Produtos() {
             )}
           </section>
 
+          {/* Modal Adicionar/Editar Produto */}
           {(isAddModalOpen || isModalOpen) && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-labelledby={isAddModalOpen ? "add-modal-title" : "edit-modal-title"} aria-modal="true">
-              <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-                <div className="p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 id={isAddModalOpen ? "add-modal-title" : "edit-modal-title"} className="text-lg sm:text-xl font-semibold text-[#2A4E73]">
-                      {isAddModalOpen ? 'Adicionar Novo Produto' : 'Editar Produto'}
-                    </h2>
-                    <button
-                      onClick={closeModal}
-                      className="text-[#2A4E73] hover:text-[#AD343E] text-2xl font-bold"
-                      aria-label="Fechar modal"
-                    >
-                      ×
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-[#2A4E73]">
+                    {isAddModalOpen ? 'Adicionar Produto' : 'Editar Produto'}
+                  </h2>
+                  <button onClick={closeModal} className="text-2xl text-[#2A4E73] hover:text-[#AD343E]">×</button>
+                </div>
+                <form onSubmit={isAddModalOpen ? handleAddProduto : handleEditProduto} className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Nome *</label>
+                    <input
+                      type="text"
+                      value={isAddModalOpen ? novoProduto.nome : editProduto?.nome}
+                      onChange={(e) => isAddModalOpen
+                        ? setNovoProduto({ ...novoProduto, nome: e.target.value })
+                        : setEditProduto({ ...editProduto, nome: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      placeholder="Camiseta Básica"
+                    />
+                    {errors.nome && <p className="text-[#AD343E] text-xs mt-1">{errors.nome}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">SKU *</label>
+                    <input
+                      type="text"
+                      value={isAddModalOpen ? novoProduto.sku : editProduto?.sku}
+                      onChange={(e) => isAddModalOpen
+                        ? setNovoProduto({ ...novoProduto, sku: e.target.value })
+                        : setEditProduto({ ...editProduto, sku: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      placeholder="ABC123"
+                    />
+                    {errors.sku && <p className="text-[#AD343E] text-xs mt-1">{errors.sku}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Marca</label>
+                    <input
+                      type="text"
+                      value={isAddModalOpen ? novoProduto.marca : editProduto?.marca}
+                      onChange={(e) => isAddModalOpen
+                        ? setNovoProduto({ ...novoProduto, marca: e.target.value })
+                        : setEditProduto({ ...editProduto, marca: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Categoria</label>
+                    <input
+                      type="text"
+                      value={isAddModalOpen ? novoProduto.categoria : editProduto?.categoria}
+                      onChange={(e) => isAddModalOpen
+                        ? setNovoProduto({ ...novoProduto, categoria: e.target.value })
+                        : setEditProduto({ ...editProduto, categoria: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Descrição</label>
+                    <input
+                      type="text"
+                      value={isAddModalOpen ? novoProduto.descricao : editProduto?.descricao}
+                      onChange={(e) => isAddModalOpen
+                        ? setNovoProduto({ ...novoProduto, descricao: e.target.value })
+                        : setEditProduto({ ...editProduto, descricao: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Fabricação</label>
+                    <input
+                      type="date"
+                      value={isAddModalOpen ? novoProduto.fabricacao : editProduto?.fabricacao}
+                      onChange={(e) => isAddModalOpen
+                        ? setNovoProduto({ ...novoProduto, fabricacao: e.target.value })
+                        : setEditProduto({ ...editProduto, fabricacao: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Validade</label>
+                    <input
+                      type="date"
+                      value={isAddModalOpen ? novoProduto.validade : editProduto?.validade}
+                      onChange={(e) => isAddModalOpen
+                        ? setNovoProduto({ ...novoProduto, validade: e.target.value })
+                        : setEditProduto({ ...editProduto, validade: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={isAddModalOpen ? novoProduto.ativo : editProduto?.ativo}
+                      onChange={(e) => isAddModalOpen
+                        ? setNovoProduto({ ...novoProduto, ativo: e.target.checked })
+                        : setEditProduto({ ...editProduto, ativo: e.target.checked })
+                      }
+                      className="h-4 w-4"
+                    />
+                    <label className="text-sm font-medium text-[#2A4E73]">Ativo</label>
+                  </div>
+                  <div className="flex gap-3 pt-3">
+                    <button type="submit" className="flex-1 py-2 bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]">
+                      {isAddModalOpen ? 'Adicionar' : 'Salvar'}
+                    </button>
+                    <button type="button" onClick={closeModal} className="flex-1 py-2 bg-[#AD343E] text-white rounded hover:bg-[#2A4E73]">
+                      Cancelar
                     </button>
                   </div>
-                  <form onSubmit={isAddModalOpen ? handleAddProduto : handleEditProduto} className="space-y-3">
-                    <div>
-                      <label htmlFor={isAddModalOpen ? "add-nome" : "edit-nome"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Nome do Produto *
-                      </label>
-                      <input
-                        type="text"
-                        id={isAddModalOpen ? "add-nome" : "edit-nome"}
-                        value={isAddModalOpen ? novoProduto.nome : editProduto?.nome}
-                        onChange={(e) => {
-                          if (isAddModalOpen) {
-                            setNovoProduto({ ...novoProduto, nome: e.target.value });
-                          } else {
-                            setEditProduto({ ...editProduto, nome: e.target.value });
-                          }
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: Camiseta Básica"
-                        aria-invalid={errors.nome ? 'true' : 'false'}
-                        aria-describedby={errors.nome ? (isAddModalOpen ? 'add-nome-error' : 'edit-nome-error') : undefined}
-                      />
-                      {errors.nome && <p id={isAddModalOpen ? "add-nome-error" : "edit-nome-error"} className="text-[#AD343E] text-xs mt-1">{errors.nome}</p>}
-                    </div>
-                    <div>
-                      <label htmlFor={isAddModalOpen ? "add-sku" : "edit-sku"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        SKU *
-                      </label>
-                      <input
-                        type="text"
-                        id={isAddModalOpen ? "add-sku" : "edit-sku"}
-                        value={isAddModalOpen ? novoProduto.sku : editProduto?.sku}
-                        onChange={(e) => {
-                          if (isAddModalOpen) {
-                            setNovoProduto({ ...novoProduto, sku: e.target.value });
-                          } else {
-                            setEditProduto({ ...editProduto, sku: e.target.value });
-                          }
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: ABC123"
-                        aria-invalid={errors.sku ? 'true' : 'false'}
-                        aria-describedby={errors.sku ? (isAddModalOpen ? 'add-sku-error' : 'edit-sku-error') : undefined}
-                      />
-                      {errors.sku && <p id={isAddModalOpen ? "add-sku-error" : "edit-sku-error"} className="text-[#AD343E] text-xs mt-1">{errors.sku}</p>}
-                    </div>
-                    <div>
-                      <label htmlFor={isAddModalOpen ? "add-marca" : "edit-marca"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Marca
-                      </label>
-                      <input
-                        type="text"
-                        id={isAddModalOpen ? "add-marca" : "edit-marca"}
-                        value={isAddModalOpen ? novoProduto.marca : editProduto?.marca}
-                        onChange={(e) => {
-                          if (isAddModalOpen) {
-                            setNovoProduto({ ...novoProduto, marca: e.target.value });
-                          } else {
-                            setEditProduto({ ...editProduto, marca: e.target.value });
-                          }
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: Marca X"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor={isAddModalOpen ? "add-categoria" : "edit-categoria"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Categoria
-                      </label>
-                      <input
-                        type="text"
-                        id={isAddModalOpen ? "add-categoria" : "edit-categoria"}
-                        value={isAddModalOpen ? novoProduto.categoria : editProduto?.categoria}
-                        onChange={(e) => {
-                          if (isAddModalOpen) {
-                            setNovoProduto({ ...novoProduto, categoria: e.target.value });
-                          } else {
-                            setEditProduto({ ...editProduto, categoria: e.target.value });
-                          }
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: Roupas"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor={isAddModalOpen ? "add-descricao" : "edit-descricao"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Descrição
-                      </label>
-                      <input
-                        type="text"
-                        id={isAddModalOpen ? "add-descricao" : "edit-descricao"}
-                        value={isAddModalOpen ? novoProduto.descricao : editProduto?.descricao}
-                        onChange={(e) => {
-                          if (isAddModalOpen) {
-                            setNovoProduto({ ...novoProduto, descricao: e.target.value });
-                          } else {
-                            setEditProduto({ ...editProduto, descricao: e.target.value });
-                          }
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: Camiseta de algodão"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor={isAddModalOpen ? "add-fornecedor_id" : "edit-fornecedor_id"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Fornecedor *
-                      </label>
-                      <select
-                        id={isAddModalOpen ? "add-fornecedor_id" : "edit-fornecedor_id"}
-                        value={isAddModalOpen ? novoProduto.fornecedor_id : editProduto?.fornecedor_id}
-                        onChange={(e) => {
-                          if (isAddModalOpen) {
-                            setNovoProduto({ ...novoProduto, fornecedor_id: e.target.value });
-                          } else {
-                            setEditProduto({ ...editProduto, fornecedor_id: e.target.value });
-                          }
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        aria-invalid={errors.fornecedor_id ? 'true' : 'false'}
-                        aria-describedby={errors.fornecedor_id ? (isAddModalOpen ? 'add-fornecedor_id-error' : 'edit-fornecedor_id-error') : undefined}
-                      >
-                        <option value="">Selecione um fornecedor</option>
-                        {fornecedores.map((fornecedor) => (
-                          <option key={fornecedor.id} value={fornecedor.id}>
-                            {fornecedor.nome}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.fornecedor_id && <p id={isAddModalOpen ? "add-fornecedor_id-error" : "edit-fornecedor_id-error"} className="text-[#AD343E] text-xs mt-1">{errors.fornecedor_id}</p>}
-                    </div>
-                    <div>
-                      <label htmlFor={isAddModalOpen ? "add-fabricacao" : "edit-fabricacao"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Data de Fabricação
-                      </label>
-                      <input
-                        type="date"
-                        id={isAddModalOpen ? "add-fabricacao" : "edit-fabricacao"}
-                        value={isAddModalOpen ? novoProduto.fabricacao : editProduto?.fabricacao || ''}
-                        onChange={(e) => {
-                          if (isAddModalOpen) {
-                            setNovoProduto({ ...novoProduto, fabricacao: e.target.value });
-                          } else {
-                            setEditProduto({ ...editProduto, fabricacao: e.target.value });
-                          }
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        aria-invalid={errors.fabricacao ? 'true' : 'false'}
-                        aria-describedby={errors.fabricacao ? (isAddModalOpen ? 'add-fabricacao-error' : 'edit-fabricacao-error') : undefined}
-                      />
-                      {errors.fabricacao && <p id={isAddModalOpen ? "add-fabricacao-error" : "edit-fabricacao-error"} className="text-[#AD343E] text-xs mt-1">{errors.fabricacao}</p>}
-                    </div>
-                    <div>
-                      <label htmlFor={isAddModalOpen ? "add-validade" : "edit-validade"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Data de Validade
-                      </label>
-                      <input
-                        type="date"
-                        id={isAddModalOpen ? "add-validade" : "edit-validade"}
-                        value={isAddModalOpen ? novoProduto.validade : editProduto?.validade || ''}
-                        onChange={(e) => {
-                          if (isAddModalOpen) {
-                            setNovoProduto({ ...novoProduto, validade: e.target.value });
-                          } else {
-                            setEditProduto({ ...editProduto, validade: e.target.value });
-                          }
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        aria-invalid={errors.validade ? 'true' : 'false'}
-                        aria-describedby={errors.validade ? (isAddModalOpen ? 'add-validade-error' : 'edit-validade-error') : undefined}
-                      />
-                      {errors.validade && <p id={isAddModalOpen ? "add-validade-error" : "edit-validade-error"} className="text-[#AD343E] text-xs mt-1">{errors.validade}</p>}
-                    </div>
-                    <div className="flex items-center">
-                      <label htmlFor={isAddModalOpen ? "add-ativo" : "edit-ativo"} className="block text-sm font-medium text-[#2A4E73] mr-2">
-                        Ativo
-                      </label>
-                      <input
-                        type="checkbox"
-                        id={isAddModalOpen ? "add-ativo" : "edit-ativo"}
-                        checked={isAddModalOpen ? novoProduto.ativo : editProduto?.ativo}
-                        onChange={(e) => {
-                          if (isAddModalOpen) {
-                            setNovoProduto({ ...novoProduto, ativo: e.target.checked });
-                          } else {
-                            setEditProduto({ ...editProduto, ativo: e.target.checked });
-                          }
-                        }}
-                        className="h-4 w-4 text-[#2A4E73] border-gray-300 rounded focus:ring-[#CFE8F9]"
-                        aria-label="Produto ativo"
-                      />
-                    </div>
-                    <div className="flex gap-3 pt-3">
-                      <button
-                        type="submit"
-                        className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        aria-label={isAddModalOpen ? "Adicionar produto" : "Salvar alterações"}
-                      >
-                        {isAddModalOpen ? 'Adicionar' : 'Salvar'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={closeModal}
-                        className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        aria-label="Cancelar"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  </form>
-                </div>
+                </form>
               </div>
             </div>
           )}
 
+          {/* Modal Estoque */}
           {isEstoqueModalOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-labelledby="estoque-modal-title" aria-modal="true">
-              <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-                <div className="p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 id="estoque-modal-title" className="text-lg sm:text-xl font-semibold text-[#2A4E73]">
-                      Adicionar ao Estoque
-                    </h2>
-                    <button
-                      onClick={closeModal}
-                      className="text-[#2A4E73] hover:text-[#AD343E] text-2xl font-bold"
-                      aria-label="Fechar modal"
-                    >
-                      ×
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <h2 className="text-xl font-semibold text-[#2A4E73] mb-4">Adicionar ao Estoque</h2>
+                <form onSubmit={handleAddEstoque} className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Quantidade *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={estoqueProduto.quantidade}
+                      onChange={(e) => setEstoqueProduto({ ...estoqueProduto, quantidade: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      placeholder="10"
+                    />
+                    {errors.quantidade && <p className="text-[#AD343E] text-xs mt-1">{errors.quantidade}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Preço (R$) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={estoqueProduto.preco}
+                      onChange={(e) => setEstoqueProduto({ ...estoqueProduto, preco: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      placeholder="29.99"
+                    />
+                    {errors.preco && <p className="text-[#AD343E] text-xs mt-1">{errors.preco}</p>}
+                  </div>
+                  <div className="flex gap-3 pt-3">
+                    <button type="submit" className="flex-1 py-2 bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]">
+                      Adicionar
+                    </button>
+                    <button type="button" onClick={closeModal} className="flex-1 py-2 bg-[#AD343E] text-white rounded hover:bg-[#2A4E73]">
+                      Cancelar
                     </button>
                   </div>
-                  <form onSubmit={handleAddEstoque} className="space-y-3">
-                    <div>
-                      <label htmlFor="estoque-quantidade" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Quantidade *
-                      </label>
-                      <input
-                        type="number"
-                        id="estoque-quantidade"
-                        value={estoqueProduto.quantidade}
-                        onChange={(e) => setEstoqueProduto({ ...estoqueProduto, quantidade: e.target.value })}
-                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: 100"
-                        step="0.01"
-                        aria-invalid={errors.quantidade ? 'true' : 'false'}
-                        aria-describedby={errors.quantidade ? 'estoque-quantidade-error' : undefined}
-                      />
-                      {errors.quantidade && <p id="estoque-quantidade-error" className="text-[#AD343E] text-xs mt-1">{errors.quantidade}</p>}
-                    </div>
-                    <div>
-                      <label htmlFor="estoque-preco" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Preço (R$) *
-                      </label>
-                      <input
-                        type="number"
-                        id="estoque-preco"
-                        value={estoqueProduto.preco}
-                        onChange={(e) => setEstoqueProduto({ ...estoqueProduto, preco: e.target.value })}
-                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: 29.99"
-                        step="0.01"
-                        aria-invalid={errors.preco ? 'true' : 'false'}
-                        aria-describedby={errors.preco ? 'estoque-preco-error' : undefined}
-                      />
-                      {errors.preco && <p id="estoque-preco-error" className="text-[#AD343E] text-xs mt-1">{errors.preco}</p>}
-                    </div>
-                    <div className="flex gap-3 pt-3">
-                      <button
-                        type="submit"
-                        className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        aria-label="Adicionar ao estoque"
-                      >
-                        Adicionar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={closeModal}
-                        className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        aria-label="Cancelar"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  </form>
-                </div>
+                </form>
               </div>
             </div>
           )}

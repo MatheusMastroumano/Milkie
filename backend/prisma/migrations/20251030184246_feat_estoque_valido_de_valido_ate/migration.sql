@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `estoque` ADD COLUMN `valido_ate` DATETIME(3) NULL,
+    ADD COLUMN `valido_de` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);

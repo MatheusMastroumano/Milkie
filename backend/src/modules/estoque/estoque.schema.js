@@ -7,7 +7,10 @@ const { Decimal } = pkg;
 const EstoqueSchema = z.object({
     produto_id: utils.id,
     loja_id: utils.id,
-    quantidade: z.union([z.string(), z.number()]).transform((val) => new Decimal(val)),
+    preco: z.union([z.string(), z.number()]).transform((val) => new Decimal(val)),
+    quantidade: z.number().int().positive(),
+    valido_de: utils.criadoEm,
+    valido_ate: z.coerce.date(),
 });
 
 export default EstoqueSchema;

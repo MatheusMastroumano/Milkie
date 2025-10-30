@@ -20,7 +20,6 @@ model lojas {
     ativo        Boolean        @default(true)
     criado_em    DateTime       @default(now())
     usuarios     usuarios[]
-    precos       precos[]
     estoque      estoque[]
     vendas       vendas[]
     caixa        caixa[]
@@ -37,20 +36,20 @@ enum TipoLoja {
  * acesso ao sistema ou não (inclui faxineiros, zeladores, etc)
  */
 model funcionarios {
-    id        Int        @id @default(autoincrement())
+    id        Int      @id @default(autoincrement())
     loja_id   Int
     nome      String
-    cpf       String     @unique
-    email     String     @unique
+    cpf       String   @unique
+    email     String   @unique
     telefone  String
     idade     Int
     cargo     String
-    salario   Decimal    @db.Decimal(10, 2)
-    ativo     Boolean    @default(true)
-    criado_em DateTime   @default(now())
-    
-    loja      lojas      @relation(fields: [loja_id], references: [id], onDelete: Cascade)
-    usuarios  usuarios[]
+    salario   Decimal  @db.Decimal(10, 2)
+    ativo     Boolean  @default(true)
+    criado_em DateTime @default(now())
+
+    loja     lojas      @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+    usuarios usuarios[]
 }
 
 // agora sim, só usuários com acesso ao sistema (caixa, gerente e admin)
@@ -91,25 +90,9 @@ model produtos {
     validade     DateTime
     ativo        Boolean               @default(true)
     criado_em    DateTime              @default(now())
-    precos       precos[]
     estoque      estoque[]
     venda_itens  venda_itens[]
     fornecedores fornecedor_produtos[]
-}
-
-/**
- * ---------------- // especificamente os preços dos produtos ---------------
- */
-model precos {
-    id         Int       @id @default(autoincrement())
-    produto_id Int
-    loja_id    Int?
-    preco      Decimal   @db.Decimal(10, 2)
-    valido_de  DateTime
-    valido_ate DateTime?
-
-    produto produtos @relation(fields: [produto_id], references: [id], onDelete: Cascade)
-    loja    lojas?   @relation(fields: [loja_id], references: [id], onDelete: SetNull)
 }
 
 /**
@@ -118,7 +101,10 @@ model precos {
 model estoque {
     produto_id Int
     loja_id    Int
-    quantidade Decimal @default(0) @db.Decimal(10, 2)
+    preco      Decimal   @db.Decimal(10, 2)
+    quantidade Int
+    valido_de  DateTime  @default(now())
+    valido_ate DateTime?
 
     produto produtos @relation(fields: [produto_id], references: [id], onDelete: Cascade)
     loja    lojas    @relation(fields: [loja_id], references: [id], onDelete: Cascade)
@@ -130,12 +116,12 @@ model estoque {
  * ---------------------- // fornecedores dos produtos ----------------------
  */
 model fornecedores {
-    id                  Int                   @id @default(autoincrement())
-    nome                String
-    cnpj_cpf            String                @unique
-    ativo               Boolean               @default(true)
-    criado_em           DateTime              @default(now())
-    produtos            fornecedor_produtos[]
+    id        Int                   @id @default(autoincrement())
+    nome      String
+    cnpj_cpf  String                @unique
+    ativo     Boolean               @default(true)
+    criado_em DateTime              @default(now())
+    produtos  fornecedor_produtos[]
 }
 
 /**
