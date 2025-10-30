@@ -1,311 +1,375 @@
 "use client";
 
-import { useState } from "react";
-import Header from "@/components/Header/page";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CheckCircle, XCircle, Loader2, Search } from 'lucide-react';
+import Header from '@/components/Header/page';
+import Footer from '@/components/Footer/page';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export default function Estoque() {
-  const [lojas] = useState([
-    { id: 1, nome: "Loja Centro", tipo: "Matriz", endereco: "Rua Principal, 123" },
-    { id: 2, nome: "Loja Sul", tipo: "Filial", endereco: "Av. Sul, 456" },
-    { id: 3, nome: "Loja Norte", tipo: "Filial", endereco: "Rua Norte, 789" },
-    { id: 4, nome: "Loja Oeste", tipo: "Filial", endereco: "Av. Oeste, 321" },
-  ]);
+  const router = useRouter();
+  const [lojas, setLojas] = useState([]);
+  const [produtos, setProdutos] = useState([]);
+  const [estoque, setEstoque] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [lojaId, setLojaId] = useState(null);
+  const [isMatriz, setIsMatriz] = useState(false);
 
-  const [estoque, setEstoque] = useState([
-    { produto_id: 1, loja_id: 1, nomeProduto: "Camiseta Azul", quantidade: 50, preco: 29.90 },
-    { produto_id: 2, loja_id: 1, nomeProduto: "Calça Jeans", quantidade: 20, preco: 89.90 },
-    { produto_id: 3, loja_id: 2, nomeProduto: "Tênis Branco", quantidade: 15, preco: 149.90 },
-    { produto_id: 4, loja_id: 1, nomeProduto: "Boné Preto", quantidade: 8, preco: 39.90 },
-    { produto_id: 5, loja_id: 2, nomeProduto: "Jaqueta Vermelha", quantidade: 25, preco: 119.90 },
-    { produto_id: 6, loja_id: 3, nomeProduto: "Bermuda Branca", quantidade: 12, preco: 49.90 },
-    { produto_id: 7, loja_id: 4, nomeProduto: "Vestido Floral", quantidade: 18, preco: 79.90 },
-  ]);
-
-  const [novoProduto, setNovoProduto] = useState({
-    nomeProduto: '',
+  const [novoEstoque, setNovoEstoque] = useState({
+    produto_id: '',
     quantidade: '',
     preco: '',
     loja_id: '',
   });
-
-  const [editProduto, setEditProduto] = useState(null);
+  const [editEstoque, setEditEstoque] = useState(null);
   const [selectedLojaId, setSelectedLojaId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [lojaSearchTerm, setLojaSearchTerm] = useState("");
   const [errors, setErrors] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [notification, setNotification] = useState(null);
+  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
-  // Função para mostrar notificação e fechar após 3 segundos
-  const showNotification = (message) => {
-    setNotification(message);
-    setTimeout(() => setNotification(null), 3000);
-  };
+  // Carregar usuário
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const id = user.loja_id || null;
+    const matriz = user.funcao === 'admin' || user.tipo_loja === 'matriz';
 
-  // Função para validar o formulário
-  const validateForm = (produto) => {
-    const newErrors = {};
-    if (!produto.nomeProduto.trim()) newErrors.nomeProduto = 'O nome do produto é obrigatório';
-    if (!produto.quantidade) newErrors.quantidade = 'A quantidade é obrigatória';
-    else if (produto.quantidade < 0) newErrors.quantidade = 'A quantidade deve ser maior ou igual a zero';
-    if (!produto.preco) newErrors.preco = 'O preço é obrigatório';
-    else if (produto.preco <= 0) newErrors.preco = 'O preço deve ser maior que zero';
-    if (!produto.loja_id) newErrors.loja_id = 'Selecione uma loja';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    setLojaId(id);
+    setIsMatriz(matriz);
 
-  // Função para formatar preço enquanto digita
-  const handlePrecoChange = (e, setProduto) => {
-    let value = e.target.value.replace(/[^\d,]/g, ''); // Permite apenas dígitos e vírgula
-    setProduto((prev) => ({ ...prev, preco: value }));
-  };
+    if (!matriz && id) {
+      setSelectedLojaId(id.toString());
+      setNovoEstoque(prev => ({ ...prev, loja_id: id.toString() }));
+    }
+  }, []);
 
-  // Função para adicionar produto ao estoque
-  const handleAddProduto = (e) => {
-    e.preventDefault();
-    const produto = {
-      ...novoProduto,
-      preco: parseFloat(novoProduto.preco.replace(',', '.')),
-      quantidade: parseInt(novoProduto.quantidade)
+  // Carregar lojas
+  useEffect(() => {
+    const fetchLojas = async () => {
+      try {
+        const res = await fetch(`${API_URL}/lojas`);
+        if (!res.ok) throw new Error('Falha ao carregar lojas');
+        const data = await res.json();
+        setLojas(data.lojas || []);
+      } catch (err) {
+        showAlert('error', 'Erro ao carregar lojas');
+      }
     };
-    
-    if (validateForm(produto)) {
-      const nextId = Math.max(...estoque.map(item => item.produto_id), 0) + 1;
-      setEstoque([
-        ...estoque,
-        { 
-          produto_id: nextId, 
-          ...produto, 
-          loja_id: parseInt(produto.loja_id) 
-        },
-      ]);
-      setNovoProduto({ nomeProduto: '', quantidade: '', preco: '', loja_id: '' });
-      setErrors({});
-      showNotification('Produto adicionado ao estoque com sucesso! 🎉');
+    fetchLojas();
+  }, []);
+
+  // Carregar produtos
+  useEffect(() => {
+    const fetchProdutos = async () => {
+      try {
+        const res = await fetch(`${API_URL}/produtos`);
+        if (!res.ok) throw new Error('Falha ao carregar produtos');
+        const data = await res.json();
+        setProdutos(data.produtos || []);
+      } catch (err) {
+        showAlert('error', 'Erro ao carregar produtos');
+      }
+    };
+    fetchProdutos();
+  }, []);
+
+  // Carregar estoque
+  useEffect(() => {
+    const fetchEstoque = async () => {
+      if (!selectedLojaId && !isMatriz) return;
+      try {
+        setLoading(true);
+        const url = isMatriz
+          ? `${API_URL}/estoque`
+          : `${API_URL}/estoque?loja_id=${selectedLojaId}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Falha ao carregar estoque');
+        const data = await res.json();
+        setEstoque(data.estoque || []);
+      } catch (err) {
+        showAlert('error', err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEstoque();
+  }, [selectedLojaId, isMatriz]);
+
+  const showAlert = (type, message) => {
+    setAlert({ show: true, type, message });
+    setTimeout(() => setAlert({ show: false }), 4000);
+  };
+
+  const validateForm = (item) => {
+    const err = {};
+    if (!item.produto_id) err.produto_id = 'Selecione um produto';
+    if (!item.quantidade || parseFloat(item.quantidade) <= 0) err.quantidade = 'Quantidade inválida';
+    if (!item.preco || parseFloat(item.preco) <= 0) err.preco = 'Preço inválido';
+    if (isMatriz && !item.loja_id) err.loja_id = 'Selecione uma loja';
+    setErrors(err);
+    return Object.keys(err).length === 0;
+  };
+
+  const handlePrecoChange = (e, setFn) => {
+    let value = e.target.value.replace(/[^\d,]/g, '');
+    setFn(prev => ({ ...prev, preco: value }));
+  };
+
+  const handleAddEstoque = async (e) => {
+    e.preventDefault();
+    const payload = {
+      produto_id: parseInt(novoEstoque.produto_id),
+      loja_id: isMatriz ? parseInt(novoEstoque.loja_id) : lojaId,
+      quantidade: parseFloat(novoEstoque.quantidade),
+      preco: parseFloat(novoEstoque.preco.replace(',', '.')),
+    };
+
+    if (!validateForm(payload)) return;
+
+    try {
+      const res = await fetch(`${API_URL}/estoque`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err || 'Erro ao adicionar');
+      }
+
+      const novo = await res.json();
+      setEstoque(prev => {
+        const exists = prev.find(p => p.produto_id === novo.produto_id && p.loja_id === novo.loja_id);
+        return exists
+          ? prev.map(p => p.produto_id === novo.produto_id && p.loja_id === novo.loja_id ? novo : p)
+          : [...prev, novo];
+      });
+
+      setNovoEstoque({ produto_id: '', quantidade: '', preco: '', loja_id: '' });
+      showAlert('success', 'Adicionado ao estoque!');
+    } catch (err) {
+      showAlert('error', err.message);
     }
   };
 
-  // Função para editar produto no modal
-  const handleEditProduto = (e) => {
+  const handleEditEstoque = async (e) => {
     e.preventDefault();
-    const produto = {
-      ...editProduto,
-      preco: parseFloat(editProduto.preco.replace(',', '.')),
-      quantidade: parseInt(editProduto.quantidade)
+    const payload = {
+      produto_id: editEstoque.produto_id,
+      loja_id: parseInt(editEstoque.loja_id),
+      quantidade: parseFloat(editEstoque.quantidade),
+      preco: parseFloat(editEstoque.preco.replace(',', '.')),
     };
-    
-    if (validateForm(produto)) {
-      setEstoque(
-        estoque.map((item) =>
-          item.produto_id === produto.produto_id 
-            ? { ...produto, loja_id: parseInt(produto.loja_id) } 
-            : item
-        )
-      );
-      setIsModalOpen(false);
-      setEditProduto(null);
-      setErrors({});
-      showNotification('Produto atualizado com sucesso! ✅');
+
+    if (!validateForm(payload)) return;
+
+    try {
+      const res = await fetch(`${API_URL}/estoque`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error('Erro ao atualizar');
+
+      const atualizado = await res.json();
+      setEstoque(prev => prev.map(p =>
+        p.produto_id === atualizado.produto_id && p.loja_id === atualizado.loja_id ? atualizado : p
+      ));
+
+      closeModal();
+      showAlert('success', 'Estoque atualizado!');
+    } catch (err) {
+      showAlert('error', err.message);
     }
   };
 
-  // Função para abrir modal de edição
-  const openEditProduto = (produto) => {
-    setEditProduto({ 
-      ...produto, 
-      loja_id: produto.loja_id.toString(),
-      preco: produto.preco.toString().replace('.', ',')
+  const openEdit = (item) => {
+    setEditEstoque({
+      ...item,
+      loja_id: item.loja_id.toString(),
+      preco: item.preco.replace('.', ','),
     });
     setIsModalOpen(true);
-    setErrors({});
   };
 
-  // Função para fechar modal
   const closeModal = () => {
     setIsModalOpen(false);
-    setEditProduto(null);
+    setEditEstoque(null);
     setErrors({});
   };
 
-  // Função para excluir produto
-  const handleDeleteProduto = (produto_id, loja_id) => {
-    if (window.confirm('Tem certeza que deseja excluir este produto do estoque?')) {
-      setEstoque(estoque.filter((item) => !(item.produto_id === produto_id && item.loja_id === loja_id)));
-      if (editProduto && editProduto.produto_id === produto_id && editProduto.loja_id === loja_id) {
-        closeModal();
-      }
-      showNotification('Produto removido do estoque com sucesso! 🗑️');
+  const handleDelete = async (produto_id, loja_id) => {
+    if (!confirm('Excluir do estoque?')) return;
+    try {
+      await fetch(`${API_URL}/estoque`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ produto_id, loja_id }),
+      });
+      setEstoque(prev => prev.filter(p => !(p.produto_id === produto_id && p.loja_id === loja_id)));
+      showAlert('success', 'Removido!');
+    } catch (err) {
+      showAlert('error', 'Erro ao excluir');
     }
   };
 
-  // Filtrar lojas pelo termo de busca
-  const filteredLojas = lojas.filter(loja => 
-    loja.nome.toLowerCase().includes(lojaSearchTerm.toLowerCase()) ||
-    loja.tipo.toLowerCase().includes(lojaSearchTerm.toLowerCase()) ||
-    loja.endereco.toLowerCase().includes(lojaSearchTerm.toLowerCase())
+  const filteredLojas = lojas.filter(l =>
+    l.nome.toLowerCase().includes(lojaSearchTerm.toLowerCase()) ||
+    l.tipo?.toLowerCase().includes(lojaSearchTerm.toLowerCase()) ||
+    l.endereco?.toLowerCase().includes(lojaSearchTerm.toLowerCase())
   );
 
-  // Filtra estoque da loja selecionada
-  const filteredEstoque = selectedLojaId
-    ? estoque
-        .filter((item) => item.loja_id === parseInt(selectedLojaId))
-        .filter((item) =>
-          item.nomeProduto.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-    : [];
+  const filteredEstoque = estoque
+    .filter(item => selectedLojaId ? item.loja_id === parseInt(selectedLojaId) : true)
+    .filter(item => {
+      const prod = produtos.find(p => p.id === item.produto_id);
+      return prod?.nome.toLowerCase().includes(searchTerm.toLowerCase());
+    });
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-[#FFFFFF] pt-14 sm:pt-16 transition-all duration-300">
+    <div className="flex flex-col min-h-screen">
+      <main className="flex-1 bg-[#FFFFFF] pt-14 sm:pt-16">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6">
-          {/* Título */}
+          <Header />
+          {alert.show && (
+            <Alert variant={alert.type === 'success' ? 'default' : 'destructive'} className="mb-6">
+              {alert.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+              <AlertTitle>{alert.type === 'success' ? 'Sucesso!' : 'Erro!'}</AlertTitle>
+              <AlertDescription>{alert.message}</AlertDescription>
+            </Alert>
+          )}
+
           <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-6 text-center">
             Gerenciamento de Estoque
           </h1>
 
-          {/* Formulário para Adicionar Produto ao Estoque */}
+          {/* Adicionar ao Estoque */}
           <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6 mb-8">
             <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
-              Adicionar Produto ao Estoque
+              Adicionar ao Estoque
             </h2>
-            <form onSubmit={handleAddProduto} className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-              <div className="flex-1">
-                <label htmlFor="nomeProduto" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Nome do Produto
-                </label>
-                <input
-                  type="text"
-                  id="nomeProduto"
-                  value={novoProduto.nomeProduto}
-                  onChange={(e) => setNovoProduto({ ...novoProduto, nomeProduto: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Ex.: Camiseta Azul"
-                />
-                {errors.nomeProduto && <p className="text-[#AD343E] text-sm mt-1">{errors.nomeProduto}</p>}
-              </div>
-              <div className="flex-1">
-                <label htmlFor="quantidade" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Quantidade
-                </label>
-                <input
-                  type="number"
-                  id="quantidade"
-                  min="0"
-                  value={novoProduto.quantidade}
-                  onChange={(e) => setNovoProduto({ ...novoProduto, quantidade: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Ex.: 50"
-                />
-                {errors.quantidade && <p className="text-[#AD343E] text-sm mt-1">{errors.quantidade}</p>}
-              </div>
-              <div className="flex-1">
-                <label htmlFor="preco" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Preço (R$)
-                </label>
-                <input
-                  type="text"
-                  id="preco"
-                  value={novoProduto.preco}
-                  onChange={(e) => handlePrecoChange(e, setNovoProduto)}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Ex.: 29,90"
-                />
-                {errors.preco && <p className="text-[#AD343E] text-sm mt-1">{errors.preco}</p>}
-              </div>
-              <div className="flex-1">
-                <label htmlFor="loja_id" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Loja
-                </label>
+            <form onSubmit={handleAddEstoque} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[#2A4E73] mb-1">Produto</label>
                 <select
-                  id="loja_id"
-                  value={novoProduto.loja_id}
-                  onChange={(e) => setNovoProduto({ ...novoProduto, loja_id: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                  value={novoEstoque.produto_id}
+                  onChange={(e) => setNovoEstoque({ ...novoEstoque, produto_id: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-md"
                 >
-                  <option value="">Selecione uma loja</option>
-                  {lojas.map((loja) => (
-                    <option key={loja.id} value={loja.id}>
-                      {loja.nome} ({loja.tipo})
-                    </option>
+                  <option value="">Selecione</option>
+                  {produtos.map(p => (
+                    <option key={p.id} value={p.id}>{p.nome} ({p.sku})</option>
                   ))}
                 </select>
-                {errors.loja_id && <p className="text-[#AD343E] text-sm mt-1">{errors.loja_id}</p>}
+                {errors.produto_id && <p className="text-[#AD343E] text-xs">{errors.produto_id}</p>}
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2A4E73] mb-1">Quantidade</label>
+                <input
+                  type="number"
+                  value={novoEstoque.quantidade}
+                  onChange={(e) => setNovoEstoque({ ...novoEstoque, quantidade: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="10"
+                />
+                {errors.quantidade && <p className="text-[#AD343E] text-xs">{errors.quantidade}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2A4E73] mb-1">Preço (R$)</label>
+                <input
+                  type="text"
+                  value={novoEstoque.preco}
+                  onChange={(e) => handlePrecoChange(e, setNovoEstoque)}
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="29,90"
+                />
+                {errors.preco && <p className="text-[#AD343E] text-xs">{errors.preco}</p>}
+              </div>
+
+              {isMatriz && (
+                <div>
+                  <label className="block text-sm font-medium text-[#2A4E73] mb-1">Loja</label>
+                  <select
+                    value={novoEstoque.loja_id}
+                    onChange={(e) => setNovoEstoque({ ...novoEstoque, loja_id: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value="">Selecione</option>
+                    {lojas.map(l => (
+                      <option key={l.id} value={l.id}>{l.nome}</option>
+                    ))}
+                  </select>
+                  {errors.loja_id && <p className="text-[#AD343E] text-xs">{errors.loja_id}</p>}
+                </div>
+              )}
+
               <div className="flex items-end">
-                <button
-                  type="submit"
-                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                >
+                <button type="submit" className="w-full px-4 py-2 bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]">
                   Adicionar
                 </button>
               </div>
             </form>
           </section>
 
-          {/* Seção de Consulta de Estoque */}
+          {/* Consulta de Estoque */}
           <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
             <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
               Consulta de Estoque por Loja
             </h2>
 
-            {/* Busca de Loja com Lupa */}
+            {/* Busca de Loja */}
             <div className="mb-6">
-              <label htmlFor="search-loja" className="block text-sm font-medium text-[#2A4E73] mb-2">
-                 Buscar Loja
-              </label>
+              <label className="block text-sm font-medium text-[#2A4E73] mb-2">Buscar Loja</label>
               <div className="relative">
                 <input
                   type="text"
-                  id="search-loja"
                   value={lojaSearchTerm}
                   onChange={(e) => setLojaSearchTerm(e.target.value)}
-                  className="w-full sm:w-80 px-4 py-2 pl-10 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Digite o nome, tipo ou endereço da loja..."
+                  className="w-full sm:w-80 pl-10 pr-4 py-2 border rounded-md"
+                  placeholder="Nome, tipo ou endereço..."
                 />
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#2A4E73]">
-                  
-                </div>
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#2A4E73] h-5 w-5" />
               </div>
             </div>
 
-            {/* Lista de Lojas Filtradas */}
+            {/* Lojas encontradas */}
             {lojaSearchTerm && (
-              <div className="mb-6">
-                <h3 className="text-md font-medium text-[#2A4E73] mb-3">Lojas Encontradas:</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredLojas.map((loja) => (
-                    <div
-                      key={loja.id}
-                      onClick={() => {
-                        setSelectedLojaId(loja.id.toString());
-                        setLojaSearchTerm('');
-                      }}
-                      className="p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-[#CFE8F9] hover:border-[#2A4E73] transition-colors"
-                    >
-                      <h4 className="font-semibold text-[#2A4E73]">{loja.nome}</h4>
-                      <p className="text-sm text-gray-600">{loja.tipo}</p>
-                      <p className="text-sm text-gray-500">{loja.endereco}</p>
-                    </div>
-                  ))}
-                </div>
+              <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredLojas.map(loja => (
+                  <div
+                    key={loja.id}
+                    onClick={() => {
+                      setSelectedLojaId(loja.id.toString());
+                      setLojaSearchTerm('');
+                    }}
+                    className="p-4 bg-white border rounded-lg cursor-pointer hover:bg-[#CFE8F9]"
+                  >
+                    <h4 className="font-semibold text-[#2A4E73]">{loja.nome}</h4>
+                    <p className="text-sm text-gray-600">{loja.tipo}</p>
+                    <p className="text-sm text-gray-500">{loja.endereco}</p>
+                  </div>
+                ))}
               </div>
             )}
 
             {/* Seleção de Loja */}
             <div className="mb-6">
-              <label htmlFor="select-loja" className="block text-sm font-medium text-[#2A4E73] mb-2">
-                Loja Selecionada
-              </label>
+              <label className="block text-sm font-medium text-[#2A4E73] mb-2">Loja Selecionada</label>
               <select
-                id="select-loja"
                 value={selectedLojaId}
                 onChange={(e) => setSelectedLojaId(e.target.value)}
-                className="w-full sm:w-80 px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                className="w-full sm:w-80 px-3 py-2 border rounded-md"
               >
                 <option value="">Selecione uma loja</option>
-                {lojas.map((loja) => (
+                {lojas.map(loja => (
                   <option key={loja.id} value={loja.id}>
                     {loja.nome} ({loja.tipo}) - {loja.endereco}
                   </option>
@@ -313,210 +377,107 @@ export default function Estoque() {
               </select>
             </div>
 
-            {/* Pesquisa de Produto */}
+            {/* Busca de Produto */}
             {selectedLojaId && (
               <div className="mb-6">
-                <label htmlFor="search-produto" className="block text-sm font-medium text-[#2A4E73] mb-2">
-                  Pesquisar Produto no Estoque
-                </label>
+                <label className="block text-sm font-medium text-[#2A4E73] mb-2">Pesquisar Produto</label>
                 <input
                   type="text"
-                  id="search-produto"
-                  placeholder="Digite o nome do produto..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full sm:w-96 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm sm:text-base text-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                  className="w-full sm:w-96 px-4 py-2 border rounded-md"
+                  placeholder="Digite o nome do produto..."
                 />
               </div>
             )}
 
-            {/* Notificação */}
-            {notification && (
-              <div className="w-full max-w-md mx-auto mb-4 p-4 px-4 py-2 bg-[#CFE8F9] text-[#2A4E73] rounded-md shadow-md text-sm sm:text-base font-medium text-center animate-fadeIn">
-                {notification}
+            {/* Tabela de Estoque */}
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-[#2A4E73]" />
               </div>
-            )}
-
-            {/* Estoque da Loja Selecionada */}
-            {selectedLojaId ? (
+            ) : selectedLojaId ? (
               filteredEstoque.length === 0 ? (
-                <p className="text-[#2A4E73] text-center font-medium">
-                  Nenhum produto encontrado no estoque desta loja.
-                </p>
+                <p className="text-center py-8 text-[#2A4E73]">Nenhum produto no estoque.</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm sm:text-base text-[#2A4E73] border-collapse rounded-lg shadow-md">
+                  <table className="w-full text-sm text-[#2A4E73]">
                     <thead>
-                      <tr className="bg-[#2A4E73] text-[#FFFFFF]">
-                        <th className="px-3 sm:px-4 py-3 text-left rounded-tl-lg">
-                          Código
-                        </th>
-                        <th className="px-3 sm:px-4 py-3 text-left">Produto</th>
-                        <th className="px-3 sm:px-4 py-3 text-center">Quantidade</th>
-                        <th className="px-3 sm:px-4 py-3 text-center">Preço (R$)</th>
-                        <th className="px-3 sm:px-4 py-3 text-center rounded-tr-lg">Ações</th>
+                      <tr className="bg-[#2A4E73] text-white">
+                        <th className="px-4 py-3 text-left">Código</th>
+                        <th className="px-4 py-3 text-left">Produto</th>
+                        <th className="px-4 py-3 text-center">Qtd</th>
+                        <th className="px-4 py-3 text-center">Preço</th>
+                        <th className="px-4 py-3 text-center">Ações</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredEstoque.map((item) => (
-                        <tr
-                          key={`${item.produto_id}-${item.loja_id}`}
-                          className="border-b border-gray-200 hover:bg-[#CFE8F9]"
-                        >
-                          <td className="px-3 sm:px-4 py-3">{item.produto_id}</td>
-                          <td className="px-3 sm:px-4 py-3 truncate max-w-[200px]">
-                            {item.nomeProduto}
-                          </td>
-                          <td
-                            className={`px-3 sm:px-4 py-3 text-center font-semibold ${
-                              item.quantidade < 10
-                                ? "text-[#AD343E]"
-                                : "text-[#2A4E73]"
-                            }`}
-                          >
-                            {item.quantidade}
-                          </td>
-                          <td className="px-3 sm:px-4 py-3 text-center font-medium text-[#2A4E73]">
-                            {item.preco.toFixed(2).replace('.', ',')}
-                          </td>
-                          <td className="px-3 sm:px-4 py-3 text-center space-x-2">
-                            <button
-                              onClick={() => openEditProduto(item)}
-                              className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => handleDeleteProduto(item.produto_id, item.loja_id)}
-                              className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                            >
-                              Excluir
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredEstoque.map(item => {
+                        const prod = produtos.find(p => p.id === item.produto_id);
+                        return (
+                          <tr key={`${item.produto_id}-${item.loja_id}`} className="border-b hover:bg-[#CFE8F9]">
+                            <td className="px-4 py-3">{item.produto_id}</td>
+                            <td className="px-4 py-3 truncate max-w-[200px]">{prod?.nome || 'Desconhecido'}</td>
+                            <td className={`px-4 py-3 text-center font-semibold ${item.quantidade < 10 ? 'text-[#AD343E]' : ''}`}>
+                              {item.quantidade}
+                            </td>
+                            <td className="px-4 py-3 text-center space-x-2">
+                              <button onClick={() => openEdit(item)} className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]">Editar</button>
+                              <button onClick={() => handleDelete(item.produto_id, item.loja_id)} className="px-3 py-1 text-xs bg-[#AD343E] text-white rounded hover:bg-[#2A4E73]">Excluir</button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               )
             ) : (
-              <p className="text-[#2A4E73] text-center font-medium">
-                Selecione uma loja para visualizar o estoque.
-              </p>
+              <p className="text-center py-8 text-[#2A4E73]">Selecione uma loja para ver o estoque.</p>
             )}
           </section>
 
-          {/* Modal de Edição de Produto */}
-          {isModalOpen && editProduto && (
+          {/* Modal de Edição */}
+          {isModalOpen && editEstoque && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-[#2A4E73]">Editar Produto</h2>
-                    <button
-                      onClick={closeModal}
-                      className="text-[#2A4E73] hover:text-[#AD343E] text-2xl font-bold"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <form onSubmit={handleEditProduto} className="space-y-4">
-                    <div>
-                      <label htmlFor="edit-codigo" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Código do Produto
-                      </label>
-                      <input
-                        type="text"
-                        id="edit-codigo"
-                        value={editProduto.produto_id}
-                        disabled
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] bg-gray-100 border border-gray-300 rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="edit-nomeProduto" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Nome do Produto
-                      </label>
-                      <input
-                        type="text"
-                        id="edit-nomeProduto"
-                        value={editProduto.nomeProduto}
-                        onChange={(e) => setEditProduto({ ...editProduto, nomeProduto: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: Camiseta Azul"
-                      />
-                      {errors.nomeProduto && <p className="text-[#AD343E] text-sm mt-1">{errors.nomeProduto}</p>}
-                    </div>
-                    <div>
-                      <label htmlFor="edit-quantidade" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Quantidade
-                      </label>
-                      <input
-                        type="number"
-                        id="edit-quantidade"
-                        min="0"
-                        value={editProduto.quantidade}
-                        onChange={(e) => setEditProduto({ ...editProduto, quantidade: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: 50"
-                      />
-                      {errors.quantidade && <p className="text-[#AD343E] text-sm mt-1">{errors.quantidade}</p>}
-                    </div>
-                    <div>
-                      <label htmlFor="edit-preco" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Preço (R$)
-                      </label>
-                      <input
-                        type="text"
-                        id="edit-preco"
-                        value={editProduto.preco}
-                        onChange={(e) => handlePrecoChange(e, setEditProduto)}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                        placeholder="Ex.: 29,90"
-                      />
-                      {errors.preco && <p className="text-[#AD343E] text-sm mt-1">{errors.preco}</p>}
-                    </div>
-                    <div>
-                      <label htmlFor="edit-loja_id" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                        Loja
-                      </label>
-                      <select
-                        id="edit-loja_id"
-                        value={editProduto.loja_id}
-                        onChange={(e) => setEditProduto({ ...editProduto, loja_id: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      >
-                        <option value="">Selecione uma loja</option>
-                        {lojas.map((loja) => (
-                          <option key={loja.id} value={loja.id}>
-                            {loja.nome} ({loja.tipo})
-                          </option>
-                        ))}
-                      </select>
-                      {errors.loja_id && <p className="text-[#AD343E] text-sm mt-1">{errors.loja_id}</p>}
-                    </div>
-                    <div className="flex gap-3 pt-4">
-                      <button
-                        type="submit"
-                        className="flex-1 px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      >
-                        Salvar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={closeModal}
-                        className="flex-1 px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  </form>
+              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-[#2A4E73]">Editar Estoque</h2>
+                  <button onClick={closeModal} className="text-2xl text-[#2A4E73] hover:text-[#AD343E]">×</button>
                 </div>
+                <form onSubmit={handleEditEstoque} className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Produto</label>
+                    <input type="text" value={produtos.find(p => p.id === editEstoque.produto_id)?.nome || ''} disabled className="w-full px-3 py-2 bg-gray-100 border rounded-md" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Quantidade</label>
+                    <input type="number" value={editEstoque.quantidade} onChange={(e) => setEditEstoque({ ...editEstoque, quantidade: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Preço (R$)</label>
+                    <input type="text" value={editEstoque.preco} onChange={(e) => handlePrecoChange(e, setEditEstoque)} className="w-full px-3 py-2 border rounded-md" placeholder="29,90" />
+                  </div>
+                  {isMatriz && (
+                    <div>
+                      <label className="block text-sm font-medium text-[#2A4E73] mb-1">Loja</label>
+                      <select value={editEstoque.loja_id} onChange={(e) => setEditEstoque({ ...editEstoque, loja_id: e.target.value })} className="w-full px-3 py-2 border rounded-md">
+                        <option value="">Selecione</option>
+                        {lojas.map(l => <option key={l.id} value={l.id}>{l.nome}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  <div className="flex gap-3 pt-4">
+                    <button type="submit" className="flex-1 py-2 bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]">Salvar</button>
+                    <button type="button" onClick={closeModal} className="flex-1 py-2 bg-[#AD343E] text-white rounded hover:bg-[#2A4E73]">Cancelar</button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
         </div>
       </main>
-    </>
+      <Footer />
+    </div>
   );
 }

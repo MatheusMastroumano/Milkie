@@ -14,6 +14,7 @@ export default function Produtos() {
   const [produtos, setProdutos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lojaId, setLojaId] = useState(null);
+  const [lojas, setLojas] = useState([]); // Novo: lista de lojas
   const [novoProduto, setNovoProduto] = useState({
     nome: '',
     marca: '',
@@ -25,20 +26,26 @@ export default function Produtos() {
     ativo: true,
   });
   const [editProduto, setEditProduto] = useState(null);
-  const [estoqueProduto, setEstoqueProduto] = useState({ produto_id: null, quantidade: '', preco: '' });
+  const [estoqueProduto, setEstoqueProduto] = useState({
+    produto_id: null,
+    loja_id: '',
+    quantidade: '',
+    preco: '',
+    valido_ate: '',
+  });
   const [errors, setErrors] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEstoqueModalOpen, setIsEstoqueModalOpen] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
-  // Obter loja_id dinamicamente (ex: do localStorage ou contexto)
+  // Obter loja_id do usuário
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setLojaId(user.loja_id || 1);
   }, []);
 
-  // Carregar produtos com estoque da loja atual
+  // Carregar produtos
   useEffect(() => {
     if (!lojaId) return;
 
@@ -57,6 +64,21 @@ export default function Produtos() {
     };
     fetchProdutos();
   }, [lojaId]);
+
+  // Novo: Carregar lista de lojas
+  useEffect(() => {
+    const fetchLojas = async () => {
+      try {
+        const res = await fetch(`${API_URL}/lojas`);
+        if (!res.ok) throw new Error('Erro ao carregar lojas');
+        const data = await res.json();
+        setLojas(data.lojas || data || []);
+      } catch (error) {
+        showAlert('error', 'Erro ao carregar lojas');
+      }
+    };
+    fetchLojas();
+  }, []);
 
   const showAlert = (type, message) => {
     setAlert({ show: true, type, message });
@@ -80,12 +102,17 @@ export default function Produtos() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Atualizado: validação do estoque com todos os campos
   const validateEstoqueForm = (estoque) => {
     const newErrors = {};
+    if (!estoque.loja_id) newErrors.loja_id = 'Selecione uma filial';
     const qtd = parseFloat(estoque.quantidade);
     const preco = parseFloat(estoque.preco);
     if (isNaN(qtd) || qtd <= 0) newErrors.quantidade = 'Quantidade inválida';
     if (isNaN(preco) || preco <= 0) newErrors.preco = 'Preço inválido';
+    if (estoque.valido_ate && isNaN(new Date(estoque.valido_ate))) {
+      newErrors.valido_ate = 'Data inválida';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -138,6 +165,7 @@ export default function Produtos() {
     }
   };
 
+  // Atualizado: envio com todos os campos
   const handleAddEstoque = async (e) => {
     e.preventDefault();
     if (!validateEstoqueForm(estoqueProduto)) return;
@@ -148,21 +176,27 @@ export default function Produtos() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           produto_id: estoqueProduto.produto_id,
-          loja_id: lojaId,
+          loja_id: parseInt(estoqueProduto.loja_id),
           quantidade: parseFloat(estoqueProduto.quantidade),
           preco: parseFloat(estoqueProduto.preco),
+          valido_ate: estoqueProduto.valido_ate || null,
         }),
       });
-      if (!res.ok) throw new Error('Erro ao atualizar estoque');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Erro ao atualizar estoque');
+      }
+
+      const { estoque: novoEstoque } = await res.json();
 
       setProdutos(prev => prev.map(p =>
         p.id === estoqueProduto.produto_id
-          ? { ...p, estoque: [{ ...p.estoque?.[0], quantidade: parseFloat(estoqueProduto.quantidade), preco: parseFloat(estoqueProduto.preco) }] }
+          ? { ...p, estoque: [novoEstoque] }
           : p
       ));
 
       closeModal();
-      showAlert('success', 'Estoque atualizado!');
+      showAlert('success', 'Estoque atualizado com sucesso!');
     } catch (error) {
       showAlert('error', error.message);
     }
@@ -178,11 +212,14 @@ export default function Produtos() {
     setErrors({});
   };
 
+  // Atualizado: inicializa com loja_id atual
   const openEstoqueModal = (produto) => {
     setEstoqueProduto({
       produto_id: produto.id,
+      loja_id: lojaId?.toString() || '',
       quantidade: '',
       preco: produto.estoque?.[0]?.preco?.toString() || '',
+      valido_ate: '',
     });
     setIsEstoqueModalOpen(true);
     setErrors({});
@@ -193,7 +230,13 @@ export default function Produtos() {
     setIsAddModalOpen(false);
     setIsEstoqueModalOpen(false);
     setEditProduto(null);
-    setEstoqueProduto({ produto_id: null, quantidade: '', preco: '' });
+    setEstoqueProduto({
+      produto_id: null,
+      loja_id: '',
+      quantidade: '',
+      preco: '',
+      valido_ate: '',
+    });
     setNovoProduto({
       nome: '', marca: '', categoria: '', descricao: '', sku: '',
       fabricacao: '', validade: '', ativo: true,
@@ -433,12 +476,32 @@ export default function Produtos() {
             </div>
           )}
 
-          {/* Modal Estoque */}
+          {/* Modal Estoque - Atualizado com todos os campos */}
           {isEstoqueModalOpen && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                <h2 className="text-xl font-semibold text-[#2A4E73] mb-4">Adicionar ao Estoque</h2>
+              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-[#2A4E73]">Adicionar ao Estoque</h2>
+                  <button onClick={closeModal} className="text-2xl text-[#2A4E73] hover:text-[#AD343E]">×</button>
+                </div>
                 <form onSubmit={handleAddEstoque} className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Filial *</label>
+                    <select
+                      value={estoqueProduto.loja_id}
+                      onChange={(e) => setEstoqueProduto({ ...estoqueProduto, loja_id: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                    >
+                      <option value="">Selecione uma filial</option>
+                      {lojas.map((loja) => (
+                        <option key={loja.id} value={loja.id}>
+                          {loja.nome} ({loja.cidade || loja.id})
+                        </option>
+                      ))}
+                    </select>
+                    {errors.loja_id && <p className="text-[#AD343E] text-xs mt-1">{errors.loja_id}</p>}
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-[#2A4E73] mb-1">Quantidade *</label>
                     <input
@@ -447,10 +510,11 @@ export default function Produtos() {
                       value={estoqueProduto.quantidade}
                       onChange={(e) => setEstoqueProduto({ ...estoqueProduto, quantidade: e.target.value })}
                       className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
-                      placeholder="10"
+                      placeholder="51"
                     />
                     {errors.quantidade && <p className="text-[#AD343E] text-xs mt-1">{errors.quantidade}</p>}
                   </div>
+
                   <div>
                     <label className="block text-sm font-medium text-[#2A4E73] mb-1">Preço (R$) *</label>
                     <input
@@ -459,13 +523,25 @@ export default function Produtos() {
                       value={estoqueProduto.preco}
                       onChange={(e) => setEstoqueProduto({ ...estoqueProduto, preco: e.target.value })}
                       className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
-                      placeholder="29.99"
+                      placeholder="20.99"
                     />
                     {errors.preco && <p className="text-[#AD343E] text-xs mt-1">{errors.preco}</p>}
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Válido até</label>
+                    <input
+                      type="date"
+                      value={estoqueProduto.valido_ate}
+                      onChange={(e) => setEstoqueProduto({ ...estoqueProduto, valido_ate: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                    />
+                    {errors.valido_ate && <p className="text-[#AD343E] text-xs mt-1">{errors.valido_ate}</p>}
+                  </div>
+
                   <div className="flex gap-3 pt-3">
                     <button type="submit" className="flex-1 py-2 bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]">
-                      Adicionar
+                      Adicionar ao Estoque
                     </button>
                     <button type="button" onClick={closeModal} className="flex-1 py-2 bg-[#AD343E] text-white rounded hover:bg-[#2A4E73]">
                       Cancelar
