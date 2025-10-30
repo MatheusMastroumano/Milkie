@@ -1,10 +1,8 @@
+import 'dotenv/config';
 import JWT_SECRET from '../../shared/config/jwt.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import prisma from '../../shared/config/database.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 /* ---------------------------------- LOGIN --------------------------------- */
 export async function loginController(req, res) {
