@@ -11,7 +11,6 @@ export default function Fornecedores() {
   const [novoFornecedor, setNovoFornecedor] = useState({ 
     nome: '', 
     cnpj_cpf: '', 
-    produtos_fornecidos: '', 
     ativo: true 
   });
   const [editFornecedor, setEditFornecedor] = useState(null);
@@ -38,7 +37,7 @@ export default function Fornecedores() {
     }
   };
 
-  // Validação do formulário
+  // Validação do formulário (sem produtos_fornecidos)
   const validateForm = (fornecedor, isEdit = false) => {
     const newErrors = {};
     
@@ -53,10 +52,6 @@ export default function Fornecedores() {
       if (cnpjCpfLimpo.length !== 11 && cnpjCpfLimpo.length !== 14) {
         newErrors.cnpj_cpf = 'CNPJ deve ter 14 dígitos ou CPF deve ter 11 dígitos';
       }
-    }
-
-    if (!fornecedor.produtos_fornecidos.trim()) {
-      newErrors.produtos_fornecidos = 'Produtos fornecidos é obrigatório';
     }
 
     setErrors(newErrors);
@@ -74,7 +69,6 @@ export default function Fornecedores() {
           body: JSON.stringify({
             nome: novoFornecedor.nome,
             cnpj_cpf: novoFornecedor.cnpj_cpf,
-            produtos_fornecidos: novoFornecedor.produtos_fornecidos,
             ativo: novoFornecedor.ativo,
           }),
         });
@@ -85,7 +79,7 @@ export default function Fornecedores() {
         }
 
         await fetchFornecedores();
-        setNovoFornecedor({ nome: '', cnpj_cpf: '', produtos_fornecidos: '', ativo: true });
+        setNovoFornecedor({ nome: '', cnpj_cpf: '', ativo: true });
         setErrors({});
         alert('Fornecedor adicionado com sucesso!');
       } catch (error) {
@@ -105,7 +99,6 @@ export default function Fornecedores() {
           body: JSON.stringify({
             nome: editFornecedor.nome,
             cnpj_cpf: editFornecedor.cnpj_cpf,
-            produtos_fornecidos: editFornecedor.produtos_fornecidos,
             ativo: editFornecedor.ativo,
           }),
         });
@@ -209,20 +202,7 @@ export default function Fornecedores() {
                   {errors.cnpj_cpf && <p className="text-[#AD343E] text-sm mt-1">{errors.cnpj_cpf}</p>}
                 </div>
               </div>
-              <div>
-                <label htmlFor="produtos_fornecidos" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                  Produtos Fornecidos *
-                </label>
-                <input
-                  type="text"
-                  id="produtos_fornecidos"
-                  value={novoFornecedor.produtos_fornecidos}
-                  onChange={(e) => setNovoFornecedor({ ...novoFornecedor, produtos_fornecidos: e.target.value })}
-                  className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  placeholder="Ex.: Alimentos, Bebidas, Material de limpeza"
-                />
-                {errors.produtos_fornecidos && <p className="text-[#AD343E] text-sm mt-1">{errors.produtos_fornecidos}</p>}
-              </div>
+
               <div className="flex items-center gap-4">
                 <label htmlFor="ativo" className="text-sm font-medium text-[#2A4E73]">
                   Ativo
@@ -261,7 +241,6 @@ export default function Fornecedores() {
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left rounded-tl-md">ID</th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Nome</th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">CNPJ/CPF</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Produtos Fornecidos</th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Ativo</th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-center rounded-tr-md">Ações</th>
                     </tr>
@@ -272,9 +251,6 @@ export default function Fornecedores() {
                         <td className="px-3 sm:px-4 py-2 sm:py-3">{forn.id}</td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3">{forn.nome}</td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3">{forn.cnpj_cpf}</td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[200px]">
-                          {forn.produtos_fornecidos}
-                        </td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3">{forn.ativo ? 'Sim' : 'Não'}</td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3 text-center space-x-2">
                           <button
@@ -341,16 +317,6 @@ export default function Fornecedores() {
                         className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
                       />
                       {errors.cnpj_cpf && <p className="text-[#AD343E] text-sm mt-1">{errors.cnpj_cpf}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#2A4E73] mb-1">Produtos Fornecidos *</label>
-                      <input
-                        type="text"
-                        value={editFornecedor.produtos_fornecidos}
-                        onChange={(e) => setEditFornecedor({ ...editFornecedor, produtos_fornecidos: e.target.value })}
-                        className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
-                      />
-                      {errors.produtos_fornecidos && <p className="text-[#AD343E] text-sm mt-1">{errors.produtos_fornecidos}</p>}
                     </div>
                     <div className="flex items-center gap-4">
                       <label className="text-sm font-medium text-[#2A4E73]">Ativo</label>
