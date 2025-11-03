@@ -20,7 +20,6 @@ export { default as lojasRoutes } from './lojas/index.js';
 export { default as funcionariosRoutes } from './funcionarios/index.js';
 export { default as usuariosRoutes } from './usuarios/index.js';
 export { default as produtosRoutes } from './produtos/index.js';
-export { default as precosRoutes } from './precos/index.js';
 export { default as estoqueRoutes } from './estoque/index.js';
 export { default as fornecedoresRoutes} from './fornecedores/index.js';
 export { default as fornecedorProdutosRoutes} from './fornecedor_produtos/index.js';
