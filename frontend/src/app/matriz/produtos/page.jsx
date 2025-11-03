@@ -14,7 +14,7 @@ export default function Produtos() {
   const [produtos, setProdutos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lojaId, setLojaId] = useState(null);
-  const [lojas, setLojas] = useState([]); // Novo: lista de lojas
+  const [lojas, setLojas] = useState([]);
   const [novoProduto, setNovoProduto] = useState({
     nome: '',
     marca: '',
@@ -39,13 +39,11 @@ export default function Produtos() {
   const [isEstoqueModalOpen, setIsEstoqueModalOpen] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
-  // Obter loja_id do usuário
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setLojaId(user.loja_id || 1);
   }, []);
 
-  // Carregar produtos
   useEffect(() => {
     if (!lojaId) return;
 
@@ -65,7 +63,6 @@ export default function Produtos() {
     fetchProdutos();
   }, [lojaId]);
 
-  // Novo: Carregar lista de lojas
   useEffect(() => {
     const fetchLojas = async () => {
       try {
@@ -102,7 +99,6 @@ export default function Produtos() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Atualizado: validação do estoque com todos os campos
   const validateEstoqueForm = (estoque) => {
     const newErrors = {};
     if (!estoque.loja_id) newErrors.loja_id = 'Selecione uma filial';
@@ -165,7 +161,6 @@ export default function Produtos() {
     }
   };
 
-  // Atualizado: envio com todos os campos
   const handleAddEstoque = async (e) => {
     e.preventDefault();
     if (!validateEstoqueForm(estoqueProduto)) return;
@@ -212,7 +207,6 @@ export default function Produtos() {
     setErrors({});
   };
 
-  // Atualizado: inicializa com loja_id atual
   const openEstoqueModal = (produto) => {
     setEstoqueProduto({
       produto_id: produto.id,
@@ -261,236 +255,321 @@ export default function Produtos() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <main className="flex-1 bg-[#FFFFFF] pt-14 sm:pt-16 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6">
-          <Header />
-          {alert.show && (
-            <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
-              <Alert variant={alert.type === 'success' ? 'default' : 'destructive'}>
-                {alert.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                <AlertTitle>{alert.type === 'success' ? 'Sucesso!' : 'Erro!'}</AlertTitle>
-                <AlertDescription>{alert.message}</AlertDescription>
-              </Alert>
-            </div>
-          )}
+    <main className="min-h-screen bg-[#FFFFFF] pt-14 sm:pt-16 transition-all duration-300">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6">
+        <Header />
+        {alert.show && (
+          <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+            <Alert variant={alert.type === 'success' ? 'default' : 'destructive'}>
+              {alert.type === 'success' ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : (
+                <XCircle className="h-4 w-4" />
+              )}
+              <AlertTitle>{alert.type === 'success' ? 'Sucesso!' : 'Erro!'}</AlertTitle>
+              <AlertDescription>{alert.message}</AlertDescription>
+            </Alert>
+          </div>
+        )}
 
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-4 text-center">
-            Gerenciamento de Produtos
-          </h1>
-          <p className="text-sm text-[#2A4E73] mb-6 text-center max-w-2xl mx-auto">
-            Gerencie produtos e estoque da filial. Preço é definido ao adicionar ao estoque.
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-4 text-center">
+          Gerenciamento de Produtos
+        </h1>
+        <p className="text-sm text-[#2A4E73] mb-6 text-center max-w-2xl mx-auto">
+          Gerencie produtos e estoque da filial. Preço é definido ao adicionar ao estoque.
+        </p>
+
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+            aria-label="Abrir formulário para adicionar novo produto"
+          >
+            Adicionar Produto
+          </button>
+        </div>
+
+        <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-2 text-center">
+            Lista de Produtos
+          </h2>
+          <p className="text-sm text-[#2A4E73] mb-4 text-center">
+            Visualize todos os produtos cadastrados, incluindo SKU, nome, marca e categoria.
           </p>
 
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-[#2A4E73] rounded-md hover:bg-[#AD343E] transition-colors"
-            >
-              Adicionar Produto
-            </button>
-          </div>
-
-          <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-2 text-center">
-              Lista de Produtos
-            </h2>
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-[#2A4E73]" />
-              </div>
-            ) : produtos.length === 0 ? (
-              <p className="text-center py-8 text-[#2A4E73]">Nenhum produto cadastrado.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm sm:text-base text-[#2A4E73] border-collapse">
-                  <thead>
-                    <tr className="bg-[#2A4E73] text-white">
-                      <th className="px-3 sm:px-4 py-3 text-left rounded-tl-md">SKU</th>
-                      <th className="px-3 sm:px-4 py-3 text-left">Nome</th>
-                      <th className="px-3 sm:px-4 py-3 text-left">Marca</th>
-                      <th className="px-3 sm:px-4 py-3 text-left">Categoria</th>
-                      <th className="px-3 sm:px-4 py-3 text-center rounded-tr-md">Ações</th>
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-[#2A4E73]" />
+            </div>
+          ) : produtos.length === 0 ? (
+            <p className="text-[#2A4E73] text-center py-8">Nenhum produto cadastrado.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm sm:text-base text-[#2A4E73] border-collapse">
+                <thead>
+                  <tr className="bg-[#2A4E73] text-[#FFFFFF]">
+                    <th className="px-3 sm:px-4 py-2 sm:py-3 text-left rounded-tl-md">SKU</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Nome</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Marca</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Categoria</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-3 text-center rounded-tr-md">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {produtos.map((p) => (
+                    <tr
+                      key={p.id}
+                      className="border-b border-gray-200 hover:bg-[#CFE8F9] cursor-pointer"
+                      onClick={() => handleViewProduct(p)}
+                    >
+                      <td className="px-3 sm:px-4 py-2 sm:py-3">{p.sku}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[180px]">{p.nome}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-3">{p.marca || '-'}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-3">{p.categoria || '-'}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-3 text-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => openEditProduto(p)}
+                          className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                          aria-label={`Editar produto ${p.nome}`}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => openEstoqueModal(p)}
+                          className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                          aria-label={`Adicionar ao estoque do produto ${p.nome}`}
+                        >
+                          Estoque
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduto(p.id)}
+                          className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                          aria-label={`Excluir produto ${p.nome}`}
+                        >
+                          Excluir
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {produtos.map((p) => (
-                      <tr
-                        key={p.id}
-                        className="border-b hover:bg-[#CFE8F9] cursor-pointer"
-                        onClick={() => handleViewProduct(p)}
-                      >
-                        <td className="px-3 sm:px-4 py-3">{p.sku}</td>
-                        <td className="px-3 sm:px-4 py-3 truncate max-w-[180px]">{p.nome}</td>
-                        <td className="px-3 sm:px-4 py-3">{p.marca || '-'}</td>
-                        <td className="px-3 sm:px-4 py-3">{p.categoria || '-'}</td>
-                        <td className="px-3 sm:px-4 py-3 text-center space-x-1">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); openEditProduto(p); }}
-                            className="px-2 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); openEstoqueModal(p); }}
-                            className="px-2 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]"
-                          >
-                            Estoque
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteProduto(p.id); }}
-                            className="px-2 py-1 text-xs bg-[#AD343E] text-white rounded hover:bg-[#2A4E73]"
-                          >
-                            Excluir
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
-          {/* Modal Adicionar/Editar Produto */}
-          {(isAddModalOpen || isModalOpen) && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-[#2A4E73]">
+        {/* Modal Adicionar/Editar Produto */}
+        {(isAddModalOpen || isModalOpen) && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-labelledby={isAddModalOpen ? "add-produto-title" : "edit-produto-title"} aria-modal="true">
+            <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 id={isAddModalOpen ? "add-produto-title" : "edit-produto-title"} className="text-lg font-semibold text-[#2A4E73]">
                     {isAddModalOpen ? 'Adicionar Produto' : 'Editar Produto'}
                   </h2>
-                  <button onClick={closeModal} className="text-2xl text-[#2A4E73] hover:text-[#AD343E]">×</button>
+                  <button
+                    onClick={closeModal}
+                    className="text-[#2A4E73] hover:text-[#AD343E] text-2xl font-bold"
+                    aria-label="Fechar modal"
+                  >
+                    ×
+                  </button>
                 </div>
                 <form onSubmit={isAddModalOpen ? handleAddProduto : handleEditProduto} className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Nome *</label>
+                    <label htmlFor={isAddModalOpen ? "add-nome" : "edit-nome"} className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      Nome *
+                    </label>
                     <input
+                      id={isAddModalOpen ? "add-nome" : "edit-nome"}
                       type="text"
                       value={isAddModalOpen ? novoProduto.nome : editProduto?.nome}
                       onChange={(e) => isAddModalOpen
                         ? setNovoProduto({ ...novoProduto, nome: e.target.value })
                         : setEditProduto({ ...editProduto, nome: e.target.value })
                       }
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                       placeholder="Camiseta Básica"
+                      aria-invalid={errors.nome ? 'true' : 'false'}
+                      aria-describedby={errors.nome ? (isAddModalOpen ? 'add-nome-error' : 'edit-nome-error') : undefined}
                     />
-                    {errors.nome && <p className="text-[#AD343E] text-xs mt-1">{errors.nome}</p>}
+                    {errors.nome && (
+                      <p id={isAddModalOpen ? "add-nome-error" : "edit-nome-error"} className="text-[#AD343E] text-xs mt-1">{errors.nome}</p>
+                    )}
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">SKU *</label>
+                    <label htmlFor={isAddModalOpen ? "add-sku" : "edit-sku"} className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      SKU *
+                    </label>
                     <input
+                      id={isAddModalOpen ? "add-sku" : "edit-sku"}
                       type="text"
                       value={isAddModalOpen ? novoProduto.sku : editProduto?.sku}
                       onChange={(e) => isAddModalOpen
                         ? setNovoProduto({ ...novoProduto, sku: e.target.value })
                         : setEditProduto({ ...editProduto, sku: e.target.value })
                       }
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                       placeholder="ABC123"
+                      aria-invalid={errors.sku ? 'true' : 'false'}
+                      aria-describedby={errors.sku ? (isAddModalOpen ? 'add-sku-error' : 'edit-sku-error') : undefined}
                     />
-                    {errors.sku && <p className="text-[#AD343E] text-xs mt-1">{errors.sku}</p>}
+                    {errors.sku && (
+                      <p id={isAddModalOpen ? "add-sku-error" : "edit-sku-error"} className="text-[#AD343E] text-xs mt-1">{errors.sku}</p>
+                    )}
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Marca</label>
+                    <label htmlFor={isAddModalOpen ? "add-marca" : "edit-marca"} className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      Marca
+                    </label>
                     <input
+                      id={isAddModalOpen ? "add-marca" : "edit-marca"}
                       type="text"
                       value={isAddModalOpen ? novoProduto.marca : editProduto?.marca}
                       onChange={(e) => isAddModalOpen
                         ? setNovoProduto({ ...novoProduto, marca: e.target.value })
                         : setEditProduto({ ...editProduto, marca: e.target.value })
                       }
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Categoria</label>
+                    <label htmlFor={isAddModalOpen ? "add-categoria" : "edit-categoria"} className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      Categoria
+                    </label>
                     <input
+                      id={isAddModalOpen ? "add-categoria" : "edit-categoria"}
                       type="text"
                       value={isAddModalOpen ? novoProduto.categoria : editProduto?.categoria}
                       onChange={(e) => isAddModalOpen
                         ? setNovoProduto({ ...novoProduto, categoria: e.target.value })
                         : setEditProduto({ ...editProduto, categoria: e.target.value })
                       }
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Descrição</label>
+                    <label htmlFor={isAddModalOpen ? "add-descricao" : "edit-descricao"} className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      Descrição
+                    </label>
                     <input
+                      id={isAddModalOpen ? "add-descricao" : "edit-descricao"}
                       type="text"
                       value={isAddModalOpen ? novoProduto.descricao : editProduto?.descricao}
                       onChange={(e) => isAddModalOpen
                         ? setNovoProduto({ ...novoProduto, descricao: e.target.value })
                         : setEditProduto({ ...editProduto, descricao: e.target.value })
                       }
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Fabricação</label>
+                    <label htmlFor={isAddModalOpen ? "add-fabricacao" : "edit-fabricacao"} className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      Fabricação
+                    </label>
                     <input
+                      id={isAddModalOpen ? "add-fabricacao" : "edit-fabricacao"}
                       type="date"
                       value={isAddModalOpen ? novoProduto.fabricacao : editProduto?.fabricacao}
                       onChange={(e) => isAddModalOpen
                         ? setNovoProduto({ ...novoProduto, fabricacao: e.target.value })
                         : setEditProduto({ ...editProduto, fabricacao: e.target.value })
                       }
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Validade</label>
+                    <label htmlFor={isAddModalOpen ? "add-validade" : "edit-validade"} className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      Validade
+                    </label>
                     <input
+                      id={isAddModalOpen ? "add-validade" : "edit-validade"}
                       type="date"
                       value={isAddModalOpen ? novoProduto.validade : editProduto?.validade}
                       onChange={(e) => isAddModalOpen
                         ? setNovoProduto({ ...novoProduto, validade: e.target.value })
                         : setEditProduto({ ...editProduto, validade: e.target.value })
                       }
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={isAddModalOpen ? novoProduto.ativo : editProduto?.ativo}
-                      onChange={(e) => isAddModalOpen
-                        ? setNovoProduto({ ...novoProduto, ativo: e.target.checked })
-                        : setEditProduto({ ...editProduto, ativo: e.target.checked })
-                      }
-                      className="h-4 w-4"
-                    />
-                    <label className="text-sm font-medium text-[#2A4E73]">Ativo</label>
-                  </div>
+
+                  {isModalOpen && (
+                    <div>
+                      <label className="flex items-center text-sm font-medium text-[#2A4E73]">
+                        <input
+                          type="checkbox"
+                          checked={editProduto?.ativo}
+                          onChange={(e) => setEditProduto({ ...editProduto, ativo: e.target.checked })}
+                          className="mr-2 h-4 w-4 text-[#2A4E73] focus:ring-[#CFE8F9]"
+                          aria-label="Produto ativo"
+                        />
+                        Produto Ativo
+                      </label>
+                    </div>
+                  )}
+
                   <div className="flex gap-3 pt-3">
-                    <button type="submit" className="flex-1 py-2 bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]">
-                      {isAddModalOpen ? 'Adicionar' : 'Salvar'}
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      disabled={loading}
+                      aria-label={isAddModalOpen ? "Adicionar produto" : "Salvar alterações"}
+                    >
+                      {loading ? (
+                        <Loader2 className="h-4 w-4 animate-spin inline-block" />
+                      ) : (
+                        isAddModalOpen ? 'Adicionar' : 'Salvar'
+                      )}
                     </button>
-                    <button type="button" onClick={closeModal} className="flex-1 py-2 bg-[#AD343E] text-white rounded hover:bg-[#2A4E73]">
+                    <button
+                      onClick={closeModal}
+                      className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      aria-label="Cancelar"
+                    >
                       Cancelar
                     </button>
                   </div>
                 </form>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Modal Estoque - Atualizado com todos os campos */}
-          {isEstoqueModalOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-[#2A4E73]">Adicionar ao Estoque</h2>
-                  <button onClick={closeModal} className="text-2xl text-[#2A4E73] hover:text-[#AD343E]">×</button>
+        {/* Modal Estoque */}
+        {isEstoqueModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-labelledby="estoque-modal-title" aria-modal="true">
+            <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 id="estoque-modal-title" className="text-lg font-semibold text-[#2A4E73]">
+                    Adicionar ao Estoque
+                  </h2>
+                  <button
+                    onClick={closeModal}
+                    className="text-[#2A4E73] hover:text-[#AD343E] text-2xl font-bold"
+                    aria-label="Fechar modal"
+                  >
+                    ×
+                  </button>
                 </div>
                 <form onSubmit={handleAddEstoque} className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Filial *</label>
+                    <label htmlFor="estoque-loja" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      Filial *
+                    </label>
                     <select
+                      id="estoque-loja"
                       value={estoqueProduto.loja_id}
                       onChange={(e) => setEstoqueProduto({ ...estoqueProduto, loja_id: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      aria-invalid={errors.loja_id ? 'true' : 'false'}
+                      aria-describedby={errors.loja_id ? 'estoque-loja-error' : undefined}
                     >
                       <option value="">Selecione uma filial</option>
                       {lojas.map((loja) => (
@@ -499,61 +578,87 @@ export default function Produtos() {
                         </option>
                       ))}
                     </select>
-                    {errors.loja_id && <p className="text-[#AD343E] text-xs mt-1">{errors.loja_id}</p>}
+                    {errors.loja_id && (
+                      <p id="estoque-loja-error" className="text-[#AD343E] text-xs mt-1">{errors.loja_id}</p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Quantidade *</label>
+                    <label htmlFor="estoque-quantidade" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      Quantidade *
+                    </label>
                     <input
+                      id="estoque-quantidade"
                       type="number"
                       step="0.01"
                       value={estoqueProduto.quantidade}
                       onChange={(e) => setEstoqueProduto({ ...estoqueProduto, quantidade: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                       placeholder="51"
+                      aria-invalid={errors.quantidade ? 'true' : 'false'}
+                      aria-describedby={errors.quantidade ? 'estoque-quantidade-error' : undefined}
                     />
-                    {errors.quantidade && <p className="text-[#AD343E] text-xs mt-1">{errors.quantidade}</p>}
+                    {errors.quantidade && (
+                      <p id="estoque-quantidade-error" className="text-[#AD343E] text-xs mt-1">{errors.quantidade}</p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Preço (R$) *</label>
+                    <label htmlFor="estoque-preco" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      Preço (R$) *
+                    </label>
                     <input
+                      id="estoque-preco"
                       type="number"
                       step="0.01"
                       value={estoqueProduto.preco}
                       onChange={(e) => setEstoqueProduto({ ...estoqueProduto, preco: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                       placeholder="20.99"
+                      aria-invalid={errors.preco ? 'true' : 'false'}
+                      aria-describedby={errors.preco ? 'estoque-preco-error' : undefined}
                     />
-                    {errors.preco && <p className="text-[#AD343E] text-xs mt-1">{errors.preco}</p>}
+                    {errors.preco && (
+                      <p id="estoque-preco-error" className="text-[#AD343E] text-xs mtparameter-1">{errors.preco}</p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Válido até</label>
+                    <label htmlFor="estoque-validade" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      Válido até
+                    </label>
                     <input
+                      id="estoque-validade"
                       type="date"
                       value={estoqueProduto.valido_ate}
                       onChange={(e) => setEstoqueProduto({ ...estoqueProduto, valido_ate: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                     />
-                    {errors.valido_ate && <p className="text-[#AD343E] text-xs mt-1">{errors.valido_ate}</p>}
                   </div>
 
                   <div className="flex gap-3 pt-3">
-                    <button type="submit" className="flex-1 py-2 bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]">
-                      Adicionar ao Estoque
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      disabled={loading}
+                    >
+                      {loading ? <Loader2 className="h-4 w-4 animate-spin inline-block" /> : 'Adicionar ao Estoque'}
                     </button>
-                    <button type="button" onClick={closeModal} className="flex-1 py-2 bg-[#AD343E] text-white rounded hover:bg-[#2A4E73]">
+                    <button
+                      onClick={closeModal}
+                      className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                    >
                       Cancelar
                     </button>
                   </div>
                 </form>
               </div>
             </div>
-          )}
-        </div>
-      </main>
+          </div>
+        )}
+      </div>
+      <br /><br /><br /><br /><br /><br /><br />
       <Footer />
-    </div>
+    </main>
   );
 }

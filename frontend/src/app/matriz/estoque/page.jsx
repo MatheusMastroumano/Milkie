@@ -1,9 +1,10 @@
+// app/estoque/page.jsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, XCircle, Loader2, Search } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Header from '@/components/Header/page';
 import Footer from '@/components/Footer/page';
 
@@ -22,6 +23,7 @@ export default function Estoque() {
     produto_id: '',
     quantidade: '',
     preco: '',
+    valido_ate: '',
     loja_id: '',
   });
   const [editEstoque, setEditEstoque] = useState(null);
@@ -30,6 +32,7 @@ export default function Estoque() {
   const [lojaSearchTerm, setLojaSearchTerm] = useState("");
   const [errors, setErrors] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
   // Carregar usuário
@@ -104,28 +107,31 @@ export default function Estoque() {
     setTimeout(() => setAlert({ show: false }), 4000);
   };
 
+  // Validação simples (igual ao de produtos)
   const validateForm = (item) => {
     const err = {};
     if (!item.produto_id) err.produto_id = 'Selecione um produto';
     if (!item.quantidade || parseFloat(item.quantidade) <= 0) err.quantidade = 'Quantidade inválida';
-    if (!item.preco || parseFloat(item.preco) <= 0) err.preco = 'Preço inválido';
+    
+    const precoNum = parseFloat(item.preco);
+    if (isNaN(precoNum) || precoNum <= 0) err.preco = 'Preço inválido';
+
     if (isMatriz && !item.loja_id) err.loja_id = 'Selecione uma loja';
+
     setErrors(err);
     return Object.keys(err).length === 0;
   };
 
-  const handlePrecoChange = (e, setFn) => {
-    let value = e.target.value.replace(/[^\d,]/g, '');
-    setFn(prev => ({ ...prev, preco: value }));
-  };
-
+  // POST: igual ao de produtos
   const handleAddEstoque = async (e) => {
     e.preventDefault();
+
     const payload = {
       produto_id: parseInt(novoEstoque.produto_id),
       loja_id: isMatriz ? parseInt(novoEstoque.loja_id) : lojaId,
       quantidade: parseFloat(novoEstoque.quantidade),
-      preco: parseFloat(novoEstoque.preco.replace(',', '.')),
+      preco: parseFloat(novoEstoque.preco),
+      valido_ate: novoEstoque.valido_ate || null,
     };
 
     if (!validateForm(payload)) return;
@@ -138,8 +144,8 @@ export default function Estoque() {
       });
 
       if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err || 'Erro ao adicionar');
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Erro ao adicionar ao estoque');
       }
 
       const novo = await res.json();
@@ -150,7 +156,9 @@ export default function Estoque() {
           : [...prev, novo];
       });
 
-      setNovoEstoque({ produto_id: '', quantidade: '', preco: '', loja_id: '' });
+      setNovoEstoque({ produto_id: '', quantidade: '', preco: '', loja_id: '', valido_ate: '' });
+      setErrors({});
+      setIsAddModalOpen(false);
       showAlert('success', 'Adicionado ao estoque!');
     } catch (err) {
       showAlert('error', err.message);
@@ -159,11 +167,13 @@ export default function Estoque() {
 
   const handleEditEstoque = async (e) => {
     e.preventDefault();
+
     const payload = {
       produto_id: editEstoque.produto_id,
       loja_id: parseInt(editEstoque.loja_id),
       quantidade: parseFloat(editEstoque.quantidade),
-      preco: parseFloat(editEstoque.preco.replace(',', '.')),
+      preco: parseFloat(editEstoque.preco),
+      valido_ate: editEstoque.valido_ate || null,
     };
 
     if (!validateForm(payload)) return;
@@ -182,7 +192,9 @@ export default function Estoque() {
         p.produto_id === atualizado.produto_id && p.loja_id === atualizado.loja_id ? atualizado : p
       ));
 
-      closeModal();
+      setIsModalOpen(false);
+      setEditEstoque(null);
+      setErrors({});
       showAlert('success', 'Estoque atualizado!');
     } catch (err) {
       showAlert('error', err.message);
@@ -193,19 +205,23 @@ export default function Estoque() {
     setEditEstoque({
       ...item,
       loja_id: item.loja_id.toString(),
-      preco: item.preco.replace('.', ','),
+      preco: item.preco.toString(),
+      valido_ate: item.valido_ate ? item.valido_ate.split('T')[0] : '',
     });
     setIsModalOpen(true);
+    setErrors({});
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setIsAddModalOpen(false);
     setEditEstoque(null);
+    setNovoEstoque({ produto_id: '', quantidade: '', preco: '', loja_id: '', valido_ate: '' });
     setErrors({});
   };
 
   const handleDelete = async (produto_id, loja_id) => {
-    if (!confirm('Excluir do estoque?')) return;
+    if (!window.confirm('Excluir do estoque?')) return;
     try {
       await fetch(`${API_URL}/estoque`, {
         method: 'DELETE',
@@ -233,251 +249,299 @@ export default function Estoque() {
     });
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <main className="flex-1 bg-[#FFFFFF] pt-14 sm:pt-16">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6">
-          <Header />
-          {alert.show && (
-            <Alert variant={alert.type === 'success' ? 'default' : 'destructive'} className="mb-6">
-              {alert.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+    <main className="min-h-screen bg-[#FFFFFF] pt-14 sm:pt-16 transition-all duration-300">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6">
+        <Header />
+        {alert.show && (
+          <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+            <Alert variant={alert.type === 'success' ? 'default' : 'destructive'}>
+              {alert.type === 'success' ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : (
+                <XCircle className="h-4 w-4" />
+              )}
               <AlertTitle>{alert.type === 'success' ? 'Sucesso!' : 'Erro!'}</AlertTitle>
               <AlertDescription>{alert.message}</AlertDescription>
             </Alert>
+          </div>
+        )}
+
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-4 text-center">
+          Gerenciamento de Estoque
+        </h1>
+
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => {
+              setIsAddModalOpen(true);
+              setNovoEstoque(prev => ({ ...prev, loja_id: selectedLojaId }));
+            }}
+            className="px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+          >
+            Adicionar Item ao Estoque
+          </button>
+        </div>
+
+        <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-2 text-center">
+            Lista de Itens no Estoque
+          </h2>
+
+          {/* Busca Loja */}
+          <div className="mb-6">
+            <label htmlFor="search-loja" className="block text-sm font-medium text-[#2A4E73] mb-2">
+              Buscar Loja
+            </label>
+            <input
+              type="text"
+              id="search-loja"
+              value={lojaSearchTerm}
+              onChange={(e) => setLojaSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+              placeholder="Nome, tipo ou endereço..."
+            />
+          </div>
+
+          {lojaSearchTerm && (
+            <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredLojas.map(loja => (
+                <div
+                  key={loja.id}
+                  onClick={() => {
+                    setSelectedLojaId(loja.id.toString());
+                    setLojaSearchTerm('');
+                  }}
+                  className="p-4 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-[#CFE8F9] transition-colors"
+                >
+                  <h4 className="font-semibold text-[#2A4E73]">{loja.nome}</h4>
+                  <p className="text-sm text-gray-600 capitalize">{loja.tipo}</p>
+                  <p className="text-sm text-gray-500">{loja.endereco}</p>
+                </div>
+              ))}
+            </div>
           )}
 
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-6 text-center">
-            Gerenciamento de Estoque
-          </h1>
+          {/* Seleção de Loja */}
+          <div className="mb-6">
+            <label htmlFor="select-loja" className="block text-sm font-medium text-[#2A4E73] mb-2">
+              Loja Selecionada
+            </label>
+            <select
+              id="select-loja"
+              value={selectedLojaId}
+              onChange={(e) => setSelectedLojaId(e.target.value)}
+              className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+            >
+              <option value="">Selecione uma loja</option>
+              {lojas.map(loja => (
+                <option key={loja.id} value={loja.id}>
+                  {loja.nome} ({loja.tipo})
+                </option>
+              ))}
+            </select>
+          </div>
 
-          {/* Adicionar ao Estoque */}
-          <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6 mb-8">
-            <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
-              Adicionar ao Estoque
-            </h2>
-            <form onSubmit={handleAddEstoque} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-[#2A4E73] mb-1">Produto</label>
-                <select
-                  value={novoEstoque.produto_id}
-                  onChange={(e) => setNovoEstoque({ ...novoEstoque, produto_id: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md"
-                >
-                  <option value="">Selecione</option>
-                  {produtos.map(p => (
-                    <option key={p.id} value={p.id}>{p.nome} ({p.sku})</option>
-                  ))}
-                </select>
-                {errors.produto_id && <p className="text-[#AD343E] text-xs">{errors.produto_id}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#2A4E73] mb-1">Quantidade</label>
-                <input
-                  type="number"
-                  value={novoEstoque.quantidade}
-                  onChange={(e) => setNovoEstoque({ ...novoEstoque, quantidade: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md"
-                  placeholder="10"
-                />
-                {errors.quantidade && <p className="text-[#AD343E] text-xs">{errors.quantidade}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#2A4E73] mb-1">Preço (R$)</label>
-                <input
-                  type="text"
-                  value={novoEstoque.preco}
-                  onChange={(e) => handlePrecoChange(e, setNovoEstoque)}
-                  className="w-full px-3 py-2 border rounded-md"
-                  placeholder="29,90"
-                />
-                {errors.preco && <p className="text-[#AD343E] text-xs">{errors.preco}</p>}
-              </div>
-
-              {isMatriz && (
-                <div>
-                  <label className="block text-sm font-medium text-[#2A4E73] mb-1">Loja</label>
-                  <select
-                    value={novoEstoque.loja_id}
-                    onChange={(e) => setNovoEstoque({ ...novoEstoque, loja_id: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-md"
-                  >
-                    <option value="">Selecione</option>
-                    {lojas.map(l => (
-                      <option key={l.id} value={l.id}>{l.nome}</option>
-                    ))}
-                  </select>
-                  {errors.loja_id && <p className="text-[#AD343E] text-xs">{errors.loja_id}</p>}
-                </div>
-              )}
-
-              <div className="flex items-end">
-                <button type="submit" className="w-full px-4 py-2 bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]">
-                  Adicionar
-                </button>
-              </div>
-            </form>
-          </section>
-
-          {/* Consulta de Estoque */}
-          <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
-              Consulta de Estoque por Loja
-            </h2>
-
-            {/* Busca de Loja */}
+          {/* Busca Produto */}
+          {selectedLojaId && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-[#2A4E73] mb-2">Buscar Loja</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={lojaSearchTerm}
-                  onChange={(e) => setLojaSearchTerm(e.target.value)}
-                  className="w-full sm:w-80 pl-10 pr-4 py-2 border rounded-md"
-                  placeholder="Nome, tipo ou endereço..."
-                />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#2A4E73] h-5 w-5" />
-              </div>
+              <label htmlFor="search-produto" className="block text-sm font-medium text-[#2A4E73] mb-2">
+                Buscar Produto
+              </label>
+              <input
+                type="text"
+                id="search-produto"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                placeholder="Nome do produto..."
+              />
             </div>
+          )}
 
-            {/* Lojas encontradas */}
-            {lojaSearchTerm && (
-              <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredLojas.map(loja => (
-                  <div
-                    key={loja.id}
-                    onClick={() => {
-                      setSelectedLojaId(loja.id.toString());
-                      setLojaSearchTerm('');
-                    }}
-                    className="p-4 bg-white border rounded-lg cursor-pointer hover:bg-[#CFE8F9]"
-                  >
-                    <h4 className="font-semibold text-[#2A4E73]">{loja.nome}</h4>
-                    <p className="text-sm text-gray-600">{loja.tipo}</p>
-                    <p className="text-sm text-gray-500">{loja.endereco}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Seleção de Loja */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-[#2A4E73] mb-2">Loja Selecionada</label>
-              <select
-                value={selectedLojaId}
-                onChange={(e) => setSelectedLojaId(e.target.value)}
-                className="w-full sm:w-80 px-3 py-2 border rounded-md"
-              >
-                <option value="">Selecione uma loja</option>
-                {lojas.map(loja => (
-                  <option key={loja.id} value={loja.id}>
-                    {loja.nome} ({loja.tipo}) - {loja.endereco}
-                  </option>
-                ))}
-              </select>
+          {/* Tabela */}
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-[#2A4E73]" />
             </div>
-
-            {/* Busca de Produto */}
-            {selectedLojaId && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-[#2A4E73] mb-2">Pesquisar Produto</label>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full sm:w-96 px-4 py-2 border rounded-md"
-                  placeholder="Digite o nome do produto..."
-                />
-              </div>
-            )}
-
-            {/* Tabela de Estoque */}
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-[#2A4E73]" />
-              </div>
-            ) : selectedLojaId ? (
-              filteredEstoque.length === 0 ? (
-                <p className="text-center py-8 text-[#2A4E73]">Nenhum produto no estoque.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-[#2A4E73]">
-                    <thead>
-                      <tr className="bg-[#2A4E73] text-white">
-                        <th className="px-4 py-3 text-left">Código</th>
-                        <th className="px-4 py-3 text-left">Produto</th>
-                        <th className="px-4 py-3 text-center">Qtd</th>
-                        <th className="px-4 py-3 text-center">Preço</th>
-                        <th className="px-4 py-3 text-center">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredEstoque.map(item => {
-                        const prod = produtos.find(p => p.id === item.produto_id);
-                        return (
-                          <tr key={`${item.produto_id}-${item.loja_id}`} className="border-b hover:bg-[#CFE8F9]">
-                            <td className="px-4 py-3">{item.produto_id}</td>
-                            <td className="px-4 py-3 truncate max-w-[200px]">{prod?.nome || 'Desconhecido'}</td>
-                            <td className={`px-4 py-3 text-center font-semibold ${item.quantidade < 10 ? 'text-[#AD343E]' : ''}`}>
-                              {item.quantidade}
-                            </td>
-                            <td className="px-4 py-3 text-center space-x-2">
-                              <button onClick={() => openEdit(item)} className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]">Editar</button>
-                              <button onClick={() => handleDelete(item.produto_id, item.loja_id)} className="px-3 py-1 text-xs bg-[#AD343E] text-white rounded hover:bg-[#2A4E73]">Excluir</button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )
+          ) : selectedLojaId ? (
+            filteredEstoque.length === 0 ? (
+              <p className="text-[#2A4E73] text-center py-8">Nenhum produto no estoque dessa loja.</p>
             ) : (
-              <p className="text-center py-8 text-[#2A4E73]">Selecione uma loja para ver o estoque.</p>
-            )}
-          </section>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm sm:text-base text-[#2A4E73] border-collapse">
+                  <thead>
+                    <tr className="bg-[#2A4E73] text-[#FFFFFF]">
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left rounded-tl-md">Código</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Produto</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-center">Qtd</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-center">Preço</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-center rounded-tr-md">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEstoque.map(item => {
+                      const prod = produtos.find(p => p.id === item.produto_id);
+                      return (
+                        <tr key={`${item.produto_id}-${item.loja_id}`} className="border-b border-gray-200 hover:bg-[#CFE8F9]">
+                          <td className="px-3 sm:px-4 py-2 sm:py-3">{item.produto_id}</td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[200px]">{prod?.nome || 'Desconhecido'}</td>
+                          <td className={`px-3 sm:px-4 py-2 sm:py-3 text-center font-semibold ${item.quantidade < 10 ? 'text-[#AD343E]' : ''}`}>
+                            {item.quantidade}
+                          </td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3 text-center">
+                            R$ {parseFloat(item.preco).toFixed(2).replace('.', ',')}
+                          </td>
+                          <td className="px-3 sm:px-4 py-2 sm:py-3 text-center space-x-2">
+                            <button
+                              onClick={() => openEdit(item)}
+                              className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => handleDelete(item.produto_id, item.loja_id)}
+                              className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                            >
+                              Excluir
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )
+          ) : (
+            <p className="text-[#2A4E73] text-center py-8">Selecione uma loja para visualizar o estoque.</p>
+          )}
+        </section>
 
-          {/* Modal de Edição */}
-          {isModalOpen && editEstoque && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-[#2A4E73]">Editar Estoque</h2>
-                  <button onClick={closeModal} className="text-2xl text-[#2A4E73] hover:text-[#AD343E]">×</button>
+        {/* MODAIS */}
+        {(isAddModalOpen || isModalOpen) && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-[#2A4E73]">
+                    {isAddModalOpen ? 'Adicionar Item ao Estoque' : 'Editar Item do Estoque'}
+                  </h2>
+                  <button onClick={closeModal} className="text-[#2A4E73] hover:text-[#AD343E] text-2xl font-bold">×</button>
                 </div>
-                <form onSubmit={handleEditEstoque} className="space-y-3">
+                <form onSubmit={isAddModalOpen ? handleAddEstoque : handleEditEstoque} className="space-y-3">
+
+                  {/* Produto */}
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Produto</label>
-                    <input type="text" value={produtos.find(p => p.id === editEstoque.produto_id)?.nome || ''} disabled className="w-full px-3 py-2 bg-gray-100 border rounded-md" />
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Produto *</label>
+                    <select
+                      value={isAddModalOpen ? novoEstoque.produto_id : editEstoque?.produto_id || ''}
+                      onChange={(e) => {
+                        const setFn = isAddModalOpen ? setNovoEstoque : setEditEstoque;
+                        setFn(prev => ({ ...prev, produto_id: e.target.value }));
+                      }}
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                    >
+                      <option value="">Selecione um produto</option>
+                      {produtos.map(prod => (
+                        <option key={prod.id} value={prod.id}>{prod.nome}</option>
+                      ))}
+                    </select>
+                    {errors.produto_id && <p className="text-[#AD343E] text-xs mt-1">{errors.produto_id}</p>}
                   </div>
+
+                  {/* Quantidade */}
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Quantidade</label>
-                    <input type="number" value={editEstoque.quantidade} onChange={(e) => setEditEstoque({ ...editEstoque, quantidade: e.target.value })} className="w-full px-3 py-2 border rounded-md" />
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Quantidade *</label>
+                    <input
+                      type="number"
+                      value={isAddModalOpen ? novoEstoque.quantidade : editEstoque?.quantidade || ''}
+                      onChange={(e) => {
+                        const setFn = isAddModalOpen ? setNovoEstoque : setEditEstoque;
+                        setFn(prev => ({ ...prev, quantidade: e.target.value }));
+                      }}
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      min="1"
+                      placeholder="50"
+                    />
+                    {errors.quantidade && <p className="text-[#AD343E] text-xs mt-1">{errors.quantidade}</p>}
                   </div>
+
+                  {/* PREÇO: IGUAL AO DE PRODUTOS */}
                   <div>
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Preço (R$)</label>
-                    <input type="text" value={editEstoque.preco} onChange={(e) => handlePrecoChange(e, setEditEstoque)} className="w-full px-3 py-2 border rounded-md" placeholder="29,90" />
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Preço (R$) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={isAddModalOpen ? novoEstoque.preco : editEstoque?.preco || ''}
+                      onChange={(e) => {
+                        const setFn = isAddModalOpen ? setNovoEstoque : setEditEstoque;
+                        setFn(prev => ({ ...prev, preco: e.target.value }));
+                      }}
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      placeholder="19.99"
+                      min="0"
+                    />
+                    {errors.preco && <p className="text-[#AD343E] text-xs mt-1">{errors.preco}</p>}
                   </div>
-                  {isMatriz && (
+
+                  {/* Validade */}
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Válido até</label>
+                    <input
+                      type="date"
+                      value={isAddModalOpen ? novoEstoque.valido_ate : editEstoque?.valido_ate || ''}
+                      onChange={(e) => {
+                        const setFn = isAddModalOpen ? setNovoEstoque : setEditEstoque;
+                        setFn(prev => ({ ...prev, valido_ate: e.target.value }));
+                      }}
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                    />
+                  </div>
+
+                  {/* Loja (somente matriz) */}
+                  {(isMatriz || isAddModalOpen) && (
                     <div>
-                      <label className="block text-sm font-medium text-[#2A4E73] mb-1">Loja</label>
-                      <select value={editEstoque.loja_id} onChange={(e) => setEditEstoque({ ...editEstoque, loja_id: e.target.value })} className="w-full px-3 py-2 border rounded-md">
-                        <option value="">Selecione</option>
-                        {lojas.map(l => <option key={l.id} value={l.id}>{l.nome}</option>)}
+                      <label className="block text-sm font-medium text-[#2A4E73] mb-1">Loja *</label>
+                      <select
+                        value={isAddModalOpen ? novoEstoque.loja_id : editEstoque?.loja_id || ''}
+                        onChange={(e) => {
+                          const setFn = isAddModalOpen ? setNovoEstoque : setEditEstoque;
+                          setFn(prev => ({ ...prev, loja_id: e.target.value }));
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      >
+                        <option value="">Selecione uma loja</option>
+                        {lojas.map(loja => (
+                          <option key={loja.id} value={loja.id}>{loja.nome} ({loja.tipo})</option>
+                        ))}
                       </select>
+                      {errors.loja_id && <p className="text-[#AD343E] text-xs mt-1">{errors.loja_id}</p>}
                     </div>
                   )}
-                  <div className="flex gap-3 pt-4">
-                    <button type="submit" className="flex-1 py-2 bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]">Salvar</button>
-                    <button type="button" onClick={closeModal} className="flex-1 py-2 bg-[#AD343E] text-white rounded hover:bg-[#2A4E73]">Cancelar</button>
+
+                  <div className="flex gap-3 pt-3">
+                    <button
+                      type="submit"
+                      className="flex-1 py-2 bg-[#2A4E73] text-white rounded hover:bg-[#AD343E] transition-colors"
+                      disabled={loading}
+                    >
+                      {loading ? <Loader2 className="h-4 w-4 animate-spin inline-block" /> : (isAddModalOpen ? 'Adicionar' : 'Salvar')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="flex-1 py-2 bg-[#AD343E] text-white rounded hover:bg-[#2A4E73] transition-colors"
+                    >
+                      Cancelar
+                    </button>
                   </div>
                 </form>
               </div>
             </div>
-          )}
-        </div>
-      </main>
+          </div>
+        )}
+      </div>
       <Footer />
-    </div>
+    </main>
   );
 }
