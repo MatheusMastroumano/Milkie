@@ -15,6 +15,24 @@ export async function getEstoque() {
     }
 }
 
+/* ------------------------------ BUSCAR POR LOJA ------------------------------ */
+export async function getEstoqueByLoja(loja_id) {
+    try {
+        return await prisma.estoque.findMany({
+            where: {
+                loja_id: loja_id
+            },
+            include: {
+                produto: true,
+                loja: true
+            }
+        });
+    } catch (err) {
+        console.error('error: ', err);
+        throw new Error(err.message);
+    }
+}
+
 /* ------------------------------ BUSCAR POT ID ----------------------------- */
 export async function getEstoqueById(produto_id, loja_id) {
     try {
@@ -58,7 +76,7 @@ export async function createEstoque(data) {
 export async function updateEstoque(produto_id, loja_id, data) {
     const { quantidade } = data;
 
-    if (quantidade < 0) {
+    if (quantidade !== undefined && quantidade < 0) {
         throw new Error('Quantidade inválida.');
     }
 
@@ -71,7 +89,9 @@ export async function updateEstoque(produto_id, loja_id, data) {
                 },
             },
             data: {
-                quantidade,
+                quantidade: data.quantidade !== undefined ? data.quantidade : undefined,
+                preco: data.preco !== undefined ? data.preco : undefined,
+                valido_ate: data.valido_ate !== undefined ? data.valido_ate : undefined,
             },
         });
     } catch (err) {

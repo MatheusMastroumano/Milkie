@@ -3,7 +3,15 @@ import * as estoqueService from './estoque.service.js';
 /* ------------------------------ BUSCAR TODOS ----------------------------- */
 export async function getEstoqueController(req, res) {
     try {
-        const estoque = await estoqueService.getEstoque();
+        const { loja_id } = req.query;
+        
+        let estoque;
+        if (loja_id) {
+            estoque = await estoqueService.getEstoqueByLoja(parseInt(loja_id));
+        } else {
+            estoque = await estoqueService.getEstoque();
+        }
+        
         res.status(200).json({ estoque });
     } catch (err) {
         console.error('Erro ao listar estoque: ', err.message);
@@ -32,9 +40,9 @@ export async function getEstoqueByIdController(req, res) {
 /* ------------------------------- CRIAR ------------------------------- */
 export async function createEstoqueController(req, res) {
     try {
-        const { produto_id, preco ,loja_id, quantidade, valido_ate } = req.body;
+        const { produto_id, preco, loja_id, quantidade, valido_ate } = req.body;
 
-        const estoqueData = { produto_id, preco ,loja_id, quantidade, valido_ate };
+        const estoqueData = { produto_id, preco, loja_id, quantidade, valido_ate };
 
         const estoque = await estoqueService.createEstoque(estoqueData);
 
@@ -51,7 +59,7 @@ export async function updateEstoqueController(req, res) {
         const { produtoId, lojaId } = req.params;
         const { quantidade, preco, valido_ate } = req.body;
 
-        const estoqueAtualizado = await estoqueService.updateEstoque(produtoId, lojaId, { quantidade , preco, valido_ate});
+        const estoqueAtualizado = await estoqueService.updateEstoque(produtoId, lojaId, { quantidade, preco, valido_ate });
 
         if (!estoqueAtualizado) {
             return res.status(404).json({ mensagem: 'Estoque não encontrado' });
