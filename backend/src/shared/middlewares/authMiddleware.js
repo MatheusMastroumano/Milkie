@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import JWT_SECRET from '../config/jwt.js';
 
-export default function auth(req, res, next) {
+export default function authMiddleware(req, res, next) {
     const token = req.cookies?.token;
 
     if (!token) return res.status(401).json({ authenticated: false, erro: 'Token não encontrado' });

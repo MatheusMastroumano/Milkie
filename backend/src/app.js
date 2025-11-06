@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import auth from './shared/middlewares/auth.js';
+import authMiddleware from './shared/middlewares/authMiddleware.js';
 
 /* -------------------------------------------------------------------------- */
 /*                         Configurações iniciais                             */
@@ -33,7 +33,7 @@ app.use(cookieParser());
     fazer esse middleware funcionar com diferentes acessos pra cada usuário
     (admin, gerente e caixa)
 
-    app.use(auth);
+    app.use(authMiddleware);
 */
 
 app.use(cors({
