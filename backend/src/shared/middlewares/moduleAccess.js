@@ -3,7 +3,7 @@ import MODULE_PERMISSIONS from "../config/permissions.js";
 
 export default function moduleAccess(moduleName) {
   return (req, res, next) => {
-    const role = req.user?.role;
+    const role = req.user?.funcao;
 
     if (!role) return res.status(401).json({ error: "Usuário não autenticado" });
 
