@@ -24,11 +24,13 @@ export default function Pagamento() {
                     setItens(parsed.itens || []);
                     const total = (parsed.total != null) ? parsed.total : (parsed.itens || []).reduce((t, i) => t + i.preco * i.quantidade, 0);
                     setValorTotal(total);
+                    if (parsed.loja_id) setLojaId(parsed.loja_id);
+                    if (parsed.usuario_id) setUsuarioId(parsed.usuario_id);
                 }
                 
                 const user = JSON.parse(localStorage.getItem('user') || '{}');
-                setLojaId(user.loja_id || 1);
-                setUsuarioId(user.id || 1);
+                setLojaId(prev => (prev != null ? prev : (user.loja_id != null ? user.loja_id : 1)));
+                setUsuarioId(prev => (prev != null ? prev : (user.id != null ? user.id : 1)));
             } catch (_) {}
         }
     }, []);
@@ -52,10 +54,9 @@ export default function Pagamento() {
             return;
         }
         
-        if (!lojaId || !usuarioId) {
-            alert('Erro: Loja ou usuário não identificado.');
-            return;
-        }
+        // Forçar constantes para teste (sem auth)
+        const lojaConst = lojaId || 1;
+        const usuarioConst = usuarioId || 1;
         
         if (itens.length === 0) {
             alert('Carrinho vazio. Adicione itens antes de finalizar.');
@@ -75,68 +76,37 @@ export default function Pagamento() {
             
             const metodoBackend = metodoMap[metodoPagamento] || 'dinheiro';
             
-            // Criar a venda
-            const vendaResponse = await fetch(`${API_URL}/vendas`, {
+            // Finalizar venda (transação com baixa de estoque)
+            const finalizarResp = await fetch(`${API_URL}/vendas/finalizar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    loja_id: lojaId,
-                    usuario_id: usuarioId,
+                    loja_id: lojaConst,
+                    usuario_id: usuarioConst,
+                    itens: itens.map(i => ({
+                        produto_id: Number(i.id),
+                        quantidade: Number(i.quantidade),
+                        preco: Number(i.preco),
+                    })),
                     comprador_cpf: null,
-                    valor_total: valorTotal
+                    metodo_pagamento: metodoBackend,
                 })
             });
-            
-            if (!vendaResponse.ok) {
-                const error = await vendaResponse.json();
-                throw new Error(error.mensagem || 'Erro ao criar venda');
+
+            if (!finalizarResp.ok) {
+                const textoErro = await finalizarResp.text();
+                let mensagem = 'Erro ao finalizar venda';
+                try {
+                    const parsed = JSON.parse(textoErro);
+                    mensagem = parsed.mensagem || mensagem;
+                } catch (_) {
+                    if (textoErro) mensagem = textoErro;
+                }
+                throw new Error(mensagem);
             }
-            
-            const vendaData = await vendaResponse.json();
-            const vendaId = vendaData.venda.id;
-            
-            // Criar os itens da venda
-            const itensPromises = itens.map(item => {
-                const subtotal = parseFloat(item.preco) * parseFloat(item.quantidade);
-                return fetch(`${API_URL}/venda-itens`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        venda_id: vendaId,
-                        produto_id: parseInt(item.id),
-                        quantidade: parseFloat(item.quantidade),
-                        preco_unitario: parseFloat(item.preco),
-                        subtotal: subtotal
-                    })
-                }).then(r => {
-                    if (!r.ok) {
-                        return r.json().then(err => { throw new Error(err.mensagem || 'Erro ao criar item'); });
-                    }
-                    return r.json();
-                });
-            });
-            
-            const itensResults = await Promise.all(itensPromises);
-            console.log('Itens criados:', itensResults);
-            
-            // Criar o pagamento
-            const pagamentoResponse = await fetch(`${API_URL}/venda-pagamentos`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    venda_id: vendaId,
-                    metodo: metodoBackend,
-                    valor: parseFloat(valorTotal)
-                })
-            });
-            
-            if (!pagamentoResponse.ok) {
-                const error = await pagamentoResponse.json();
-                throw new Error(error.mensagem || 'Erro ao criar pagamento');
-            }
-            
-            const pagamentoData = await pagamentoResponse.json();
-            console.log('Pagamento criado:', pagamentoData);
+
+            const finalizarData = await finalizarResp.json();
+            console.log('Venda finalizada:', finalizarData);
             
             // Limpar carrinho
             if (typeof window !== 'undefined') {

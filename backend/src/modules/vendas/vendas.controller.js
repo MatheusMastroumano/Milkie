@@ -83,3 +83,20 @@ export async function removeVendasController(req, res) {
         res.status(500).json({ mensagem: 'Erro ao remover venda', erro: err.message });
     }
 }
+
+/* ------------------------------- FINALIZAR ------------------------------- */
+export async function finalizarVendaController(req, res) {
+    try {
+        const { loja_id, usuario_id, itens, comprador_cpf, metodo_pagamento } = req.body;
+
+        if (!loja_id || !usuario_id) {
+            return res.status(400).json({ mensagem: 'loja_id e usuario_id são obrigatórios' });
+        }
+
+        const resultado = await vendasService.finalizarVenda({ loja_id, usuario_id, itens, comprador_cpf, metodo_pagamento });
+        return res.status(201).json(resultado);
+    } catch (err) {
+        console.error('Erro ao finalizar venda: ', err.message);
+        res.status(400).json({ mensagem: err.message });
+    }
+}

@@ -22,6 +22,7 @@ import {
 
     authRotas
 } from './modules/index.js';
+import { finalizarVendaController } from './modules/vendas/vendas.controller.js';
 
 /* -------------------------------------------------------------------------- */
 /*                               Middlewares                                  */
@@ -63,6 +64,7 @@ app.use('/produtos', produtosRoutes);
 app.use('/estoque', estoqueRoutes);
 app.use('/fornecedores', fornecedoresRoutes);
 app.use('/fornecedor-produtos', fornecedorProdutosRoutes);
+app.post('/vendas/finalizar', finalizarVendaController);
 app.use('/vendas', vendasRoutes);
 app.use('/venda-itens', vendaItensRoutes);
 app.use('/venda-pagamentos', vendaPagamentosRoutes);

@@ -1,25 +1,70 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function PDVAutoAtendimento() {
     const router = useRouter();
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-    const produtos = [
-        { id: 1, nome: 'Queijo', descricao: 'Queijo Minas', img: "/queijo.jpg", preco: 10.99 },
-        { id: 2, nome: 'Leite', descricao: 'Leite Integral', img: "/leite.jpeg", preco: 19.99 },
-    ];
-
+    const [lojaId, setLojaId] = useState(null);
+    const [usuarioId, setUsuarioId] = useState(null);
+    const [produtos, setProdutos] = useState([]);
+    const [carregando, setCarregando] = useState(false);
+    const [erro, setErro] = useState("");
     const [listaCompras, setListaCompras] = useState([]);
     const [termoBusca, setTermoBusca] = useState("");
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            setLojaId(user.loja_id || 1);
+            setUsuarioId(user.id || 1);
+        } catch (_) {
+            setLojaId(1);
+            setUsuarioId(1);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!lojaId) return;
+        const carregar = async () => {
+            try {
+                setCarregando(true);
+                const resp = await fetch(`${API_URL}/estoque?loja_id=${lojaId}`);
+                if (!resp.ok) throw new Error('Falha ao carregar estoque');
+                const data = await resp.json();
+                const lista = (data.estoque || []).map((e) => ({
+                    id: e.produto_id,
+                    nome: e.produto?.nome || `Produto ${e.produto_id}`,
+                    descricao: e.produto?.descricao || '',
+                    img: "/produto.png",
+                    preco: Number(e.preco),
+                    quantidade: Number(e.quantidade || 0),
+                }));
+                setProdutos(lista);
+            } catch (e) {
+                setErro(e.message);
+            } finally {
+                setCarregando(false);
+            }
+        };
+        carregar();
+    }, [API_URL, lojaId]);
 
     const produtosFiltrados = produtos.filter(p =>
         p.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
         p.descricao.toLowerCase().includes(termoBusca.toLowerCase())
-    );
+    ).filter(p => (p.quantidade ?? 0) > 0);
 
     const adicionarProduto = (produto) => {
         const existente = listaCompras.find((i) => i.id === produto.id);
+        const estoqueDisp = produto.quantidade ?? 0;
+        const novaQtd = (existente?.quantidade || 0) + 1;
+        if (novaQtd > estoqueDisp) {
+            alert(`Estoque insuficiente. Disponível: ${estoqueDisp}`);
+            return;
+        }
         if (existente) {
             setListaCompras(listaCompras.map((i) => (i.id === produto.id ? { ...i, quantidade: i.quantidade + 1 } : i)));
         } else {
@@ -36,6 +81,12 @@ export default function PDVAutoAtendimento() {
 
     const atualizarQuantidadeCarrinho = (id, novaQuantidade) => {
         if (novaQuantidade <= 0) return removerProduto(id);
+        const produto = produtos.find((p) => p.id === id);
+        const estoqueDisp = produto?.quantidade ?? Infinity;
+        if (novaQuantidade > estoqueDisp) {
+            alert(`Estoque insuficiente. Disponível: ${estoqueDisp}`);
+            return;
+        }
         setListaCompras(listaCompras.map((i) => (i.id === id ? { ...i, quantidade: novaQuantidade } : i)));
     };
 
@@ -48,7 +99,12 @@ export default function PDVAutoAtendimento() {
         }
         
         try {
-            const payload = { itens: listaCompras, total: valorTotal };
+            const payload = {
+                itens: listaCompras,
+                total: valorTotal,
+                loja_id: lojaId || 1,
+                usuario_id: usuarioId || 1,
+            };
             if (typeof window !== 'undefined') {
                 localStorage.setItem('pdv_cart', JSON.stringify(payload));
             }
@@ -176,6 +232,8 @@ export default function PDVAutoAtendimento() {
                                 
                                 {/* Grade de produtos */}
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                                    {carregando && <div className="col-span-full text-center text-sm text-gray-600">Carregando estoque...</div>}
+                                    {erro && <div className="col-span-full text-center text-sm text-red-600">{erro}</div>}
                                     {produtosFiltrados.map((produto) => (
                                         <button
                                             key={produto.id}
@@ -203,6 +261,7 @@ export default function PDVAutoAtendimento() {
                                             <div className="truncate text-sm font-semibold text-[#2A4E73] mb-1">{produto.nome}</div>
                                             <div className="text-xs text-gray-600 truncate mb-2">{produto.descricao}</div>
                                             <div className="text-sm font-bold text-[#2A4E73]">R$ {produto.preco.toFixed(2)}</div>
+                                            <div className="text-[10px] text-gray-500 mt-1">Disp.: {produto.quantidade}</div>
                                         </button>
                                     ))}
                                 </div>

@@ -10,6 +10,7 @@ const router = express.Router();
 router.get('/', vendasController.getVendasController);
 router.get('/:id', vendasController.getVendasByIdController);
 router.post('/', validate(vendasSchema), vendasController.createVendasController);
+router.post('/finalizar', vendasController.finalizarVendaController);
 router.put('/:id', validate(vendasSchema.partial()), vendasController.updateVendasController);
 router.delete('/:id', vendasController.removeVendasController);
 

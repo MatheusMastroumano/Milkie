@@ -1,14 +1,48 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function PDVManual() {
     const router = useRouter();
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-    const produtos = [
-        { id: 1, nome: 'Queijo', descricao: 'Queijo Minas', img: "/queijo.jpg", preco: 10.99 },
-        { id: 2, nome: 'Leite', descricao: 'Leite Integral', img: "/leite.jpeg", preco: 19.99 }
-    ];
+    const [lojaId, setLojaId] = useState(null);
+    const [usuarioId, setUsuarioId] = useState(null);
+    const [produtos, setProdutos] = useState([]);
+    const [carregando, setCarregando] = useState(false);
+    const [erro, setErro] = useState("");
+
+    // Forçando loja_id = 2 e usuario_id = 1
+    useEffect(() => {
+        setLojaId(2);
+        setUsuarioId(1);
+    }, []);
+
+    useEffect(() => {
+        if (!lojaId) return;
+        const carregar = async () => {
+            try {
+                setCarregando(true);
+                const resp = await fetch(`${API_URL}/estoque?loja_id=${lojaId}`);
+                if (!resp.ok) throw new Error('Falha ao carregar estoque');
+                const data = await resp.json();
+                const lista = (data.estoque || []).map((e) => ({
+                    id: e.produto_id,
+                    nome: e.produto?.nome || `Produto ${e.produto_id}`,
+                    descricao: e.produto?.descricao || '',
+                    img: "/produto.png",
+                    preco: Number(e.preco),
+                    quantidade: Number(e.quantidade || 0),
+                }));
+                setProdutos(lista);
+            } catch (e) {
+                setErro(e.message);
+            } finally {
+                setCarregando(false);
+            }
+        };
+        carregar();
+    }, [API_URL, lojaId]);
 
     const [quantidades, setQuantidades] = useState({});
     const [listaCompras, setListaCompras] = useState([]);
@@ -25,6 +59,12 @@ export default function PDVManual() {
     const adicionarProduto = (produto) => {
         const quantidade = parseInt(String(quantidades[produto.id])) || 1;
         const existente = listaCompras.find((i) => i.id === produto.id);
+        const estoqueDisp = produto.quantidade ?? 0;
+        const novaQtd = (existente?.quantidade || 0) + quantidade;
+        if (novaQtd > estoqueDisp) {
+            alert(`Estoque insuficiente. Disponível: ${estoqueDisp}`);
+            return;
+        }
         if (existente) {
             setListaCompras(listaCompras.map((i) => (i.id === produto.id ? { ...i, quantidade: i.quantidade + quantidade } : i)));
         } else {
@@ -44,6 +84,12 @@ export default function PDVManual() {
 
     const atualizarQuantidadeCarrinho = (id, novaQuantidade) => {
         if (novaQuantidade <= 0) return removerProduto(id);
+        const prod = produtos.find(p => p.id === id);
+        const estoqueDisp = prod?.quantidade ?? Infinity;
+        if (novaQuantidade > estoqueDisp) {
+            alert(`Estoque insuficiente. Disponível: ${estoqueDisp}`);
+            return;
+        }
         setListaCompras(listaCompras.map((i) => (i.id === id ? { ...i, quantidade: novaQuantidade } : i)));
     };
 
@@ -177,7 +223,12 @@ export default function PDVManual() {
                                         <button
                                             onClick={() => {
                                                 try {
-                                                    const payload = { itens: listaCompras, total: valorTotal };
+                                                    const payload = {
+                                                        itens: listaCompras,
+                                                        total: valorTotal,
+                                                        loja_id: lojaId || 2,
+                                                        usuario_id: usuarioId || 1,
+                                                    };
                                                     if (typeof window !== 'undefined') {
                                                         localStorage.setItem('pdv_cart', JSON.stringify(payload));
                                                     }
@@ -219,7 +270,9 @@ export default function PDVManual() {
                             <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 min-h-[680px]">
                                 {/* Grade de produtos */}
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                                    {produtosFiltrados.map((produto) => (
+                                    {carregando && <div className="col-span-full text-center text-sm text-gray-600">Carregando estoque...</div>}
+                                    {erro && <div className="col-span-full text-center text-sm text-red-600">{erro}</div>}
+                                    {produtosFiltrados.filter(p => (p.quantidade ?? 0) > 0).map((produto) => (
                                         <button
                                             key={produto.id}
                                             onClick={() => adicionarProduto(produto)}
@@ -230,6 +283,7 @@ export default function PDVManual() {
                                             </div>
                                             <div className="mt-2 truncate text-sm font-semibold text-[#2A4E73]">{produto.nome}</div>
                                             <div className="text-xs text-gray-600 truncate">R$ {produto.preco.toFixed(2)}/Unidade</div>
+                                            <div className="mt-1 text-[10px] text-gray-500">Disp.: {produto.quantidade}</div>
                                         </button>
                                     ))}
                                 </div>
