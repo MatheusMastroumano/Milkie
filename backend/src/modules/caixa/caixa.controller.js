@@ -60,26 +60,21 @@ export async function updateCaixasController(req, res) {
         const caixaId = parseInt(req.params.id);
         const caixa = await caixaService.getCaixasById(caixaId);
 
-        const { loja_id, aberto_por, aberto_em, fechado_por, fechado_em, valor_inicial, valor_final, status } = req.body;
-
         if (!caixa) {
             return res.status(404).json({ mensagem: 'Caixa nao encontrada' });
         }
 
-        if (!caixaData.loja_id) {
-            return res.status(400).json({ mensagem: 'Loja nao informada' });
-        }
-
-        if (!caixaData.aberto_por) {
-            return res.status(400).json({ mensagem: 'Aberto por nao informado' });
-        }
-
-        if (!caixaData.fechado_por) {
-            return res.status(400).json({ mensagem: 'Fechado por nao informado' });
-        }
+        const { loja_id, aberto_por, aberto_em, fechado_por, fechado_em, valor_inicial, valor_final, status } = req.body;
 
         const caixaData = { loja_id, aberto_por, aberto_em, fechado_por, fechado_em, valor_inicial, valor_final, status };
 
+        if (loja_id !== undefined && !loja_id) {
+            return res.status(400).json({ mensagem: 'Loja nao informada' });
+        }
+
+        if (aberto_por !== undefined && !aberto_por) {
+            return res.status(400).json({ mensagem: 'Aberto por nao informado' });
+        }
 
         const updatedCaixa = await caixaService.updateCaixas(caixaId, caixaData);
         res.status(200).json({ caixa: updatedCaixa });

@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 export default function Pagamento() {
     const router = useRouter();
     const [metodoPagamento, setMetodoPagamento] = useState('');
@@ -9,6 +11,9 @@ export default function Pagamento() {
     const [valorTotal, setValorTotal] = useState(0);
     const [valorRecebido, setValorRecebido] = useState('');
     const [troco, setTroco] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [lojaId, setLojaId] = useState(null);
+    const [usuarioId, setUsuarioId] = useState(null);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -20,6 +25,10 @@ export default function Pagamento() {
                     const total = (parsed.total != null) ? parsed.total : (parsed.itens || []).reduce((t, i) => t + i.preco * i.quantidade, 0);
                     setValorTotal(total);
                 }
+                
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                setLojaId(user.loja_id || 1);
+                setUsuarioId(user.id || 1);
             } catch (_) {}
         }
     }, []);
@@ -36,17 +45,111 @@ export default function Pagamento() {
         calcularTroco(valor);
     };
 
-    const finalizarVenda = () => {
+    const finalizarVenda = async () => {
         const pagamentoOk = metodoPagamento && (metodoPagamento !== 'dinheiro' || parseFloat(valorRecebido || '0') >= valorTotal);
-        if (pagamentoOk) {
-            // Aqui seria a chamada à API para registrar a venda
+        if (!pagamentoOk) {
+            alert('Preencha os dados de pagamento corretamente.');
+            return;
+        }
+        
+        if (!lojaId || !usuarioId) {
+            alert('Erro: Loja ou usuário não identificado.');
+            return;
+        }
+        
+        if (itens.length === 0) {
+            alert('Carrinho vazio. Adicione itens antes de finalizar.');
+            return;
+        }
+        
+        try {
+            setLoading(true);
+            
+            // Mapear método de pagamento para o enum do backend
+            const metodoMap = {
+                'dinheiro': 'dinheiro',
+                'debito': 'cartaodebito',
+                'credito': 'cartaocredito',
+                'pix': 'pix'
+            };
+            
+            const metodoBackend = metodoMap[metodoPagamento] || 'dinheiro';
+            
+            // Criar a venda
+            const vendaResponse = await fetch(`${API_URL}/vendas`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    loja_id: lojaId,
+                    usuario_id: usuarioId,
+                    comprador_cpf: null,
+                    valor_total: valorTotal
+                })
+            });
+            
+            if (!vendaResponse.ok) {
+                const error = await vendaResponse.json();
+                throw new Error(error.mensagem || 'Erro ao criar venda');
+            }
+            
+            const vendaData = await vendaResponse.json();
+            const vendaId = vendaData.venda.id;
+            
+            // Criar os itens da venda
+            const itensPromises = itens.map(item => {
+                const subtotal = parseFloat(item.preco) * parseFloat(item.quantidade);
+                return fetch(`${API_URL}/venda-itens`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        venda_id: vendaId,
+                        produto_id: parseInt(item.id),
+                        quantidade: parseFloat(item.quantidade),
+                        preco_unitario: parseFloat(item.preco),
+                        subtotal: subtotal
+                    })
+                }).then(r => {
+                    if (!r.ok) {
+                        return r.json().then(err => { throw new Error(err.mensagem || 'Erro ao criar item'); });
+                    }
+                    return r.json();
+                });
+            });
+            
+            const itensResults = await Promise.all(itensPromises);
+            console.log('Itens criados:', itensResults);
+            
+            // Criar o pagamento
+            const pagamentoResponse = await fetch(`${API_URL}/venda-pagamentos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    venda_id: vendaId,
+                    metodo: metodoBackend,
+                    valor: parseFloat(valorTotal)
+                })
+            });
+            
+            if (!pagamentoResponse.ok) {
+                const error = await pagamentoResponse.json();
+                throw new Error(error.mensagem || 'Erro ao criar pagamento');
+            }
+            
+            const pagamentoData = await pagamentoResponse.json();
+            console.log('Pagamento criado:', pagamentoData);
+            
+            // Limpar carrinho
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('pdv_cart');
             }
+            
             alert('Venda finalizada com sucesso!');
-            router.back();
-        } else {
-            alert('Preencha os dados de pagamento corretamente.');
+            router.push('/matriz/pdv');
+        } catch (error) {
+            console.error('Erro ao finalizar venda:', error);
+            alert(`Erro ao finalizar venda: ${error.message}`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -166,8 +269,20 @@ export default function Pagamento() {
 
                             {/* Botões de Ação */}
                             <div className="mt-6 space-y-3">
-                                <button onClick={finalizarVenda} className="w-full px-4 py-3 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors">Finalizar Venda</button>
-                                <button onClick={() => router.back()} className="w-full px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors">Voltar ao PDV</button>
+                                <button 
+                                    onClick={finalizarVenda} 
+                                    disabled={loading}
+                                    className="w-full px-4 py-3 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? 'Processando...' : 'Finalizar Venda'}
+                                </button>
+                                <button 
+                                    onClick={() => router.back()} 
+                                    disabled={loading}
+                                    className="w-full px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Voltar ao PDV
+                                </button>
                             </div>
                         </div>
                     </div>

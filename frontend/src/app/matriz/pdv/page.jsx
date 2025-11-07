@@ -4,96 +4,120 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header/page";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 export default function VendasFilial() {
   const router = useRouter();
   const [vendas, setVendas] = useState([]);
-  const [filialId, setFilialId] = useState(null); // ID da filial atual (deve ser obtido do contexto de autenticação)
+  const [filialId, setFilialId] = useState(null);
   const [periodoFiltro, setPeriodoFiltro] = useState("hoje");
-  const [lojas, setLojas] = useState([
-    { id: 1, nome: "Loja Centro", tipo: "Matriz", endereco: "Rua Principal, 123" },
-    { id: 2, nome: "Loja Sul", tipo: "Filial", endereco: "Av. Sul, 456" },
-    { id: 3, nome: "Loja Norte", tipo: "Filial", endereco: "Rua Norte, 789" },
-    { id: 4, nome: "Loja Oeste", tipo: "Filial", endereco: "Av. Oeste, 321" },
-  ]);
+  const [lojas, setLojas] = useState([]);
   const [lojaSearchTerm, setLojaSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  // Função para carregar vendas da filial
   useEffect(() => {
-    carregarVendas();
-  }, [filialId, periodoFiltro]);
+    fetchLojas();
+  }, []);
 
-  const carregarVendas = () => {
-    // Simulação de dados - em produção, substituir por chamada à API
-    const vendasSimuladas = [
-      {
-        id: 1,
-        data: "2025-10-09T14:30:00",
-        cliente: "Cliente Final",
-        vendedor: "João Silva",
-        itens: [
-          { produto: "Leite Integral", quantidade: 2, valorUnitario: 5.99, valorTotal: 11.98 },
-          { produto: "Queijo Minas", quantidade: 0.5, valorUnitario: 39.90, valorTotal: 19.95 },
-        ],
-        formaPagamento: "Cartão de Crédito",
-        valorTotal: 31.93,
-        status: "concluida",
-        loja_id: 1,
-      },
-      {
-        id: 2,
-        data: "2025-10-09T16:45:00",
-        cliente: "Maria Souza",
-        vendedor: "Maria Oliveira",
-        itens: [
-          { produto: "Iogurte Natural", quantidade: 3, valorUnitario: 7.50, valorTotal: 22.50 },
-          { produto: "Manteiga", quantidade: 1, valorUnitario: 12.90, valorTotal: 12.90 },
-        ],
-        formaPagamento: "Dinheiro",
-        valorTotal: 35.40,
-        status: "concluida",
-        loja_id: 2,
-      },
-      {
-        id: 3,
-        data: "2025-10-08T10:15:00",
-        cliente: "José Pereira",
-        vendedor: "João Silva",
-        itens: [
-          { produto: "Queijo Prato", quantidade: 0.7, valorUnitario: 45.90, valorTotal: 32.13 },
-          { produto: "Requeijão", quantidade: 2, valorUnitario: 8.99, valorTotal: 17.98 },
-        ],
-        formaPagamento: "Pix",
-        valorTotal: 50.11,
-        status: "concluida",
-        loja_id: 3,
-      },
-    ];
+  useEffect(() => {
     if (filialId) {
-      setVendas(vendasSimuladas.filter(venda => venda.loja_id === filialId));
+      carregarVendas();
     } else {
       setVendas([]);
+    }
+  }, [filialId, periodoFiltro]);
+
+  const fetchLojas = async () => {
+    try {
+      const response = await fetch(`${API_URL}/lojas`);
+      if (!response.ok) throw new Error('Erro ao buscar lojas');
+      const data = await response.json();
+      setLojas(data.lojas || []);
+    } catch (error) {
+      console.error('Erro ao carregar lojas:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const carregarVendas = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/vendas`);
+      if (!response.ok) throw new Error('Erro ao buscar vendas');
+      const data = await response.json();
+      
+      let vendasFiltradas = data.vendas || [];
+      
+      if (filialId) {
+        vendasFiltradas = vendasFiltradas.filter(venda => venda.loja_id === filialId);
+      }
+      
+      if (periodoFiltro === "hoje") {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        vendasFiltradas = vendasFiltradas.filter(venda => {
+          const dataVenda = new Date(venda.data);
+          return dataVenda >= hoje;
+        });
+      } else if (periodoFiltro === "semana") {
+        const semanaAtras = new Date();
+        semanaAtras.setDate(semanaAtras.getDate() - 7);
+        vendasFiltradas = vendasFiltradas.filter(venda => {
+          const dataVenda = new Date(venda.data);
+          return dataVenda >= semanaAtras;
+        });
+      }
+      
+      // Buscar todos os itens e pagamentos uma vez
+      const [itensRes, pagamentosRes] = await Promise.all([
+        fetch(`${API_URL}/venda-itens`).then(r => r.ok ? r.json() : { vendaItens: [] }).catch(() => ({ vendaItens: [] })),
+        fetch(`${API_URL}/venda-pagamentos`).then(r => r.ok ? r.json() : { vendaPagamentos: [] }).catch(() => ({ vendaPagamentos: [] }))
+      ]);
+      
+      const todosItens = itensRes.vendaItens || itensRes.venda_itens || [];
+      const todosPagamentos = pagamentosRes.vendaPagamentos || pagamentosRes.venda_pagamentos || [];
+      
+      const vendasComDetalhes = vendasFiltradas.map((venda) => {
+        const itens = todosItens.filter(item => item.venda_id === venda.id);
+        const pagamentos = todosPagamentos.filter(p => p.venda_id === venda.id);
+        
+        return {
+          ...venda,
+          itens: itens.map(item => ({
+            produto: item.produto?.nome || 'Produto',
+            quantidade: parseFloat(item.quantidade || 0),
+            valorUnitario: parseFloat(item.preco_unitario || 0),
+            valorTotal: parseFloat(item.subtotal || 0)
+          })),
+          formaPagamento: pagamentos.length > 0 ? pagamentos[0].metodo : 'N/A',
+          status: "concluida"
+        };
+      });
+      
+      setVendas(vendasComDetalhes);
+    } catch (error) {
+      console.error('Erro ao carregar vendas:', error);
+      setVendas([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   // Função para iniciar nova venda (redirecionamento para PDV)
   const iniciarNovaVenda = () => {
-    if (filialId) {
-      router.push(`/filial/${filialId}/pdv`);
-      alert(`Redirecionando: Abrindo o PDV para a filial ${filialId}`);
-    } else {
-      alert("Por favor, selecione uma filial antes de iniciar uma nova venda.");
-    }
+    router.push('/pdv');
   };
 
   // Função para visualizar detalhes da venda
   const visualizarVenda = (venda) => {
-    router.push(`/filial/${filialId}/vendas/${venda.id}`);
-    alert(`Redirecionando: Visualizando detalhes da venda #${venda.id}`);
+    // Pode implementar uma página de detalhes se necessário
+    alert(`Venda #${venda.id}\nTotal: R$ ${venda.valor_total}\nData: ${formatarData(venda.data)}`);
   };
 
   // Função para calcular o total de vendas
   const calcularTotalVendas = () => {
-    return vendas.reduce((total, venda) => total + venda.valorTotal, 0).toFixed(2);
+    return vendas.reduce((total, venda) => total + parseFloat(venda.valor_total || 0), 0).toFixed(2);
   };
 
   // Função para formatar data
@@ -202,10 +226,10 @@ export default function VendasFilial() {
                 onChange={(e) => setFilialId(parseInt(e.target.value))}
                 className="w-full sm:w-80 px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
               >
-                <option value="">Selecione uma filial</option>
+                <option value="">Selecione uma loja</option>
                 {lojas.map((loja) => (
                   <option key={loja.id} value={loja.id}>
-                    {loja.nome} ({loja.tipo}) - {loja.endereco}
+                    {loja.nome} ({loja.tipo})
                   </option>
                 ))}
               </select>
@@ -253,7 +277,11 @@ export default function VendasFilial() {
             </div>
 
             {/* Cards de Resumo */}
-            {filialId && (
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-[#2A4E73]">Carregando...</p>
+              </div>
+            ) : filialId && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 <div className="bg-[#F7FAFC] p-4 rounded-lg shadow-md">
                   <div className="pb-2 border-b border-gray-200">
@@ -294,7 +322,11 @@ export default function VendasFilial() {
             )}
 
             {/* Tabela de Histórico de Vendas */}
-            {filialId && (
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-[#2A4E73]">Carregando vendas...</p>
+              </div>
+            ) : filialId && (
               <section className="bg-[#F7FAFC] rounded-lg shadow-md">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
@@ -342,14 +374,14 @@ export default function VendasFilial() {
                                 {formatarData(venda.data)}
                               </td>
                               <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[150px] sm:max-w-[200px]">
-                                {venda.cliente}
+                                {venda.comprador_cpf || 'Cliente Final'}
                               </td>
-                              <td className="px-3 sm:px-4 py-2 sm:py-3">{venda.vendedor}</td>
+                              <td className="px-3 sm:px-4 py-2 sm:py-3">{venda.usuario?.funcionario?.nome || 'N/A'}</td>
                               <td className="px-3 sm:px-4 py-2 sm:py-3">
                                 {venda.formaPagamento}
                               </td>
                               <td className="px-3 sm:px-4 py-2 sm:py-3">
-                                R$ {venda.valorTotal.toFixed(2)}
+                                R$ {parseFloat(venda.valor_total || 0).toFixed(2)}
                               </td>
                               <td className="px-3 sm:px-4 py-2 sm:py-3 text-center">
                                 <button

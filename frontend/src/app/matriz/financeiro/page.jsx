@@ -5,31 +5,76 @@ import Header from "@/components/Header/page";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, XCircle, X, Download, Filter, Plus, Users, FileText, TrendingUp, Building } from 'lucide-react';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState('despesas');
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [filtroData, setFiltroData] = useState({ inicio: '', fim: '' });
+  const [loading, setLoading] = useState(true);
 
-  // Estados para Despesas
-  const [despesas, setDespesas] = useState([
-    { id: 1, descricao: 'Aluguel', valor: 5000, data: '2024-01-10', categoria: 'Fixas', status: 'Pago' },
-    { id: 2, descricao: 'Energia', valor: 800, data: '2024-01-12', categoria: 'Fixas', status: 'Pendente' },
-  ]);
+  // Estados para Despesas (usando vendas como base)
+  const [despesas, setDespesas] = useState([]);
   const [novaDespesa, setNovaDespesa] = useState({ descricao: '', valor: '', data: '', categoria: 'Fixas' });
 
   // Estados para Fornecedores
-  const [fornecedores, setFornecedores] = useState([
-    { id: 1, nome: 'Distribuidora ABC', valor: 15000, vencimento: '2024-01-15', status: 'Pago' },
-    { id: 2, nome: 'Transportadora XYZ', valor: 3200, vencimento: '2024-01-20', status: 'Pendente' },
-  ]);
+  const [fornecedores, setFornecedores] = useState([]);
   const [novoFornecedor, setNovoFornecedor] = useState({ nome: '', valor: '', vencimento: '' });
 
   // Estados para Folha de Pagamento
-  const [funcionarios, setFuncionarios] = useState([
-    { id: 1, nome: 'João Silva', cargo: 'Vendedor', salario: 2500, comissao: 500, status: 'Pago' },
-    { id: 2, nome: 'Maria Santos', cargo: 'Gerente', salario: 4500, comissao: 800, status: 'Pendente' },
-  ]);
+  const [funcionarios, setFuncionarios] = useState([]);
   const [novoFuncionario, setNovoFuncionario] = useState({ nome: '', cargo: '', salario: '', comissao: '' });
+
+  useEffect(() => {
+    carregarDados();
+  }, []);
+
+  const carregarDados = async () => {
+    try {
+      setLoading(true);
+      const [fornecedoresRes, funcionariosRes, vendasRes] = await Promise.all([
+        fetch(`${API_URL}/fornecedores`).then(r => r.ok ? r.json() : { fornecedores: [] }).catch(() => ({ fornecedores: [] })),
+        fetch(`${API_URL}/funcionarios`).then(r => r.ok ? r.json() : { funcionarios: [] }).catch(() => ({ funcionarios: [] })),
+        fetch(`${API_URL}/vendas`).then(r => r.ok ? r.json() : { vendas: [] }).catch(() => ({ vendas: [] }))
+      ]);
+
+      setFornecedores((fornecedoresRes.fornecedores || []).map(f => ({
+        id: f.id,
+        nome: f.nome,
+        valor: 0, // Valor seria calculado baseado em compras/contratos
+        vencimento: new Date().toISOString().split('T')[0],
+        status: f.ativo ? 'Pendente' : 'Pago'
+      })));
+
+      setFuncionarios((funcionariosRes.funcionarios || []).map(f => ({
+        id: f.id,
+        nome: f.nome,
+        cargo: f.cargo,
+        salario: parseFloat(f.salario || 0),
+        comissao: 0, // Comissão seria calculada baseada em vendas
+        status: f.ativo ? 'Pendente' : 'Pago'
+      })));
+
+      // Usar vendas como base para despesas (receitas negativas)
+      const vendas = vendasRes.vendas || [];
+      setDespesas(vendas.map((v) => {
+        const dataVenda = v.data ? (typeof v.data === 'string' ? v.data.split('T')[0] : new Date(v.data).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0];
+        return {
+          id: `venda-${v.id}`,
+          descricao: `Venda #${v.id}`,
+          valor: -parseFloat(v.valor_total || 0), // Negativo para representar saída
+          data: dataVenda,
+          categoria: 'Variáveis',
+          status: 'Pago'
+        };
+      }));
+    } catch (error) {
+      console.error('Erro ao carregar dados financeiros:', error);
+      showAlert('error', 'Erro ao carregar dados financeiros');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fechar alerta
   useEffect(() => {
@@ -62,7 +107,7 @@ export default function Financeiro() {
     }
 
     const nova = {
-      id: Date.now(),
+      id: `despesa-${Date.now()}`,
       ...novaDespesa,
       valor: parseFloat(novaDespesa.valor),
       status: 'Pendente'
@@ -81,23 +126,32 @@ export default function Financeiro() {
   };
 
   // Funções para Fornecedores
-  const adicionarFornecedor = (e) => {
+  const adicionarFornecedor = async (e) => {
     e.preventDefault();
     if (!novoFornecedor.nome || !novoFornecedor.valor || !novoFornecedor.vencimento) {
       showAlert('error', 'Preencha todos os campos obrigatórios');
       return;
     }
 
-    const novo = {
-      id: Date.now(),
-      ...novoFornecedor,
-      valor: parseFloat(novoFornecedor.valor),
-      status: 'Pendente'
-    };
+    try {
+      const response = await fetch(`${API_URL}/fornecedores`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: novoFornecedor.nome,
+          cnpj_cpf: '',
+          ativo: true
+        })
+      });
 
-    setFornecedores([...fornecedores, novo]);
-    showAlert('success', 'Fornecedor cadastrado com sucesso!');
-    setNovoFornecedor({ nome: '', valor: '', vencimento: '' });
+      if (!response.ok) throw new Error('Erro ao adicionar fornecedor');
+
+      await carregarDados();
+      showAlert('success', 'Fornecedor cadastrado com sucesso!');
+      setNovoFornecedor({ nome: '', valor: '', vencimento: '' });
+    } catch (error) {
+      showAlert('error', `Erro ao adicionar fornecedor: ${error.message}`);
+    }
   };
 
   const pagarFornecedor = (id) => {
@@ -110,22 +164,8 @@ export default function Financeiro() {
   // Funções para Folha de Pagamento
   const adicionarFuncionario = (e) => {
     e.preventDefault();
-    if (!novoFuncionario.nome || !novoFuncionario.cargo || !novoFuncionario.salario) {
-      showAlert('error', 'Preencha todos os campos obrigatórios');
-      return;
-    }
-
-    const novo = {
-      id: Date.now(),
-      ...novoFuncionario,
-      salario: parseFloat(novoFuncionario.salario),
-      comissao: parseFloat(novoFuncionario.comissao || 0),
-      status: 'Pendente'
-    };
-
-    setFuncionarios([...funcionarios, novo]);
-    showAlert('success', 'Funcionário adicionado com sucesso!');
-    setNovoFuncionario({ nome: '', cargo: '', salario: '', comissao: '' });
+    showAlert('error', 'Para adicionar funcionário, use a página de Funcionários');
+    // Funcionários devem ser adicionados na página específica
   };
 
   const pagarFuncionario = (id) => {
@@ -142,11 +182,11 @@ export default function Financeiro() {
   };
 
   // Cálculos para os cards
-  const totalDespesas = despesas.reduce((sum, d) => sum + d.valor, 0);
+  const totalDespesas = Math.abs(despesas.reduce((sum, d) => sum + Math.abs(d.valor), 0));
   const totalFornecedores = fornecedores.reduce((sum, f) => sum + f.valor, 0);
   const totalFolha = funcionarios.reduce((sum, f) => sum + f.salario + f.comissao, 0);
   const totalPendentes = 
-    despesas.filter(d => d.status === 'Pendente').reduce((sum, d) => sum + d.valor, 0) +
+    despesas.filter(d => d.status === 'Pendente').reduce((sum, d) => sum + Math.abs(d.valor), 0) +
     fornecedores.filter(f => f.status === 'Pendente').reduce((sum, f) => sum + f.valor, 0) +
     funcionarios.filter(f => f.status === 'Pendente').reduce((sum, f) => sum + f.salario + f.comissao, 0);
 
@@ -196,6 +236,11 @@ export default function Financeiro() {
             <p className="text-[#666] text-sm sm:text-base max-w-2xl mx-auto">
               Controle completo das finanças da sua empresa em um só lugar
             </p>
+            {loading && (
+              <div className="mt-4">
+                <p className="text-[#2A4E73]">Carregando dados...</p>
+              </div>
+            )}
           </div>
 
           {/* Cards de Resumo */}
@@ -363,7 +408,7 @@ export default function Financeiro() {
                             </span>
                           </td>
                           <td className="px-4 py-3">{new Date(despesa.data).toLocaleDateString()}</td>
-                          <td className="px-4 py-3 text-right font-medium">R$ {despesa.valor.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-right font-medium">R$ {Math.abs(despesa.valor).toLocaleString()}</td>
                           <td className="px-4 py-3 text-center">
                             <span className={`px-2 py-1 text-xs rounded-full ${
                               despesa.status === 'Pago' 

@@ -32,7 +32,7 @@ export async function createFornecedoresController(req, res) {
     try {
         const { nome, cnpj_cpf, ativo } = req.body;
 
-        const fornecedorData = { nome, cnpj_cpf, produtos_fornecidos, ativo };
+        const fornecedorData = { nome, cnpj_cpf, ativo };
 
         const fornecedor = await fornecedoresService.createFornecedores(fornecedorData);
 
@@ -55,14 +55,14 @@ export async function updateFornecedoresController(req, res) {
 
         const { nome, cnpj_cpf, ativo, } = req.body;
 
-        const fornecedorData = { nome, cnpj_cpf, produtos_fornecidos, ativo };
+        const fornecedorData = { nome, cnpj_cpf, ativo };
 
         const updatedFornecedor = await fornecedoresService.updateFornecedoresById(fornecedorId, fornecedorData)
 
         res.status(200).json({ mensagem: 'Fornecedor atualizado com sucesso: ', updatedFornecedor });
-    } catch {
-        console.error('Erro ao criar fornecedores: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao criar fornecedores: ', err })
+    } catch (err) {
+        console.error('Erro ao atualizar fornecedor: ', err.message);
+        res.status(500).json({ mensagem: 'Erro ao atualizar fornecedor: ', err })
     }
 }
 
