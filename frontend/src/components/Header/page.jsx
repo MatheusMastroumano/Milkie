@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { apiJson } from '@/lib/api';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,6 +15,17 @@ export default function Navbar() {
   const [isMounted, setIsMounted] = useState(false);
   
   const navRef = useRef(null);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await apiJson('/auth/logout', { method: 'POST' });
+    } catch (_) {
+      // ignore
+    } finally {
+      router.replace('/');
+    }
+  };
 
   // Função para fechar todos os dropdowns e abrir apenas o selecionado
   const toggleDropdown = (dropdown) => {
@@ -197,7 +210,8 @@ export default function Navbar() {
     },
     {
       name: 'Sair',
-      href: '/logout',
+      href: '#logout',
+      onClick: handleLogout,
       icon: (
         <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h3a3 3 0 013 3v1" />
@@ -287,17 +301,31 @@ export default function Navbar() {
                     <ul className="py-2">
                       {userMenuItems.map((item) => (
                         <li key={item.name}>
-                          <Link
-                            href={item.href}
-                            className="flex items-center px-3 xl:px-4 py-2.5 xl:py-3 text-sm xl:text-base text-gray-700 hover:bg-gray-50 hover:text-[#2A4E73] transition-colors"
-                            onClick={() => {
-                              setIsMenuOpen(false);
-                              toggleDropdown(null);
-                            }}
-                          >
-                            <span className="mr-2 xl:mr-3 text-gray-500">{item.icon}</span>
-                            <span>{item.name}</span>
-                          </Link>
+                          {item.onClick ? (
+                            <button
+                              onClick={() => {
+                                setIsMenuOpen(false);
+                                toggleDropdown(null);
+                                item.onClick();
+                              }}
+                              className="w-full text-left flex items-center px-3 xl:px-4 py-2.5 xl:py-3 text-sm xl:text-base text-gray-700 hover:bg-gray-50 hover:text-[#2A4E73] transition-colors"
+                            >
+                              <span className="mr-2 xl:mr-3 text-gray-500">{item.icon}</span>
+                              <span>{item.name}</span>
+                            </button>
+                          ) : (
+                            <Link
+                              href={item.href}
+                              className="flex items-center px-3 xl:px-4 py-2.5 xl:py-3 text-sm xl:text-base text-gray-700 hover:bg-gray-50 hover:text-[#2A4E73] transition-colors"
+                              onClick={() => {
+                                setIsMenuOpen(false);
+                                toggleDropdown(null);
+                              }}
+                            >
+                              <span className="mr-2 xl:mr-3 text-gray-500">{item.icon}</span>
+                              <span>{item.name}</span>
+                            </Link>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -399,17 +427,31 @@ export default function Navbar() {
                   <ul className="space-y-1">
                     {userMenuItems.map((item) => (
                       <li key={item.name}>
-                        <Link
-                          href={item.href}
-                          className="flex items-center px-4 py-3 text-base text-[#FFFFFF] rounded-md hover:bg-[#AD343E] hover:text-[#CFE8F9] transition-colors"
-                          onClick={() => {
-                            setIsMenuOpen(false);
-                            toggleDropdown(null);
-                          }}
-                        >
-                          <span className="mr-3">{item.icon}</span>
-                          <span>{item.name}</span>
-                        </Link>
+                        {item.onClick ? (
+                          <button
+                            onClick={() => {
+                              setIsMenuOpen(false);
+                              toggleDropdown(null);
+                              item.onClick();
+                            }}
+                            className="w-full text-left flex items-center px-4 py-3 text-base text-[#FFFFFF] rounded-md hover:bg-[#AD343E] hover:text-[#CFE8F9] transition-colors"
+                          >
+                            <span className="mr-3">{item.icon}</span>
+                            <span>{item.name}</span>
+                          </button>
+                        ) : (
+                          <Link
+                            href={item.href}
+                            className="flex items-center px-4 py-3 text-base text-[#FFFFFF] rounded-md hover:bg-[#AD343E] hover:text-[#CFE8F9] transition-colors"
+                            onClick={() => {
+                              setIsMenuOpen(false);
+                              toggleDropdown(null);
+                            }}
+                          >
+                            <span className="mr-3">{item.icon}</span>
+                            <span>{item.name}</span>
+                          </Link>
+                        )}
                       </li>
                     ))}
                   </ul>

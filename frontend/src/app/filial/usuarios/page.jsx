@@ -6,8 +6,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, XCircle, Loader2, Plus } from 'lucide-react';
 import Header from '@/components/Headerfilial/page';
 import Footer from '@/components/Footer/page';
+import { apiJson } from '@/lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 
 export default function Usuarios() {
   const [lojas, setLojas] = useState([]);
@@ -44,9 +45,7 @@ export default function Usuarios() {
           await fetchFuncionarios();
           await fetchUsuarios();
         } else {
-          const response = await fetch(`${API_URL}/lojas`);
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-          const data = await response.json();
+          const data = await apiJson('/lojas');
           const lojaSul = (data.lojas || []).find((loja) => loja.id === 2);
           if (!lojaSul) {
             throw new Error('Loja com ID 2 não encontrada no banco de dados');
@@ -70,9 +69,7 @@ export default function Usuarios() {
 
   const fetchLojas = async () => {
     try {
-      const response = await fetch(`${API_URL}/lojas`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = await apiJson('/lojas');
       console.log('Lojas fetched:', data);
       setLojas(data.lojas || []);
       const lojaSul = (data.lojas || []).find((loja) => loja.id === 2);
@@ -90,9 +87,7 @@ export default function Usuarios() {
 
   const fetchFuncionarios = async () => {
     try {
-      const response = await fetch(`${API_URL}/funcionarios`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = await apiJson('/funcionarios');
       console.log('Funcionarios fetched:', data);
       setFuncionarios(data.funcionarios || []);
     } catch (error) {
@@ -103,9 +98,7 @@ export default function Usuarios() {
 
   const fetchUsuarios = async () => {
     try {
-      const response = await fetch(`${API_URL}/usuarios`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = await apiJson('/usuarios');
       console.log('Usuarios fetched:', data);
       setUsuarios(data.usuarios || []);
     } catch (error) {
@@ -145,7 +138,6 @@ export default function Usuarios() {
     }
 
     if (!isEdit) {
-      // Para adição, senha é obrigatória
       if (!usuario.senha_hash?.trim()) {
         newErrors.senha_hash = 'A senha é obrigatória';
       } else if (usuario.senha_hash.length < 6) {
@@ -213,20 +205,14 @@ export default function Usuarios() {
 
       console.log('Sending usuarioData:', JSON.stringify(usuarioData, null, 2));
 
-      const response = await fetch(`${API_URL}/usuarios`, {
+      const data = await apiJson('/usuarios', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(usuarioData),
+        body: JSON.stringify({
+          ...usuarioData,
+          username: novoUsuario.username,
+          senha_hash: novoUsuario.senha_hash,
+        }),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('POST response error:', errorText);
-        const errorData = JSON.parse(errorText || '{}');
-        throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
       console.log('POST success:', data);
 
       showAlert('success', `Usuário "${novoUsuario.username}" cadastrado com sucesso!`);
@@ -277,20 +263,10 @@ export default function Usuarios() {
 
       console.log('Updating usuarioData:', JSON.stringify(usuarioData, null, 2));
 
-      const response = await fetch(`${API_URL}/usuarios/${editUsuario.id}`, {
+      const data = await apiJson(`/usuarios/${editUsuario.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(usuarioData),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('PUT response error:', errorText);
-        const errorData = JSON.parse(errorText || '{}');
-        throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
       console.log('PUT success:', data);
 
       showAlert('success', `Usuário "${editUsuario.username}" atualizado com sucesso!`);
@@ -353,18 +329,9 @@ export default function Usuarios() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/usuarios/${id}`, {
+      const data = await apiJson(`/usuarios/${id}`, {
         method: 'DELETE',
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('DELETE response error:', errorText);
-        const errorData = JSON.parse(errorText || '{}');
-        throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
       console.log('DELETE success:', data);
 
       showAlert('success', `Usuário "${usuarioToDelete.username}" removido com sucesso!`);

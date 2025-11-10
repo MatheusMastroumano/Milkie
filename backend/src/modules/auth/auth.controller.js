@@ -19,7 +19,7 @@ export async function loginController(req, res) {
         if (!senhaCorreta) return res.status(401).json({ mensagem: 'Usuário ou senha incorretos' });
         
 
-        const token = jwt.sign({ id: usuario.id, funcao: usuario.funcao, username: usuario.username }, JWT_SECRET, { expiresIn: '8h' });
+        const token = jwt.sign({ id: usuario.id, funcao: usuario.funcao, username: usuario.username, loja_id: usuario.loja_id }, JWT_SECRET, { expiresIn: '8h' });
 
         res.cookie('token', token, {
             httpOnly: true,
@@ -33,7 +33,8 @@ export async function loginController(req, res) {
             user: {
                 id: usuario.id,
                 funcao: usuario.funcao,
-                username: usuario.username
+                username: usuario.username,
+                loja_id: usuario.loja_id
             }
         });
     } catch (err) {
@@ -67,7 +68,8 @@ export async function checkAuthController(req, res) {
             user: {
                 id: decoded.id,
                 funcao: decoded.funcao,
-                username: decoded.username
+                username: decoded.username,
+                loja_id: decoded.loja_id
             }
         });
     } catch (err) {

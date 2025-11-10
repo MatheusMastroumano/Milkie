@@ -60,7 +60,7 @@ export async function createFuncionarios(data) {
         throw new Error('Salário não pode ser negativo.');
     }
 
-    const cargosPermitidos = ['gerente', 'vendedor', 'caixa'];
+    const cargosPermitidos = ['admin', 'gerente', 'caixa'];
     if (cargo && !cargosPermitidos.includes(cargo.toLowerCase())) {
         throw new Error(`Cargo inválido. Valores aceitos: ${cargosPermitidos.join(', ')}.`);
     }
@@ -103,7 +103,7 @@ export async function updateFuncionarios(id, data) {
         throw new Error('Salário não pode ser negativo.');
     }
 
-    const cargosPermitidos = ['gerente', 'vendedor', 'caixa'];
+    const cargosPermitidos = ['admin', 'gerente', 'caixa'];
     if (cargo && !cargosPermitidos.includes(cargo.toLowerCase())) {
         throw new Error(`Cargo inválido. Valores aceitos: ${cargosPermitidos.join(', ')}.`);
     }

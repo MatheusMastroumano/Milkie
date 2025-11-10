@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { apiJson } from "@/lib/api";
 import Header from "@/components/Header/page";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 
 export default function VendasFilial() {
   const router = useRouter();
@@ -29,9 +30,7 @@ export default function VendasFilial() {
 
   const fetchLojas = async () => {
     try {
-      const response = await fetch(`${API_URL}/lojas`);
-      if (!response.ok) throw new Error('Erro ao buscar lojas');
-      const data = await response.json();
+      const data = await apiJson('/lojas');
       setLojas(data.lojas || []);
     } catch (error) {
       console.error('Erro ao carregar lojas:', error);
@@ -43,9 +42,7 @@ export default function VendasFilial() {
   const carregarVendas = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/vendas`);
-      if (!response.ok) throw new Error('Erro ao buscar vendas');
-      const data = await response.json();
+      const data = await apiJson('/vendas');
       
       let vendasFiltradas = data.vendas || [];
       
@@ -71,8 +68,8 @@ export default function VendasFilial() {
       
       // Buscar todos os itens e pagamentos uma vez
       const [itensRes, pagamentosRes] = await Promise.all([
-        fetch(`${API_URL}/venda-itens`).then(r => r.ok ? r.json() : { vendaItens: [] }).catch(() => ({ vendaItens: [] })),
-        fetch(`${API_URL}/venda-pagamentos`).then(r => r.ok ? r.json() : { vendaPagamentos: [] }).catch(() => ({ vendaPagamentos: [] }))
+        apiJson('/venda-itens').catch(() => ({ vendaItens: [] })),
+        apiJson('/venda-pagamentos').catch(() => ({ vendaPagamentos: [] })),
       ]);
       
       const todosItens = itensRes.vendaItens || itensRes.venda_itens || [];

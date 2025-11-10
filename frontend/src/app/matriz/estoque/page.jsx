@@ -7,8 +7,9 @@ import { SimpleConfirm } from '@/components/ui/simple-confirm.jsx';
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import Header from "@/components/Header/page";
 import Footer from "@/components/Footer/page";
+import { apiJson } from "@/lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
 
 export default function Estoque() {
   const router = useRouter();
@@ -51,16 +52,10 @@ export default function Estoque() {
   useEffect(() => {
     async function carregarDados() {
       try {
-        const [resProdutos, resLojas] = await Promise.all([
-          fetch(`${API_URL}/produtos`),
-          fetch(`${API_URL}/lojas`),
+        const [produtosJson, lojasJson] = await Promise.all([
+          apiJson('/produtos'),
+          apiJson('/lojas'),
         ]);
-
-        if (!resProdutos.ok) throw new Error('Erro ao carregar produtos');
-        if (!resLojas.ok) throw new Error('Erro ao carregar lojas');
-
-        const produtosJson = await resProdutos.json();
-        const lojasJson = await resLojas.json();
 
         const produtosArray = produtosJson.produtos || produtosJson || [];
         const lojasArray = lojasJson.lojas || lojasJson || [];
@@ -84,10 +79,7 @@ export default function Estoque() {
     async function carregarEstoque() {
       try {
         setLoading(true);
-        const res = await fetch(`${API_URL}/estoque?loja_id=${selectedLoja}`);
-        if (!res.ok) throw new Error('Erro ao carregar estoque');
-        
-        const json = await res.json();
+        const json = await apiJson(`/estoque?loja_id=${selectedLoja}`);
         const estoqueArray = json.estoque || json || [];
         setEstoque(estoqueArray);
       } catch (err) {
@@ -123,18 +115,10 @@ export default function Estoque() {
         valido_ate: novoEstoque.valido_ate || null,
       };
 
-      const res = await fetch(`${API_URL}/estoque`, {
+      const response = await apiJson('/estoque', {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || "Erro ao adicionar no estoque");
-      }
-
-      const response = await res.json();
       const novoItem = response.estoque || response;
 
       setEstoque(prev => {
@@ -182,18 +166,10 @@ export default function Estoque() {
         valido_ate: editEstoque.valido_ate || null,
       };
 
-      const res = await fetch(`${API_URL}/estoque/${editEstoque.produto_id}/${editEstoque.loja_id}`, {
+      const updatedItem = await apiJson(`/estoque/${editEstoque.produto_id}/${editEstoque.loja_id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || "Erro ao atualizar estoque");
-      }
-
-      const updatedItem = await res.json();
 
       setEstoque(prev => prev.map(p =>
         p.produto_id === updatedItem.produto_id && p.loja_id === updatedItem.loja_id
@@ -218,8 +194,7 @@ export default function Estoque() {
       description: `Tem certeza que deseja remover "${produto?.nome || 'Produto'}" do estoque da "${loja?.nome || 'Loja'}"?`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`${API_URL}/estoque/${produto_id}/${loja_id}`, { method: "DELETE" });
-          if (!res.ok) throw new Error("Erro ao excluir");
+          await apiJson(`/estoque/${produto_id}/${loja_id}`, { method: "DELETE" });
 
           showAlert("success", "Item removido do estoque!");
           setEstoque(prev => prev.filter(p => !(p.produto_id === produto_id && p.loja_id === loja_id)));

@@ -32,6 +32,7 @@ export default function Funcionarios() {
   const [errors, setErrors] = useState({});
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const allowedCargos = ['admin', 'gerente', 'caixa'];
   const [lojaError, setLojaError] = useState(null);
 
   // Simula login e valida loja ID 2
@@ -137,6 +138,8 @@ export default function Funcionarios() {
 
     if (!funcionario.cargo?.trim()) {
       newErrors.cargo = 'O cargo é obrigatório';
+    } else if (!allowedCargos.includes(funcionario.cargo.toLowerCase())) {
+      newErrors.cargo = 'Cargo inválido. Use: admin, gerente ou caixa';
     }
 
     if (!funcionario.salario || parseFloat(funcionario.salario) <= 0) {
@@ -637,16 +640,19 @@ export default function Funcionarios() {
                     <label htmlFor="cargo" className="block text-sm font-medium text-[#2A4E73] mb-1">
                       Cargo *
                     </label>
-                    <input
-                      type="text"
+                    <select
                       id="cargo"
-                      value={novoFuncionario.cargo}
+                      value={(novoFuncionario.cargo || '').toLowerCase()}
                       onChange={(e) => setNovoFuncionario({ ...novoFuncionario, cargo: e.target.value })}
                       className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      placeholder="Ex.: Caixa"
                       aria-invalid={!!errors.cargo}
                       aria-describedby={errors.cargo ? 'cargo-error' : undefined}
-                    />
+                    >
+                      <option value="">Selecione</option>
+                      <option value="admin">admin</option>
+                      <option value="gerente">gerente</option>
+                      <option value="caixa">caixa</option>
+                    </select>
                     {errors.cargo && (
                       <p id="cargo-error" className="text-[#AD343E] text-sm mt-1">{errors.cargo}</p>
                     )}
@@ -843,16 +849,19 @@ export default function Funcionarios() {
                     <label htmlFor="edit-cargo" className="block text-sm font-medium text-[#2A4E73] mb-1">
                       Cargo *
                     </label>
-                    <input
-                      type="text"
+                    <select
                       id="edit-cargo"
-                      value={editFuncionario.cargo}
+                      value={(editFuncionario.cargo || '').toLowerCase()}
                       onChange={(e) => setEditFuncionario({ ...editFuncionario, cargo: e.target.value })}
                       className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      placeholder="Ex.: Caixa"
                       aria-invalid={!!errors.cargo}
                       aria-describedby={errors.cargo ? 'edit-cargo-error' : undefined}
-                    />
+                    >
+                      <option value="">Selecione</option>
+                      <option value="admin">admin</option>
+                      <option value="gerente">gerente</option>
+                      <option value="caixa">caixa</option>
+                    </select>
                     {errors.cargo && (
                       <p id="edit-cargo-error" className="text-[#AD343E] text-sm mt-1">{errors.cargo}</p>
                     )}

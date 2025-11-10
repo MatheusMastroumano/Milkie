@@ -6,8 +6,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Header from '@/components/Header/page';
 import Footer from '@/components/Footer/page';
+import { apiJson } from '@/lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 
 export default function Funcionarios() {
   const [lojas, setLojas] = useState([]);
@@ -32,6 +33,7 @@ export default function Funcionarios() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const allowedCargos = ['admin', 'gerente', 'caixa'];
 
   // Fetch lojas and funcionários on mount
   useEffect(() => {
@@ -41,11 +43,7 @@ export default function Funcionarios() {
 
   const fetchLojas = async () => {
     try {
-      const response = await fetch(`${API_URL}/lojas`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
+      const data = await apiJson('/lojas');
       console.log('Lojas fetched:', data);
       setLojas(data.lojas || []);
     } catch (error) {
@@ -56,11 +54,7 @@ export default function Funcionarios() {
 
   const fetchFuncionarios = async () => {
     try {
-      const response = await fetch(`${API_URL}/funcionarios`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
+      const data = await apiJson('/funcionarios');
       console.log('Funcionarios fetched:', data);
       setFuncionarios(data.funcionarios || []);
     } catch (error) {
@@ -107,6 +101,8 @@ export default function Funcionarios() {
 
     if (!funcionario.cargo?.trim()) {
       newErrors.cargo = 'O cargo é obrigatório';
+    } else if (!allowedCargos.includes(funcionario.cargo.toLowerCase())) {
+      newErrors.cargo = 'Cargo inválido. Use: admin, gerente ou caixa';
     }
 
     if (!funcionario.salario || funcionario.salario <= 0) {
@@ -147,20 +143,10 @@ export default function Funcionarios() {
 
       console.log('Sending funcionarioData:', funcionarioData);
 
-      const response = await fetch(`${API_URL}/funcionarios`, {
+      const data = await apiJson('/funcionarios', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(funcionarioData),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('POST response error:', errorText);
-        const errorData = JSON.parse(errorText || '{}');
-        throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
       console.log('POST success:', data);
 
       showAlert('success', `Funcionário "${novoFuncionario.nome}" cadastrado com sucesso!`);
@@ -205,20 +191,10 @@ export default function Funcionarios() {
 
       console.log('Updating funcionarioData:', funcionarioData);
 
-      const response = await fetch(`${API_URL}/funcionarios/${editFuncionario.id}`, {
+      const data = await apiJson(`/funcionarios/${editFuncionario.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(funcionarioData),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('PUT response error:', errorText);
-        const errorData = JSON.parse(errorText || '{}');
-        throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
       console.log('PUT success:', data);
 
       showAlert('success', `Funcionário "${editFuncionario.nome}" editado com sucesso!`);
@@ -269,18 +245,9 @@ export default function Funcionarios() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/funcionarios/${id}`, {
+      const data = await apiJson(`/funcionarios/${id}`, {
         method: 'DELETE',
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('DELETE response error:', errorText);
-        const errorData = JSON.parse(errorText || '{}');
-        throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
       console.log('DELETE success:', data);
 
       showAlert('success', `Funcionário "${funcionarioToDelete.nome}" excluído com sucesso!`);
@@ -709,22 +676,26 @@ export default function Funcionarios() {
                     >
                       Cargo *
                     </label>
-                    <input
+                    <select
                       id={isAddModalOpen ? 'add-cargo' : 'edit-cargo'}
-                      type="text"
-                      value={isAddModalOpen ? novoFuncionario.cargo : editFuncionario?.cargo || ''}
+                      value={(isAddModalOpen ? novoFuncionario.cargo : editFuncionario?.cargo || '').toLowerCase()}
                       onChange={(e) => {
+                        const val = e.target.value;
                         if (isAddModalOpen) {
-                          setNovoFuncionario({ ...novoFuncionario, cargo: e.target.value });
+                          setNovoFuncionario({ ...novoFuncionario, cargo: val });
                         } else {
-                          setEditFuncionario({ ...editFuncionario, cargo: e.target.value });
+                          setEditFuncionario({ ...editFuncionario, cargo: val });
                         }
                       }}
                       className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      placeholder="Ex.: Caixa"
                       aria-invalid={!!errors.cargo}
                       aria-describedby={errors.cargo ? (isAddModalOpen ? 'add-cargo-error' : 'edit-cargo-error') : undefined}
-                    />
+                    >
+                      <option value="">Selecione</option>
+                      <option value="admin">admin</option>
+                      <option value="gerente">gerente</option>
+                      <option value="caixa">caixa</option>
+                    </select>
                     {errors.cargo && (
                       <p
                         id={isAddModalOpen ? 'add-cargo-error' : 'edit-cargo-error'}
