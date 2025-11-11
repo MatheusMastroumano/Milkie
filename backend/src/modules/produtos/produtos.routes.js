@@ -6,6 +6,7 @@ import produtosSchema from './produtos.schema.js';
 import validate from '../../shared/middlewares/validate.js';
 import authMiddleware from '../../shared/middlewares/authMiddleware.js';
 import moduleAccess from '../../shared/middlewares/moduleAccess.js';
+import uploadMiddleware from '../../shared/middlewares/uploadMiddleware.js';
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.use(authMiddleware, moduleAccess('produtos'));
 
 router.get('/', produtosController.getProdutosController);
 router.get('/:id', produtosController.getProdutosByIdController);
-router.post('/', validate(produtosSchema), produtosController.createProdutosController);
+router.post('/', validate(produtosSchema), uploadMiddleware, produtosController.createProdutosController);
 router.put('/:id', validate(produtosSchema.partial()), produtosController.updateProdutosController);
 router.delete('/:id', produtosController.removeProdutosController);
 
