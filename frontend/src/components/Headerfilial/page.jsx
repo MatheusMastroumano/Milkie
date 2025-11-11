@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { apiJson } from '@/lib/api';
 
 export default function Navbar() {
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isGestaoOpen, setIsGestaoOpen] = useState(false);
   const [isProdutosOpen, setIsProdutosOpen] = useState(false);
@@ -171,7 +174,7 @@ export default function Navbar() {
   const userMenuItems = [
     {
       name: 'Ver Perfil',
-      href: '/matriz/perfil',
+      href: '/filial/perfil',
       icon: (
         <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -188,6 +191,19 @@ export default function Navbar() {
       ),
     },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await apiJson('/auth/logout', { method: 'POST' });
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user');
+      }
+      router.replace('/');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      alert('Erro ao fazer logout. Tente novamente.');
+    }
+  };
 
   if (!isMounted) {
     return null; // Prevent hydration mismatch
@@ -273,9 +289,13 @@ export default function Navbar() {
                           <Link
                             href={item.href}
                             className="flex items-center px-3 xl:px-4 py-2.5 xl:py-3 text-sm xl:text-base text-gray-700 hover:bg-gray-50 hover:text-[#2A4E73] transition-colors"
-                            onClick={() => {
+                            onClick={(e) => {
                               setIsMenuOpen(false);
                               toggleDropdown(null);
+                              if (item.name === 'Sair') {
+                                e.preventDefault();
+                                handleLogout();
+                              }
                             }}
                           >
                             <span className="mr-2 xl:mr-3 text-gray-500">{item.icon}</span>
@@ -385,9 +405,13 @@ export default function Navbar() {
                         <Link
                           href={item.href}
                           className="flex items-center px-4 py-3 text-base text-[#FFFFFF] rounded-md hover:bg-[#AD343E] hover:text-[#CFE8F9] transition-colors"
-                          onClick={() => {
+                          onClick={(e) => {
                             setIsMenuOpen(false);
                             toggleDropdown(null);
+                            if (item.name === 'Sair') {
+                              e.preventDefault();
+                              handleLogout();
+                            }
                           }}
                         >
                           <span className="mr-3">{item.icon}</span>

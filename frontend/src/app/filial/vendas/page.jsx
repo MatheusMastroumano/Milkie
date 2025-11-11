@@ -3,66 +3,94 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Headerfilial/page";
+import { apiJson } from "@/lib/api";
 
 export default function VendasFilial() {
   const router = useRouter();
   const [vendas, setVendas] = useState([]);
-  const [filialId, setFilialId] = useState(1); // ID da filial atual (deve ser obtido do contexto de autenticação)
+  const [filialId, setFilialId] = useState(null);
   const [periodoFiltro, setPeriodoFiltro] = useState("hoje");
   const [dataInicio, setDataInicio] = useState(new Date().toISOString().split("T")[0]);
   const [dataFim, setDataFim] = useState(new Date().toISOString().split("T")[0]);
 
-  // Função para carregar vendas da filial
+  // Obter filial do usuário logado
   useEffect(() => {
-    carregarVendas();
-  }, [periodoFiltro, dataInicio, dataFim]);
+    (async () => {
+      try {
+        const auth = await apiJson('/auth/check-auth');
+        setFilialId(Number(auth?.user?.loja_id) || null);
+      } catch {
+        setFilialId(null);
+      }
+    })();
+  }, []);
 
-  const carregarVendas = () => {
-    // Simulação de dados - em produção, substituir por chamada à API
-    const vendasSimuladas = [
-      {
-        id: 1,
-        data: "2024-06-05T14:30:00",
-        cliente: "Cliente Final",
-        vendedor: "João Silva",
-        itens: [
-          { produto: "Leite Integral", quantidade: 2, valorUnitario: 5.99, valorTotal: 11.98 },
-          { produto: "Queijo Minas", quantidade: 0.5, valorUnitario: 39.90, valorTotal: 19.95 },
-        ],
-        formaPagamento: "Cartão de Crédito",
-        valorTotal: 31.93,
-        status: "concluida",
-      },
-      {
-        id: 2,
-        data: "2024-06-05T16:45:00",
-        cliente: "Maria Souza",
-        vendedor: "Maria Oliveira",
-        itens: [
-          { produto: "Iogurte Natural", quantidade: 3, valorUnitario: 7.50, valorTotal: 22.50 },
-          { produto: "Manteiga", quantidade: 1, valorUnitario: 12.90, valorTotal: 12.90 },
-        ],
-        formaPagamento: "Dinheiro",
-        valorTotal: 35.40,
-        status: "concluida",
-      },
-      {
-        id: 3,
-        data: "2024-06-04T10:15:00",
-        cliente: "José Pereira",
-        vendedor: "João Silva",
-        itens: [
-          { produto: "Queijo Prato", quantidade: 0.7, valorUnitario: 45.90, valorTotal: 32.13 },
-          { produto: "Requeijão", quantidade: 2, valorUnitario: 8.99, valorTotal: 17.98 },
-        ],
-        formaPagamento: "Pix",
-        valorTotal: 50.11,
-        status: "concluida",
-      },
-    ];
-    
-    setVendas(vendasSimuladas);
-  };
+  // Carregar vendas da filial via API
+  useEffect(() => {
+    if (!filialId) return;
+    (async () => {
+      try {
+        // Buscar vendas e detalhes
+        const vendasData = await apiJson('/vendas');
+        const [itensRes, pagamentosRes] = await Promise.all([
+          apiJson('/venda-itens').catch(() => ({ vendaItens: [] })),
+          apiJson('/venda-pagamentos').catch(() => ({ vendaPagamentos: [] })),
+        ]);
+
+        let vendasFiltradas = (vendasData.vendas || []).filter(v => v.loja_id === filialId);
+
+        // Filtrar por período
+        const now = new Date();
+        if (periodoFiltro === 'hoje') {
+          const hoje = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          vendasFiltradas = vendasFiltradas.filter(v => new Date(v.data) >= hoje);
+        } else if (periodoFiltro === 'semana') {
+          const semana = new Date(now);
+          semana.setDate(semana.getDate() - 7);
+          vendasFiltradas = vendasFiltradas.filter(v => new Date(v.data) >= semana);
+        } else if (periodoFiltro === 'mes') {
+          const mes = new Date(now.getFullYear(), now.getMonth(), 1);
+          vendasFiltradas = vendasFiltradas.filter(v => new Date(v.data) >= mes);
+        } else if (periodoFiltro === 'personalizado') {
+          const ini = new Date(dataInicio);
+          const fim = new Date(dataFim);
+          fim.setHours(23,59,59,999);
+          vendasFiltradas = vendasFiltradas.filter(v => {
+            const d = new Date(v.data);
+            return d >= ini && d <= fim;
+          });
+        }
+
+        const todosItens = itensRes.vendaItens || itensRes.venda_itens || [];
+        const todosPagamentos = pagamentosRes.vendaPagamentos || pagamentosRes.venda_pagamentos || [];
+
+        const comDetalhes = vendasFiltradas.map((v) => {
+          const itens = todosItens.filter(i => i.venda_id === v.id);
+          const pagamentos = todosPagamentos.filter(p => p.venda_id === v.id);
+          return {
+            id: v.id,
+            data: v.data,
+            cliente: v.comprador_cpf || 'Cliente Final',
+            vendedor: v.usuario?.funcionario?.nome || 'N/A',
+            itens: itens.map(i => ({
+              produto: i.produto?.nome || 'Produto',
+              quantidade: parseFloat(i.quantidade || 0),
+              valorUnitario: parseFloat(i.preco_unitario || 0),
+              valorTotal: parseFloat(i.subtotal || 0),
+            })),
+            formaPagamento: pagamentos[0]?.metodo || 'N/A',
+            valorTotal: parseFloat(v.valor_total || 0),
+            status: 'concluida',
+          };
+        });
+
+        setVendas(comDetalhes);
+      } catch (e) {
+        console.error('Erro ao carregar vendas da filial:', e);
+        setVendas([]);
+      }
+    })();
+  }, [filialId, periodoFiltro, dataInicio, dataFim]);
 
   // Função para iniciar nova venda (redirecionamento para PDV)
   const iniciarNovaVenda = () => {

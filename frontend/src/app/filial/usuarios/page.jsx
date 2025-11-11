@@ -34,30 +34,19 @@ export default function Usuarios() {
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [lojaError, setLojaError] = useState(null);
 
-  // Inicializar loja e validar ID 2
+  // Inicializar loja a partir do usuário autenticado
   useEffect(() => {
     const initializeLoja = async () => {
       try {
-        const storedFilialId = localStorage.getItem('currentFilialId');
-        if (storedFilialId === '2') {
-          setCurrentFilialId(2);
-          await fetchLojas();
-          await fetchFuncionarios();
-          await fetchUsuarios();
-        } else {
-          const data = await apiJson('/lojas');
-          const lojaSul = (data.lojas || []).find((loja) => loja.id === 2);
-          if (!lojaSul) {
-            throw new Error('Loja com ID 2 não encontrada no banco de dados');
-          }
-          setCurrentFilialId(2);
-          setLojaNome(lojaSul.nome);
-          localStorage.setItem('currentFilialId', '2');
-          console.log(`Loja ID 2 validada: ${lojaSul.nome}`);
-          await fetchLojas();
-          await fetchFuncionarios();
-          await fetchUsuarios();
+        const auth = await apiJson('/auth/check-auth');
+        const lojaIdFromAuth = Number(auth?.user?.loja_id);
+        if (!lojaIdFromAuth) {
+          throw new Error('Loja do usuário não encontrada');
         }
+        setCurrentFilialId(lojaIdFromAuth);
+        await fetchLojas(lojaIdFromAuth);
+        await fetchFuncionarios();
+        await fetchUsuarios();
       } catch (error) {
         console.error('Error initializing loja:', error);
         setLojaError(`Erro ao validar loja: ${error.message}. Não é possível gerenciar usuários.`);
@@ -67,17 +56,17 @@ export default function Usuarios() {
     initializeLoja();
   }, []);
 
-  const fetchLojas = async () => {
+  const fetchLojas = async (lojaIdOverride) => {
     try {
       const data = await apiJson('/lojas');
       console.log('Lojas fetched:', data);
       setLojas(data.lojas || []);
-      const lojaSul = (data.lojas || []).find((loja) => loja.id === 2);
-      if (lojaSul) {
-        setLojaNome(lojaSul.nome);
-        console.log('Nome da loja ID 2:', lojaSul.nome);
+      const idToUse = Number(lojaIdOverride ?? currentFilialId);
+      const lojaDoUsuario = (data.lojas || []).find((loja) => Number(loja.id) === idToUse);
+      if (lojaDoUsuario) {
+        setLojaNome(lojaDoUsuario.nome);
       } else {
-        setLojaError('Loja com ID 2 não encontrada no banco de dados');
+        setLojaError('Loja do usuário não encontrada no banco de dados');
       }
     } catch (error) {
       console.error('Error fetching lojas:', error);
@@ -123,8 +112,8 @@ export default function Usuarios() {
       newErrors.funcionario_id = 'Funcionário inválido';
     }
 
-    if (!usuario.loja_id || parseInt(usuario.loja_id) !== 2) {
-      newErrors.loja_id = `Usuário deve pertencer à ${lojaNome || 'loja ID 2'}`;
+    if (!usuario.loja_id || parseInt(usuario.loja_id) !== currentFilialId) {
+      newErrors.loja_id = `Usuário deve pertencer à ${lojaNome || `loja ID ${currentFilialId}`}`;
     }
 
     if (!usuario.funcao?.trim()) {
@@ -200,7 +189,7 @@ export default function Usuarios() {
       const usuarioData = {
         ...novoUsuario,
         funcionario_id: parseInt(novoUsuario.funcionario_id),
-        loja_id: 2,
+        loja_id: currentFilialId,
       };
 
       console.log('Sending usuarioData:', JSON.stringify(usuarioData, null, 2));
@@ -218,7 +207,7 @@ export default function Usuarios() {
       showAlert('success', `Usuário "${novoUsuario.username}" cadastrado com sucesso!`);
       setNovoUsuario({
         funcionario_id: '',
-        loja_id: 2,
+        loja_id: currentFilialId,
         funcao: '',
         username: '',
         senha_hash: '',
@@ -251,7 +240,7 @@ export default function Usuarios() {
     try {
       const usuarioData = {
         funcionario_id: parseInt(editUsuario.funcionario_id),
-        loja_id: 2,
+        loja_id: currentFilialId,
         funcao: editUsuario.funcao,
         username: editUsuario.username,
         ativo: editUsuario.ativo,
@@ -289,7 +278,7 @@ export default function Usuarios() {
     setEditUsuario({
       ...usuario,
       funcionario_id: usuario.funcionario_id.toString(),
-      loja_id: '2',
+      loja_id: String(currentFilialId),
     });
     setEditSenha(''); // Inicializa o campo de senha vazio
     setIsEditModalOpen(true);
@@ -300,7 +289,7 @@ export default function Usuarios() {
     setIsAddModalOpen(false);
     setNovoUsuario({
       funcionario_id: '',
-      loja_id: 2,
+      loja_id: currentFilialId,
       funcao: '',
       username: '',
       senha_hash: '',
@@ -407,8 +396,8 @@ export default function Usuarios() {
         )}
 
         <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
-            Usuários - {lojaNome || 'Loja Sul'}
+      <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
+            Usuários - {lojaNome || `Loja ${currentFilialId || ''}`}
           </h2>
 
           <div className="mb-6">
@@ -533,7 +522,7 @@ export default function Usuarios() {
                     >
                       <option value="">Selecione um funcionário</option>
                       {funcionarios
-                        .filter((f) => f.loja_id === 2 && f.ativo)
+                        .filter((f) => f.loja_id === currentFilialId && f.ativo)
                         .map((funcionario) => (
                           <option key={funcionario.id} value={funcionario.id}>
                             {funcionario.nome} ({funcionario.cargo})
@@ -556,7 +545,7 @@ export default function Usuarios() {
                       aria-invalid={!!errors.loja_id}
                       aria-describedby={errors.loja_id ? 'loja_id-error' : undefined}
                     >
-                      <option value="2">{lojaNome || 'Loja Sul'} (Filial)</option>
+                      <option value={String(currentFilialId)}>{lojaNome || `Loja ${currentFilialId || ''}`} (Filial)</option>
                     </select>
                     {errors.loja_id && (
                       <p id="loja_id-error" className="text-[#AD343E] text-sm mt-1">{errors.loja_id}</p>
@@ -686,7 +675,7 @@ export default function Usuarios() {
                     >
                       <option value="">Selecione um funcionário</option>
                       {funcionarios
-                        .filter((f) => f.loja_id === 2 && f.ativo)
+                        .filter((f) => f.loja_id === currentFilialId && f.ativo)
                         .map((funcionario) => (
                           <option key={funcionario.id} value={funcionario.id}>
                             {funcionario.nome} ({funcionario.cargo})

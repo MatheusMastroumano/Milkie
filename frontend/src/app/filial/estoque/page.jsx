@@ -6,6 +6,7 @@ import { SimpleConfirm } from '@/components/ui/simple-confirm.jsx';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Header from '@/components/Headerfilial/page';
 import Footer from '@/components/Footer/page';
+import { apiJson } from '@/lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -37,20 +38,29 @@ export default function EstoqueFilial() {
     ativo: true,
   });
 
-  // Carregar dados do usuário
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    setLojaId(user.loja_id || 1);
-    setLojaNome(user.loja_nome || 'Filial');
-  }, []);
+// Carregar dados do usuário autenticado
+useEffect(() => {
+  (async () => {
+    try {
+      const auth = await apiJson('/auth/check-auth');
+      setLojaId(Number(auth?.user?.loja_id) || null);
+      // Tentar descobrir o nome da loja via /lojas
+      try {
+        const lojasData = await apiJson('/lojas');
+        const loja = (lojasData.lojas || []).find((l) => Number(l.id) === Number(auth?.user?.loja_id || null));
+        if (loja) setLojaNome(loja.nome);
+      } catch {}
+    } catch {
+      setLojaId(null);
+    }
+  })();
+}, []);
 
   // Carregar produtos
   useEffect(() => {
     const fetchProdutos = async () => {
       try {
-        const res = await fetch(`${API_URL}/produtos`);
-        if (!res.ok) throw new Error('Falha ao carregar produtos');
-        const data = await res.json();
+        const data = await apiJson('/produtos');
         const produtosArray = data.produtos || data || [];
         setProdutos(produtosArray);
       } catch (err) {
@@ -67,9 +77,7 @@ export default function EstoqueFilial() {
     const fetchEstoque = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${API_URL}/estoque?loja_id=${lojaId}`);
-        if (!res.ok) throw new Error('Falha ao carregar estoque');
-        const data = await res.json();
+        const data = await apiJson(`/estoque?loja_id=${lojaId}`);
         const estoqueArray = data.estoque || data || [];
         setEstoque(estoqueArray);
       } catch (err) {
@@ -121,17 +129,14 @@ export default function EstoqueFilial() {
     if (!validateProdutoForm(novoProduto)) return;
 
     try {
-      const res = await fetch(`${API_URL}/produtos`, {
+      const response = await apiJson('/produtos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...novoProduto,
           fabricacao: novoProduto.fabricacao || null,
           validade: novoProduto.validade || null,
         }),
       });
-      if (!res.ok) throw new Error('Falha ao criar produto');
-      const response = await res.json();
       const novo = response.produto || response;
 
       setProdutos(prev => [...prev, novo]);
@@ -168,18 +173,10 @@ export default function EstoqueFilial() {
     if (!validateForm(payload)) return;
 
     try {
-      const res = await fetch(`${API_URL}/estoque`, {
+      const response = await apiJson('/estoque', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || 'Erro ao adicionar');
-      }
-
-      const response = await res.json();
       const novo = response.estoque || response;
       
       setEstoque(prev => {
@@ -210,15 +207,10 @@ export default function EstoqueFilial() {
     if (!validateForm(payload)) return;
 
     try {
-      const res = await fetch(`${API_URL}/estoque`, {
+      const response = await apiJson('/estoque', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
-      if (!res.ok) throw new Error('Erro ao atualizar');
-
-      const response = await res.json();
       const atualizado = response.estoque || response;
       
       setEstoque(prev => prev.map(p =>
@@ -265,11 +257,9 @@ export default function EstoqueFilial() {
       description: `Tem certeza que deseja remover "${produto?.nome || 'este produto'}" do estoque?`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`${API_URL}/estoque/${produto_id}/${lojaId}`, {
+          await apiJson(`/estoque/${produto_id}/${lojaId}`, {
             method: 'DELETE',
           });
-          
-          if (!res.ok) throw new Error('Erro ao excluir');
           
           setEstoque(prev => prev.filter(p => p.produto_id !== produto_id));
           showAlert('success', 'Item removido do estoque!');
