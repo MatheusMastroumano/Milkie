@@ -7,7 +7,7 @@ import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Header from '@/components/Header/page';
 import Footer from '@/components/Footer/page';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function Produtos() {
   const router = useRouter();
@@ -251,7 +251,7 @@ export default function Produtos() {
 
   const handleViewProduct = (produto) => {
     localStorage.setItem('productDetails', JSON.stringify(produto));
-    router.push(`/filial/produtos/${produto.id}`);
+    router.push(`/matriz/produtos/${produto.id}`);
   };
 
   return (
