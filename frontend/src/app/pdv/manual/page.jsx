@@ -1,21 +1,27 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiJson } from "@/lib/api";
 
 export default function PDVManual() {
     const router = useRouter();
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
     const [lojaId, setLojaId] = useState(null);
     const [usuarioId, setUsuarioId] = useState(null);
     const [produtos, setProdutos] = useState([]);
     const [carregando, setCarregando] = useState(false);
     const [erro, setErro] = useState("");
 
-    // Forçando loja_id = 2 e usuario_id = 1
+    // Carregar loja_id do usuário logado
     useEffect(() => {
-        setLojaId(2);
-        setUsuarioId(1);
+        (async () => {
+            try {
+                const auth = await apiJson('/auth/check-auth');
+                setLojaId(auth?.user?.loja_id || null);
+                setUsuarioId(auth?.user?.id || null);
+            } catch {
+                setLojaId(null);
+            }
+        })();
     }, []);
 
     useEffect(() => {
@@ -23,9 +29,8 @@ export default function PDVManual() {
         const carregar = async () => {
             try {
                 setCarregando(true);
-                const resp = await fetch(`${API_URL}/estoque?loja_id=${lojaId}`);
-                if (!resp.ok) throw new Error('Falha ao carregar estoque');
-                const data = await resp.json();
+                const resp = await apiJson(`/estoque?loja_id=${lojaId}`);
+                const data = resp;
                 const lista = (data.estoque || []).map((e) => ({
                     id: e.produto_id,
                     nome: e.produto?.nome || `Produto ${e.produto_id}`,
@@ -42,7 +47,7 @@ export default function PDVManual() {
             }
         };
         carregar();
-    }, [API_URL, lojaId]);
+    }, [lojaId]);
 
     const [quantidades, setQuantidades] = useState({});
     const [listaCompras, setListaCompras] = useState([]);

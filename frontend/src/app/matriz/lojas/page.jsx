@@ -5,8 +5,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Header from '@/components/Header/page';
 import Footer from '@/components/Footer/page';
+import { apiJson } from '@/lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 
 export default function Lojas() {
   const [lojas, setLojas] = useState([]);
@@ -32,9 +33,7 @@ export default function Lojas() {
   const fetchLojas = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/lojas`);
-      if (!response.ok) throw new Error('Erro ao buscar lojas');
-      const data = await response.json();
+      const data = await apiJson('/lojas');
       setLojas(data.lojas || []);
     } catch (error) {
       showAlert('error', `Erro ao carregar lojas: ${error.message}`);
@@ -91,16 +90,10 @@ export default function Lojas() {
         tipo: novaLoja.tipo.toLowerCase()
       };
 
-      const response = await fetch(`${API_URL}/lojas`, {
+      await apiJson('/lojas', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(lojaData),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.mensagem || 'Erro ao criar loja');
-      }
 
       showAlert('success', `Loja "${novaLoja.nome}" cadastrada com sucesso!`);
       
@@ -132,16 +125,10 @@ export default function Lojas() {
         tipo: editLoja.tipo.toLowerCase()
       };
 
-      const response = await fetch(`${API_URL}/lojas/${editLoja.id}`, {
+      await apiJson(`/lojas/${editLoja.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(lojaData),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.mensagem || 'Erro ao atualizar loja');
-      }
 
       showAlert('success', `Loja "${editLoja.nome}" editada com sucesso!`);
       setIsModalOpen(false);
@@ -182,14 +169,9 @@ export default function Lojas() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/lojas/${id}`, {
+      await apiJson(`/lojas/${id}`, {
         method: 'DELETE',
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.mensagem || 'Erro ao excluir loja');
-      }
 
       showAlert('success', `Loja "${lojaToDelete.nome}" excluída com sucesso!`);
       

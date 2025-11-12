@@ -1,12 +1,10 @@
 "use client"
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Header from '@/components/Header/page';
+import Header from '@/components/Headerfilial/page';
 import { apiJson } from '@/lib/api';
 
-export default function PerfilMatriz() {
-  const router = useRouter();
+export default function PerfilFilial() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [usuario, setUsuario] = useState(null);
@@ -16,23 +14,25 @@ export default function PerfilMatriz() {
     (async () => {
       try {
         const auth = await apiJson('/auth/check-auth');
-        if (!auth?.authenticated) throw new Error('Sessão expirada');
+        if (!auth?.authenticated) {
+          throw new Error('Sessão expirada. Faça login novamente.');
+        }
         const user = auth.user || {};
         setUsuario(user);
 
+        // Buscar nome da loja
         if (user?.loja_id) {
           try {
             const lojasResp = await apiJson('/lojas');
-            const lojas = lojasResp?.lojas || lojasResp || [];
-            const loja = (lojas || []).find((l) => Number(l.id) === Number(user.loja_id));
+            const lojas = lojasResp?.lojas || [];
+            const loja = lojas.find((l) => Number(l.id) === Number(user.loja_id));
             if (loja) setLojaNome(loja.nome);
           } catch {
-            // ignore
+            // ignora erro ao buscar lojas; exibiremos apenas o id
           }
         }
       } catch (e) {
         setErro(e?.message || 'Falha ao carregar perfil');
-        try { router.replace('/'); } catch {}
       } finally {
         setLoading(false);
       }
@@ -83,3 +83,4 @@ export default function PerfilMatriz() {
     </>
   );
 }
+

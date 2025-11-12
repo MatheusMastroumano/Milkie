@@ -6,8 +6,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Header from '@/components/Header/page';
 import Footer from '@/components/Footer/page';
+import { apiJson } from '@/lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 
 export default function Produtos() {
   const router = useRouter();
@@ -50,9 +51,7 @@ export default function Produtos() {
     const fetchProdutos = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${API_URL}/produtos?loja_id=${lojaId}`);
-        if (!res.ok) throw new Error('Erro ao carregar produtos');
-        const { produtos: data } = await res.json();
+        const { produtos: data } = await apiJson(`/produtos?loja_id=${lojaId}`);
         setProdutos(data || []);
       } catch (error) {
         showAlert('error', error.message);
@@ -66,9 +65,7 @@ export default function Produtos() {
   useEffect(() => {
     const fetchLojas = async () => {
       try {
-        const res = await fetch(`${API_URL}/lojas`);
-        if (!res.ok) throw new Error('Erro ao carregar lojas');
-        const data = await res.json();
+        const data = await apiJson('/lojas');
         setLojas(data.lojas || data || []);
       } catch (error) {
         showAlert('error', 'Erro ao carregar lojas');
@@ -118,17 +115,14 @@ export default function Produtos() {
     if (!validateProdutoForm(novoProduto)) return;
 
     try {
-      const res = await fetch(`${API_URL}/produtos`, {
+      const { produto: novo } = await apiJson('/produtos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...novoProduto,
           fabricacao: novoProduto.fabricacao || null,
           validade: novoProduto.validade || null,
         }),
       });
-      if (!res.ok) throw new Error('Falha ao criar produto');
-      const { produto: novo } = await res.json();
 
       setProdutos(prev => [...prev, novo]);
       closeModal();
@@ -143,9 +137,8 @@ export default function Produtos() {
     if (!validateProdutoForm(editProduto)) return;
 
     try {
-      await fetch(`${API_URL}/produtos/${editProduto.id}`, {
+      await apiJson(`/produtos/${editProduto.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...editProduto,
           fabricacao: editProduto.fabricacao || null,
@@ -166,9 +159,8 @@ export default function Produtos() {
     if (!validateEstoqueForm(estoqueProduto)) return;
 
     try {
-      const res = await fetch(`${API_URL}/estoque`, {
+      const { estoque: novoEstoque } = await apiJson('/estoque', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           produto_id: estoqueProduto.produto_id,
           loja_id: parseInt(estoqueProduto.loja_id),
@@ -177,12 +169,6 @@ export default function Produtos() {
           valido_ate: estoqueProduto.valido_ate || null,
         }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Erro ao atualizar estoque');
-      }
-
-      const { estoque: novoEstoque } = await res.json();
 
       setProdutos(prev => prev.map(p =>
         p.id === estoqueProduto.produto_id
@@ -241,7 +227,7 @@ export default function Produtos() {
   const handleDeleteProduto = async (id) => {
     if (!window.confirm('Excluir este produto?')) return;
     try {
-      await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' });
+      await apiJson(`/produtos/${id}`, { method: 'DELETE' });
       setProdutos(prev => prev.filter(p => p.id !== id));
       showAlert('success', 'Produto removido!');
     } catch (error) {

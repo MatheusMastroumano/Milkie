@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Header from "@/components/Header/page";
+import { apiJson } from '@/lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 
 export default function Fornecedores() {
   const [fornecedores, setFornecedores] = useState([]);
@@ -25,9 +26,7 @@ export default function Fornecedores() {
   const fetchFornecedores = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/fornecedores`);
-      if (!response.ok) throw new Error('Erro ao buscar fornecedores');
-      const data = await response.json();
+      const data = await apiJson('/fornecedores');
       setFornecedores(data.fornecedores || []);
     } catch (error) {
       console.error('Erro ao carregar fornecedores:', error);
@@ -63,20 +62,14 @@ export default function Fornecedores() {
     e.preventDefault();
     if (validateForm(novoFornecedor)) {
       try {
-        const response = await fetch(`${API_URL}/fornecedores`, {
+        await apiJson('/fornecedores', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             nome: novoFornecedor.nome,
             cnpj_cpf: novoFornecedor.cnpj_cpf,
             ativo: novoFornecedor.ativo,
           }),
         });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || 'Erro ao adicionar fornecedor');
-        }
 
         await fetchFornecedores();
         setNovoFornecedor({ nome: '', cnpj_cpf: '', ativo: true });
@@ -93,20 +86,14 @@ export default function Fornecedores() {
     e.preventDefault();
     if (validateForm(editFornecedor, true)) {
       try {
-        const response = await fetch(`${API_URL}/fornecedores/${editFornecedor.id}`, {
+        await apiJson(`/fornecedores/${editFornecedor.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             nome: editFornecedor.nome,
             cnpj_cpf: editFornecedor.cnpj_cpf,
             ativo: editFornecedor.ativo,
           }),
         });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || 'Erro ao atualizar fornecedor');
-        }
 
         await fetchFornecedores();
         setIsModalOpen(false);
@@ -137,14 +124,9 @@ export default function Fornecedores() {
   const handleDeleteFornecedor = async (id) => {
     if (window.confirm('Tem certeza que deseja excluir este fornecedor?')) {
       try {
-        const response = await fetch(`${API_URL}/fornecedores/${id}`, {
+        await apiJson(`/fornecedores/${id}`, {
           method: 'DELETE',
         });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || 'Erro ao excluir fornecedor');
-        }
 
         await fetchFornecedores();
         if (editFornecedor && editFornecedor.id === id) {

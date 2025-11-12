@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiJson } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -16,23 +17,24 @@ export default function Pagamento() {
     const [usuarioId, setUsuarioId] = useState(null);
 
     useEffect(() => {
-        if (typeof window !== 'undefined') {
+        (async () => {
             try {
-                const raw = localStorage.getItem('pdv_cart');
-                if (raw) {
-                    const parsed = JSON.parse(raw);
-                    setItens(parsed.itens || []);
-                    const total = (parsed.total != null) ? parsed.total : (parsed.itens || []).reduce((t, i) => t + i.preco * i.quantidade, 0);
-                    setValorTotal(total);
-                    if (parsed.loja_id) setLojaId(parsed.loja_id);
-                    if (parsed.usuario_id) setUsuarioId(parsed.usuario_id);
+                if (typeof window !== 'undefined') {
+                    const raw = localStorage.getItem('pdv_cart');
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        setItens(parsed.itens || []);
+                        const total = (parsed.total != null) ? parsed.total : (parsed.itens || []).reduce((t, i) => t + i.preco * i.quantidade, 0);
+                        setValorTotal(total);
+                        if (parsed.loja_id) setLojaId(parsed.loja_id);
+                        if (parsed.usuario_id) setUsuarioId(parsed.usuario_id);
+                    }
                 }
-                
-                const user = JSON.parse(localStorage.getItem('user') || '{}');
-                setLojaId(prev => (prev != null ? prev : (user.loja_id != null ? user.loja_id : 1)));
-                setUsuarioId(prev => (prev != null ? prev : (user.id != null ? user.id : 1)));
+                const auth = await apiJson('/auth/check-auth');
+                setLojaId(prev => (prev != null ? prev : (auth?.user?.loja_id ?? null)));
+                setUsuarioId(prev => (prev != null ? prev : (auth?.user?.id ?? null)));
             } catch (_) {}
-        }
+        })();
     }, []);
 
     const calcularTroco = (recebido) => {

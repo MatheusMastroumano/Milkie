@@ -4,10 +4,11 @@
 import { useState, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, XCircle, Loader2, Plus } from 'lucide-react';
+import { apiJson } from '@/lib/api';
 import Header from '@/components/Header/page';
 import Footer from '@/components/Footer/page';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 
 export default function UsuariosMatriz() {
   const [lojas, setLojas] = useState([]);
@@ -41,9 +42,7 @@ export default function UsuariosMatriz() {
 
   const fetchLojas = async () => {
     try {
-      const response = await fetch(`${API_URL}/lojas`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = await apiJson('/lojas');
       console.log('Lojas fetched:', data);
       setLojas(data.lojas || []);
     } catch (error) {
@@ -54,9 +53,7 @@ export default function UsuariosMatriz() {
 
   const fetchFuncionarios = async () => {
     try {
-      const response = await fetch(`${API_URL}/funcionarios`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = await apiJson('/funcionarios');
       console.log('Funcionarios fetched:', data);
       setFuncionarios(data.funcionarios || []);
     } catch (error) {
@@ -67,9 +64,7 @@ export default function UsuariosMatriz() {
 
   const fetchUsuarios = async () => {
     try {
-      const response = await fetch(`${API_URL}/usuarios`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = await apiJson('/usuarios');
       console.log('Usuarios fetched:', data);
       setUsuarios(data.usuarios || []);
     } catch (error) {
@@ -104,6 +99,7 @@ export default function UsuariosMatriz() {
       newErrors.funcao = 'A função é obrigatória';
     }
 
+    // Username e senha obrigatórios na criação
     if (!usuario.username?.trim()) {
       newErrors.username = 'O nome de usuário é obrigatório';
     } else if (usuarios.some((u) => u.username === usuario.username && (!isEdit || u.id !== usuario.id))) {
@@ -172,20 +168,14 @@ export default function UsuariosMatriz() {
 
       console.log('Sending usuarioData:', JSON.stringify(usuarioData, null, 2));
 
-      const response = await fetch(`${API_URL}/usuarios`, {
+      const data = await apiJson('/usuarios', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(usuarioData),
+        body: JSON.stringify({
+          ...usuarioData,
+          username: novoUsuario.username,
+          senha_hash: novoUsuario.senha_hash,
+        }),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('POST response error:', errorText);
-        const errorData = JSON.parse(errorText || '{}');
-        throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
       console.log('POST success:', data);
 
       showAlert('success', `Usuário "${novoUsuario.username}" cadastrado com sucesso!`);
@@ -230,20 +220,10 @@ export default function UsuariosMatriz() {
 
       console.log('Updating usuarioData:', JSON.stringify(usuarioData, null, 2));
 
-      const response = await fetch(`${API_URL}/usuarios/${editUsuario.id}`, {
+      const data = await apiJson(`/usuarios/${editUsuario.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(usuarioData),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('PUT response error:', errorText);
-        const errorData = JSON.parse(errorText || '{}');
-        throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
       console.log('PUT success:', data);
 
       showAlert('success', `Usuário "${editUsuario.username}" atualizado com sucesso!`);
@@ -298,18 +278,9 @@ export default function UsuariosMatriz() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/usuarios/${id}`, {
+      const data = await apiJson(`/usuarios/${id}`, {
         method: 'DELETE',
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('DELETE response error:', errorText);
-        const errorData = JSON.parse(errorText || '{}');
-        throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
       console.log('DELETE success:', data);
 
       showAlert('success', `Usuário "${usuarioToDelete.username}" removido com sucesso!`);
@@ -621,42 +592,42 @@ export default function UsuariosMatriz() {
                       <p id="funcao-error" className="text-[#AD343E] text-sm mt-1">{errors.funcao}</p>
                     )}
                   </div>
-                  <div>
-                    <label htmlFor="username" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                      Nome de Usuário *
-                    </label>
-                    <input
-                      type="text"
-                      id="username"
-                      value={novoUsuario.username}
-                      onChange={(e) => setNovoUsuario({ ...novoUsuario, username: e.target.value })}
-                      className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      placeholder="Ex.: usuario123"
-                      aria-invalid={!!errors.username}
-                      aria-describedby={errors.username ? 'username-error' : undefined}
-                    />
-                    {errors.username && (
-                      <p id="username-error" className="text-[#AD343E] text-sm mt-1">{errors.username}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label htmlFor="senha_hash" className="block text-sm font-medium text-[#2A4E73] mb-1">
-                      Senha *
-                    </label>
-                    <input
-                      type="password"
-                      id="senha_hash"
-                      value={novoUsuario.senha_hash}
-                      onChange={(e) => setNovoUsuario({ ...novoUsuario, senha_hash: e.target.value })}
-                      className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      placeholder="Digite a senha"
-                      aria-invalid={!!errors.senha_hash}
-                      aria-describedby={errors.senha_hash ? 'senha_hash-error' : undefined}
-                    />
-                    {errors.senha_hash && (
-                      <p id="senha_hash-error" className="text-[#AD343E] text-sm mt-1">{errors.senha_hash}</p>
-                    )}
-                  </div>
+                <div>
+                  <label htmlFor="username" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                    Nome de Usuário *
+                  </label>
+                  <input
+                    type="text"
+                    id="username"
+                    value={novoUsuario.username}
+                    onChange={(e) => setNovoUsuario({ ...novoUsuario, username: e.target.value })}
+                    className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                    placeholder="Ex.: usuario123"
+                    aria-invalid={!!errors.username}
+                    aria-describedby={errors.username ? 'username-error' : undefined}
+                  />
+                  {errors.username && (
+                    <p id="username-error" className="text-[#AD343E] text-sm mt-1">{errors.username}</p>
+                  )}
+                </div>
+                <div>
+                  <label htmlFor="senha_hash" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                    Senha *
+                  </label>
+                  <input
+                    type="password"
+                    id="senha_hash"
+                    value={novoUsuario.senha_hash}
+                    onChange={(e) => setNovoUsuario({ ...novoUsuario, senha_hash: e.target.value })}
+                    className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                    placeholder="Digite a senha"
+                    aria-invalid={!!errors.senha_hash}
+                    aria-describedby={errors.senha_hash ? 'senha_hash-error' : undefined}
+                  />
+                  {errors.senha_hash && (
+                    <p id="senha_hash-error" className="text-[#AD343E] text-sm mt-1">{errors.senha_hash}</p>
+                  )}
+                </div>
                   <div className="flex gap-3 pt-4">
                     <button
                       type="submit"

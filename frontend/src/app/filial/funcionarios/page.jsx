@@ -7,7 +7,7 @@ import { CheckCircle, XCircle, Loader2, Plus } from 'lucide-react';
 import Header from '@/components/Headerfilial/page';
 import Footer from '@/components/Footer/page';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { apiJson } from '@/lib/api';
 
 export default function Funcionarios() {
   const [lojas, setLojas] = useState([]);
@@ -32,33 +32,21 @@ export default function Funcionarios() {
   const [errors, setErrors] = useState({});
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const allowedCargos = ['admin', 'gerente', 'caixa'];
   const [lojaError, setLojaError] = useState(null);
 
-  // Simula login e valida loja ID 2
+  // Usa a loja do usuário autenticado
   useEffect(() => {
     const initializeLoja = async () => {
       try {
-        const storedFilialId = localStorage.getItem('currentFilialId');
-        if (storedFilialId === '2') {
-          setCurrentFilialId(2);
-          await fetchLojas();
-          await fetchFuncionarios();
-        } else {
-          // Simula login forçando Loja ID 2
-          const response = await fetch(`${API_URL}/lojas`);
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-          const data = await response.json();
-          const lojaSul = (data.lojas || []).find((loja) => loja.id === 2);
-          if (!lojaSul) {
-            throw new Error('Loja com ID 2 não encontrada no banco de dados');
-          }
-          setCurrentFilialId(2);
-          setLojaNome(lojaSul.nome);
-          localStorage.setItem('currentFilialId', '2');
-          console.log(`Loja ID 2 validada: ${lojaSul.nome}`);
-          await fetchLojas();
-          await fetchFuncionarios();
+        const auth = await apiJson('/auth/check-auth');
+        const lojaId = Number(auth?.user?.loja_id);
+        if (!lojaId) {
+          throw new Error('Loja do usuário não encontrada');
         }
+        setCurrentFilialId(lojaId);
+        await fetchLojas();
+        await fetchFuncionarios();
       } catch (error) {
         console.error('Error initializing loja:', error);
         setLojaError(`Erro ao validar loja: ${error.message}. Não é possível gerenciar funcionários.`);
@@ -70,17 +58,14 @@ export default function Funcionarios() {
 
   const fetchLojas = async () => {
     try {
-      const response = await fetch(`${API_URL}/lojas`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = await apiJson('/lojas');
       console.log('Lojas fetched:', data);
       setLojas(data.lojas || []);
-      const lojaSul = (data.lojas || []).find((loja) => loja.id === 2);
-      if (lojaSul) {
-        setLojaNome(lojaSul.nome);
-        console.log('Nome da loja ID 2:', lojaSul.nome);
+      const lojaDoUsuario = (data.lojas || []).find((loja) => loja.id === currentFilialId);
+      if (lojaDoUsuario) {
+        setLojaNome(lojaDoUsuario.nome);
       } else {
-        setLojaError('Loja com ID 2 não encontrada no banco de dados');
+        setLojaError('Loja do usuário não encontrada no banco de dados');
       }
     } catch (error) {
       console.error('Error fetching lojas:', error);
@@ -90,9 +75,7 @@ export default function Funcionarios() {
 
   const fetchFuncionarios = async () => {
     try {
-      const response = await fetch(`${API_URL}/funcionarios`);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = await apiJson('/funcionarios');
       console.log('Funcionarios fetched:', data);
       setFuncionarios(data.funcionarios || []);
     } catch (error) {
@@ -137,14 +120,16 @@ export default function Funcionarios() {
 
     if (!funcionario.cargo?.trim()) {
       newErrors.cargo = 'O cargo é obrigatório';
+    } else if (!allowedCargos.includes(funcionario.cargo.toLowerCase())) {
+      newErrors.cargo = 'Cargo inválido. Use: admin, gerente ou caixa';
     }
 
     if (!funcionario.salario || parseFloat(funcionario.salario) <= 0) {
       newErrors.salario = 'O salário deve ser um número positivo';
     }
 
-    if (!funcionario.loja_id || parseInt(funcionario.loja_id) !== 2) {
-      newErrors.loja_id = `Funcionário deve pertencer à ${lojaNome || 'loja ID 2'}`;
+    if (!funcionario.loja_id || parseInt(funcionario.loja_id) !== currentFilialId) {
+      newErrors.loja_id = `Funcionário deve pertencer à ${lojaNome || `loja ID ${currentFilialId}`}`;
     }
 
     setErrors(newErrors);
@@ -198,20 +183,10 @@ export default function Funcionarios() {
 
       console.log('Sending funcionarioData:', JSON.stringify(funcionarioData, null, 2));
 
-      const response = await fetch(`${API_URL}/funcionarios`, {
+      const data = await apiJson('/funcionarios', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(funcionarioData),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('POST response error:', errorText);
-        const errorData = JSON.parse(errorText || '{}');
-        throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
       console.log('POST success:', data);
 
       showAlert('success', `Funcionário "${novoFuncionario.nome}" cadastrado com sucesso!`);
@@ -259,20 +234,10 @@ export default function Funcionarios() {
 
       console.log('Updating funcionarioData:', JSON.stringify(funcionarioData, null, 2));
 
-      const response = await fetch(`${API_URL}/funcionarios/${editFuncionario.id}`, {
+      const data = await apiJson(`/funcionarios/${editFuncionario.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(funcionarioData),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('PUT response error:', errorText);
-        const errorData = JSON.parse(errorText || '{}');
-        throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
       console.log('PUT success:', data);
 
       showAlert('success', `Funcionário "${editFuncionario.nome}" atualizado com sucesso!`);
@@ -335,18 +300,9 @@ export default function Funcionarios() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/funcionarios/${id}`, {
+      const data = await apiJson(`/funcionarios/${id}`, {
         method: 'DELETE',
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('DELETE response error:', errorText);
-        const errorData = JSON.parse(errorText || '{}');
-        throw new Error(errorData.mensagem || `Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
       console.log('DELETE success:', data);
 
       showAlert('success', `Funcionário "${funcionarioToDelete.nome}" removido com sucesso!`);
@@ -424,7 +380,7 @@ export default function Funcionarios() {
 
         <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
-            Funcionários - {lojaNome || 'Loja Sul'}
+            Funcionários - {lojaNome || `Loja ${currentFilialId || ''}`}
           </h2>
 
           <div className="mb-6">
@@ -637,16 +593,19 @@ export default function Funcionarios() {
                     <label htmlFor="cargo" className="block text-sm font-medium text-[#2A4E73] mb-1">
                       Cargo *
                     </label>
-                    <input
-                      type="text"
+                    <select
                       id="cargo"
-                      value={novoFuncionario.cargo}
+                      value={(novoFuncionario.cargo || '').toLowerCase()}
                       onChange={(e) => setNovoFuncionario({ ...novoFuncionario, cargo: e.target.value })}
                       className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      placeholder="Ex.: Caixa"
                       aria-invalid={!!errors.cargo}
                       aria-describedby={errors.cargo ? 'cargo-error' : undefined}
-                    />
+                    >
+                      <option value="">Selecione</option>
+                      <option value="admin">admin</option>
+                      <option value="gerente">gerente</option>
+                      <option value="caixa">caixa</option>
+                    </select>
                     {errors.cargo && (
                       <p id="cargo-error" className="text-[#AD343E] text-sm mt-1">{errors.cargo}</p>
                     )}
@@ -683,7 +642,7 @@ export default function Funcionarios() {
                       aria-invalid={!!errors.loja_id}
                       aria-describedby={errors.loja_id ? 'loja_id-error' : undefined}
                     >
-                      <option value="2">{lojaNome || 'Loja Sul'} (Filial)</option>
+                      <option value={String(currentFilialId)}>{lojaNome || `Loja ${currentFilialId || ''}`} (Filial)</option>
                     </select>
                     {errors.loja_id && (
                       <p id="loja_id-error" className="text-[#AD343E] text-sm mt-1">{errors.loja_id}</p>
@@ -843,16 +802,19 @@ export default function Funcionarios() {
                     <label htmlFor="edit-cargo" className="block text-sm font-medium text-[#2A4E73] mb-1">
                       Cargo *
                     </label>
-                    <input
-                      type="text"
+                    <select
                       id="edit-cargo"
-                      value={editFuncionario.cargo}
+                      value={(editFuncionario.cargo || '').toLowerCase()}
                       onChange={(e) => setEditFuncionario({ ...editFuncionario, cargo: e.target.value })}
                       className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      placeholder="Ex.: Caixa"
                       aria-invalid={!!errors.cargo}
                       aria-describedby={errors.cargo ? 'edit-cargo-error' : undefined}
-                    />
+                    >
+                      <option value="">Selecione</option>
+                      <option value="admin">admin</option>
+                      <option value="gerente">gerente</option>
+                      <option value="caixa">caixa</option>
+                    </select>
                     {errors.cargo && (
                       <p id="edit-cargo-error" className="text-[#AD343E] text-sm mt-1">{errors.cargo}</p>
                     )}
@@ -889,7 +851,7 @@ export default function Funcionarios() {
                       aria-invalid={!!errors.loja_id}
                       aria-describedby={errors.loja_id ? 'edit-loja_id-error' : undefined}
                     >
-                      <option value="2">{lojaNome || 'Loja Sul'} (Filial)</option>
+                      <option value={String(currentFilialId)}>{lojaNome || `Loja ${currentFilialId || ''}`} (Filial)</option>
                     </select>
                     {errors.loja_id && (
                       <p id="edit-loja_id-error" className="text-[#AD343E] text-sm mt-1">{errors.loja_id}</p>

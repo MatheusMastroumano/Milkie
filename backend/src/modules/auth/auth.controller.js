@@ -9,7 +9,10 @@ export async function loginController(req, res) {
     const { username, senha } = req.body;
 
     try {
-        const usuario = await prisma.usuarios.findUnique({ where: { username } });
+        const usuario = await prisma.usuarios.findUnique({
+            where: { username },
+            include: { funcionario: true },
+        });
 
         if (!usuario) return res.status(401).json({ mensagem: 'Usuário ou senha incorretos' });
         
@@ -19,7 +22,8 @@ export async function loginController(req, res) {
         if (!senhaCorreta) return res.status(401).json({ mensagem: 'Usuário ou senha incorretos' });
         
 
-        const token = jwt.sign({ id: usuario.id, funcao: usuario.funcao, username: usuario.username }, JWT_SECRET, { expiresIn: '8h' });
+        const resolvedLojaId = usuario.loja_id ?? usuario.funcionario?.loja_id ?? null;
+        const token = jwt.sign({ id: usuario.id, funcao: usuario.funcao, username: usuario.username, loja_id: resolvedLojaId }, JWT_SECRET, { expiresIn: '8h' });
 
         res.cookie('token', token, {
             httpOnly: true,
@@ -33,7 +37,8 @@ export async function loginController(req, res) {
             user: {
                 id: usuario.id,
                 funcao: usuario.funcao,
-                username: usuario.username
+                username: usuario.username,
+                loja_id: resolvedLojaId
             }
         });
     } catch (err) {
@@ -62,12 +67,27 @@ export async function checkAuthController(req, res) {
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
 
+        // Se o token não tiver loja_id, buscar do banco (via relação com funcionário)
+        let lojaId = decoded.loja_id ?? null;
+        if (!lojaId) {
+            try {
+                const u = await prisma.usuarios.findUnique({
+                    where: { id: decoded.id },
+                    include: { funcionario: true },
+                });
+                lojaId = u?.loja_id ?? u?.funcionario?.loja_id ?? null;
+            } catch (_) {
+                // ignora, retornará null
+            }
+        }
+
         return res.json({
             authenticated: true,
             user: {
                 id: decoded.id,
                 funcao: decoded.funcao,
-                username: decoded.username
+                username: decoded.username,
+                loja_id: lojaId
             }
         });
     } catch (err) {

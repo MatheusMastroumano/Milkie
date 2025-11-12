@@ -9,7 +9,7 @@ import authMiddleware from './shared/middlewares/authMiddleware.js';
 /* -------------------------------------------------------------------------- */
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 8080;
 
 /* -------------------------------------------------------------------------- */
 /*                            Importação de rotas                             */
@@ -31,11 +31,23 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+        const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+        if (isDev) {
+            // Em desenvolvimento, permite qualquer origem para facilitar testes locais
+            return callback(null, true);
+        }
+        if (!origin || origin === allowedOrigin) {
+            return callback(null, true);
+        }
+        return callback(new Error('Not allowed by CORS'));
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
     credentials: true,
 }));
+
 
 /* ------------------- Middleware global de tratamento de erros -------------- */
 app.use((err, req, res, next) => {
