@@ -17,6 +17,7 @@
   "description": "",
   "dependencies": {
     "@prisma/client": "^6.17.0",
+    "bad-words": "^4.0.0",
     "bcrypt": "^6.0.0",
     "brazilian-values": "^0.13.1",
     "cep-promise": "^4.4.1",
