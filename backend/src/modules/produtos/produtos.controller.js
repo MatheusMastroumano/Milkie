@@ -1,5 +1,7 @@
 import * as produtosService from './produtos.service.js';
 
+import uploadImagem from '../../shared/utils/uploadSupabase.js';
+
 /* ------------------------------ BUSCAR TODOS ----------------------------- */
 export async function getProdutosController(req, res) {
     try {
@@ -30,9 +32,12 @@ export async function getProdutosByIdController(req, res) {
 /* ------------------------------- CRIAR ------------------------------- */
 export async function createProdutosController(req, res) {
     try {
-        const { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo, imagem_url } = req.body;
+        const { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo } = req.body;
+        const imagem = req.files?.imagem;
 
-        const produtoData = { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo, imagem_url };
+        const imagemUrl = await uploadImagem(imagem, 'produtos');
+
+        const produtoData = { nome, imagemUrl, marca, categoria, descricao, sku, fabricacao, validade, ativo };
 
         const produto = await produtosService.createProdutos(produtoData);
 

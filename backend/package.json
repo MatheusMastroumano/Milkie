@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node src/app.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "node prisma/seed.js",
+    "test:api": "node playground/test_all_routes.js"
   },
   "keywords": [],
   "author": "",
@@ -13,14 +17,17 @@
   "description": "",
   "dependencies": {
     "@prisma/client": "^6.17.0",
+    "@supabase/supabase-js": "^2.81.1",
     "bcrypt": "^6.0.0",
     "brazilian-values": "^0.13.1",
+    "fetch-cookie": "^3.0.1",
     "cep-promise": "^4.4.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "cpf-cnpj-validator": "^1.0.3",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
+    "express-fileupload": "^1.5.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "zod": "^4.1.11"
