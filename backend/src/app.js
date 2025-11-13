@@ -2,10 +2,11 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import authMiddleware from './shared/middlewares/authMiddleware.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+
+import verificarPalavroes from './shared/middlewares/verificarPalavroes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -53,6 +54,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(verificarPalavroes);
 
 // Servir arquivos estáticos (imagens) - DEVE estar DEPOIS do CORS
 // __dirname aponta para backend/src, então precisamos subir um nível para backend
