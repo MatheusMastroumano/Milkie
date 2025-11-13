@@ -6,7 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Header from '@/components/Header/page';
 import Footer from '@/components/Footer/page';
-import { apiJson } from '@/lib/api';
+import { apiJson, apiFormData } from '@/lib/api';
 
 
 
@@ -24,8 +24,12 @@ export default function Produtos() {
     sku: '',
     fabricacao: '',
     validade: '',
+    imagem_url: '',
     ativo: true,
   });
+  const [imagemSelecionada, setImagemSelecionada] = useState(null);
+  const [previewImagem, setPreviewImagem] = useState(null);
+  const [uploadingImagem, setUploadingImagem] = useState(false);
   const [editProduto, setEditProduto] = useState(null);
   const [estoqueProduto, setEstoqueProduto] = useState({
     produto_id: null,
@@ -110,15 +114,54 @@ export default function Produtos() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImagemSelecionada(file);
+      // Criar preview da imagem
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImagem(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUploadImagem = async () => {
+    if (!imagemSelecionada) return null;
+
+    try {
+      setUploadingImagem(true);
+      const formData = new FormData();
+      formData.append('imagem', imagemSelecionada);
+
+      const response = await apiFormData('/produtos/upload-imagem', formData);
+      return response.imagem_url;
+    } catch (error) {
+      showAlert('error', `Erro ao fazer upload da imagem: ${error.message}`);
+      return null;
+    } finally {
+      setUploadingImagem(false);
+    }
+  };
+
   const handleAddProduto = async (e) => {
     e.preventDefault();
     if (!validateProdutoForm(novoProduto)) return;
 
     try {
+      // Fazer upload da imagem se houver
+      let imagemUrl = novoProduto.imagem_url;
+      if (imagemSelecionada) {
+        imagemUrl = await handleUploadImagem();
+        if (!imagemUrl) return; // Se o upload falhar, não continua
+      }
+
       const { produto: novo } = await apiJson('/produtos', {
         method: 'POST',
         body: JSON.stringify({
           ...novoProduto,
+          imagem_url: imagemUrl || null,
           fabricacao: novoProduto.fabricacao || null,
           validade: novoProduto.validade || null,
         }),
@@ -219,8 +262,10 @@ export default function Produtos() {
     });
     setNovoProduto({
       nome: '', marca: '', categoria: '', descricao: '', sku: '',
-      fabricacao: '', validade: '', ativo: true,
+      fabricacao: '', validade: '', imagem_url: '', ativo: true,
     });
+    setImagemSelecionada(null);
+    setPreviewImagem(null);
     setErrors({});
   };
 
@@ -237,7 +282,7 @@ export default function Produtos() {
 
   const handleViewProduct = (produto) => {
     localStorage.setItem('productDetails', JSON.stringify(produto));
-    router.push(`/filial/produtos/${produto.id}`);
+    router.push(`/matriz/produtos/${produto.id}`);
   };
 
   return (
@@ -484,6 +529,33 @@ export default function Produtos() {
                       className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                     />
                   </div>
+
+                  {isAddModalOpen && (
+                    <div>
+                      <label htmlFor="add-imagem" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                        Imagem do Produto
+                      </label>
+                      <input
+                        id="add-imagem"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      />
+                      {previewImagem && (
+                        <div className="mt-2">
+                          <img 
+                            src={previewImagem} 
+                            alt="Preview" 
+                            className="max-w-full h-32 object-contain rounded-md border border-gray-300"
+                          />
+                        </div>
+                      )}
+                      {uploadingImagem && (
+                        <p className="text-xs text-[#2A4E73] mt-1">Enviando imagem...</p>
+                      )}
+                    </div>
+                  )}
 
                   {isModalOpen && (
                     <div>

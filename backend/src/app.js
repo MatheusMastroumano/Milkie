@@ -3,6 +3,12 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authMiddleware from './shared/middlewares/authMiddleware.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /* -------------------------------------------------------------------------- */
 /*                         Configurações iniciais                             */
@@ -27,9 +33,6 @@ import { finalizarVendaController } from './modules/vendas/vendas.controller.js'
 /* -------------------------------------------------------------------------- */
 /*                               Middlewares                                  */
 /* -------------------------------------------------------------------------- */
-app.use(express.json());
-app.use(cookieParser());
-
 app.use(cors({
     origin: (origin, callback) => {
         const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -48,6 +51,22 @@ app.use(cors({
     credentials: true,
 }));
 
+app.use(express.json());
+app.use(cookieParser());
+
+// Servir arquivos estáticos (imagens) - DEVE estar DEPOIS do CORS
+// __dirname aponta para backend/src, então precisamos subir um nível para backend
+const uploadsPath = path.join(__dirname, '../uploads');
+console.log('📁 Servindo arquivos estáticos de:', uploadsPath);
+
+app.use('/uploads', express.static(uploadsPath, {
+    setHeaders: (res, filePath) => {
+        // Configurar headers apropriados para imagens
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
+        console.log('📸 Servindo imagem:', filePath);
+    }
+}));
 
 /* ------------------- Middleware global de tratamento de erros -------------- */
 app.use((err, req, res, next) => {

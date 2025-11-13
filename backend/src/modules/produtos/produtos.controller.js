@@ -30,9 +30,9 @@ export async function getProdutosByIdController(req, res) {
 /* ------------------------------- CRIAR ------------------------------- */
 export async function createProdutosController(req, res) {
     try {
-        const { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo } = req.body;
+        const { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo, imagem_url } = req.body;
 
-        const produtoData = { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo };
+        const produtoData = { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo, imagem_url };
 
         const produto = await produtosService.createProdutos(produtoData);
 
@@ -53,9 +53,9 @@ export async function updateProdutosController(req, res) {
             return res.status(404).json({ mensagem: 'Produto nao encontrado' });
         }
 
-        const { nome, marca, categoria, descricao, sku, ativo } = req.body;
+        const { nome, marca, categoria, descricao, sku, ativo, imagem_url } = req.body;
 
-        const produtoData = { nome, marca, categoria, descricao, sku, ativo };
+        const produtoData = { nome, marca, categoria, descricao, sku, ativo, imagem_url };
 
         const updatedProduto = await produtosService.updateProdutos(produtoId, produtoData);
 

@@ -88,6 +88,7 @@ model produtos {
     sku          String                @unique
     fabricacao   DateTime
     validade     DateTime
+    imagem_url   String?
     ativo        Boolean               @default(true)
     criado_em    DateTime              @default(now())
     estoque      estoque[]

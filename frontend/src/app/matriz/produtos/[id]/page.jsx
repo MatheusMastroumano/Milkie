@@ -3,21 +3,44 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header/page";
+import { apiJson } from "@/lib/api";
+import { Loader2 } from "lucide-react";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export default function ProductDetails() {
   const router = useRouter();
   const params = useParams();
   const [produto, setProduto] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Recuperar os dados do produto do localStorage
-    const productData = localStorage.getItem("productDetails");
-    if (productData) {
-      setProduto(JSON.parse(productData));
-    }
-    setLoading(false);
-  }, []);
+    const fetchProduto = async () => {
+      try {
+        setLoading(true);
+        // Primeiro tenta buscar do localStorage (fallback)
+        const productData = localStorage.getItem("productDetails");
+        if (productData) {
+          const produtoLocal = JSON.parse(productData);
+          setProduto(produtoLocal);
+        }
+        
+        // Busca da API usando o ID da URL
+        if (params?.id) {
+          const { produto: produtoApi } = await apiJson(`/produtos/${params.id}`);
+          setProduto(produtoApi);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar produto:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduto();
+  }, [params?.id]);
 
   const handleGoBack = () => {
     router.back();
@@ -36,12 +59,54 @@ export default function ProductDetails() {
     }).format(price);
   };
 
+  // Função para construir a URL completa da imagem
+  const getImagemUrl = (imagemUrl) => {
+    if (!imagemUrl) {
+      console.log('Imagem URL é nula ou vazia');
+      return null;
+    }
+    // Se já é uma URL completa, retorna como está
+    if (imagemUrl.startsWith('http://') || imagemUrl.startsWith('https://')) {
+      console.log('URL completa da imagem:', imagemUrl);
+      return imagemUrl;
+    }
+    // Se é uma URL relativa, adiciona a URL da API
+    const fullUrl = `${API_URL}${imagemUrl}`;
+    console.log('URL construída da imagem:', fullUrl);
+    return fullUrl;
+  };
+
   if (loading) {
     return (
       <>
         <Header />
-        <main className="min-h-screen flex items-center justify-center bg-[#FFFFFF]">
-          <div className="text-[#2A4E73] text-lg">Carregando...</div>
+        <main className="min-h-screen flex items-center justify-center bg-[#FFFFFF] pt-16">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-[#2A4E73]" />
+            <div className="text-[#2A4E73] text-lg">Carregando produto...</div>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen flex items-center justify-center bg-[#FFFFFF] pt-16">
+          <div className="text-center max-w-md p-6 bg-[#F7FAFC] rounded-lg shadow">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#AD343E] mb-4">
+              Erro ao carregar produto
+            </h1>
+            <p className="text-[#2A4E73] mb-6">{error}</p>
+            <button
+              onClick={() => router.push("/matriz/produtos")}
+              className="px-6 py-3 text-sm font-medium text-white bg-[#2A4E73] rounded-md hover:bg-[#AD343E] transition-colors"
+            >
+              Voltar à Lista
+            </button>
+          </div>
         </main>
       </>
     );
@@ -110,9 +175,11 @@ export default function ProductDetails() {
                 >
                   {produto.ativo ? "Ativo" : "Inativo"}
                 </div>
-                <div className="text-2xl font-bold mt-1">
-                  {formatPrice(produto.preco)}
-                </div>
+                {produto.estoque?.[0]?.preco && (
+                  <div className="text-2xl font-bold mt-1">
+                    {formatPrice(produto.estoque[0].preco)}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -120,13 +187,42 @@ export default function ProductDetails() {
             <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Imagem */}
               <div className="flex justify-center">
-                <div className="bg-white border rounded-lg shadow-sm w-full h-64 flex items-center justify-center overflow-hidden">
-                  {produto.foto ? (
-                    <img
-                      src={produto.foto}
-                      alt={`Imagem do produto ${produto.nome}`}
-                      className="object-contain w-full h-full"
-                    />
+                <div className="bg-white border-2 border-gray-200 rounded-lg shadow-lg w-full min-h-[500px] flex items-center justify-center overflow-hidden">
+                  {getImagemUrl(produto.imagem_url) ? (
+                    <>
+                      <img
+                        key={produto.imagem_url}
+                        src={getImagemUrl(produto.imagem_url)}
+                        alt={`Imagem do produto ${produto.nome}`}
+                        className="object-contain w-full h-full max-h-[500px] p-6"
+                        onError={(e) => {
+                          console.error('Erro ao carregar imagem:', e.target.src);
+                          console.error('URL da imagem que falhou:', getImagemUrl(produto.imagem_url));
+                          e.target.style.display = 'none';
+                          const placeholder = e.target.parentElement.querySelector('.img-placeholder');
+                          if (placeholder) placeholder.style.display = 'flex';
+                        }}
+                        onLoad={() => {
+                          console.log('Imagem carregada com sucesso:', getImagemUrl(produto.imagem_url));
+                        }}
+                      />
+                      <div className="hidden img-placeholder text-center text-[#2A4E73] opacity-60 w-full h-full flex-col items-center justify-center">
+                        <svg
+                          className="mx-auto h-16 w-16 mb-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16l4.586-4.586a2 0 012.828 0L16 16m-2-2l1.586-1.586a2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 0 002-2V6a2 0 00-2-2H6a2 0 00-2 2v12a2 0 002 2z"
+                          />
+                        </svg>
+                        <p className="text-sm">Erro ao carregar imagem</p>
+                      </div>
+                    </>
                   ) : (
                     <div className="text-center text-[#2A4E73] opacity-60">
                       <svg
@@ -149,7 +245,7 @@ export default function ProductDetails() {
               </div>
 
               {/* Infos */}
-              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Informações Básicas */}
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-[#2A4E73] border-b border-[#CFE8F9] pb-1">
@@ -158,12 +254,22 @@ export default function ProductDetails() {
                   <p><b>ID:</b> {produto.id}</p>
                   <p><b>Nome:</b> {produto.nome}</p>
                   <p><b>SKU:</b> {produto.sku}</p>
-                  <p>
-                    <b>Preço:</b>{" "}
-                    <span className="font-semibold">
-                      {formatPrice(produto.preco)}
-                    </span>
-                  </p>
+                  {produto.estoque?.[0]?.preco && (
+                    <p>
+                      <b>Preço:</b>{" "}
+                      <span className="font-semibold text-green-600">
+                        {formatPrice(produto.estoque[0].preco)}
+                      </span>
+                    </p>
+                  )}
+                  {produto.estoque?.[0]?.quantidade !== undefined && (
+                    <p>
+                      <b>Quantidade em estoque:</b>{" "}
+                      <span className="font-semibold">
+                        {produto.estoque[0].quantidade}
+                      </span>
+                    </p>
+                  )}
                 </div>
 
                 {/* Categorização */}
@@ -173,7 +279,9 @@ export default function ProductDetails() {
                   </h3>
                   <p><b>Marca:</b> {produto.marca || "Não informada"}</p>
                   <p><b>Categoria:</b> {produto.categoria || "Não informada"}</p>
-                  <p><b>Fornecedor:</b> {produto.fornecedor}</p>
+                  {produto.descricao && (
+                    <p><b>Descrição:</b> {produto.descricao}</p>
+                  )}
                 </div>
 
                 {/* Datas */}
@@ -215,17 +323,6 @@ export default function ProductDetails() {
               </div>
             </div>
 
-            {/* Descrição */}
-            {produto.descricao && (
-              <div className="px-6 pb-6">
-                <h3 className="text-lg font-semibold text-[#2A4E73] border-b border-[#CFE8F9] pb-2 mb-3">
-                  Descrição
-                </h3>
-                <p className="text-gray-800 leading-relaxed bg-white p-4 rounded-md border shadow-sm">
-                  {produto.descricao}
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Card técnico */}
@@ -239,16 +336,18 @@ export default function ProductDetails() {
                 <span className="font-mono">{produto.id}</span>
               </p>
               <p>
-                <b>ID Fornecedor:</b>{" "}
-                <span className="font-mono">{produto.fornecedor_id}</span>
-              </p>
-              <p>
                 <b>Código SKU:</b>{" "}
                 <span className="font-mono">{produto.sku}</span>
               </p>
               <p>
                 <b>Status do Sistema:</b> {produto.ativo ? "Ativado" : "Desativado"}
               </p>
+              {produto.imagem_url && (
+                <p>
+                  <b>Imagem:</b>{" "}
+                  <span className="font-mono text-xs break-all">{produto.imagem_url}</span>
+                </p>
+              )}
             </div>
           </div>
 
@@ -261,10 +360,13 @@ export default function ProductDetails() {
               Voltar à Lista
             </button>
             <button
-              onClick={() => router.push("/matriz/produtos")}
+              onClick={() => {
+                localStorage.setItem('productDetails', JSON.stringify(produto));
+                router.push("/matriz/produtos");
+              }}
               className="px-6 py-3 text-sm font-medium text-[#2A4E73] bg-white border border-[#2A4E73] rounded-md hover:bg-[#F7FAFC] transition-colors"
             >
-              Editar Produto
+              Voltar e Editar
             </button>
           </div>
         </div>

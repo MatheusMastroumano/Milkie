@@ -9,6 +9,7 @@ const ProdutosSchema = z.object({
     sku: utils.string,
     fabricacao: z.coerce.date(),
     validade: z.coerce.date(),
+    imagem_url: z.string().optional(),
     ativo: z.boolean().default(true),
     criado_em: utils.criadoEm,
 });

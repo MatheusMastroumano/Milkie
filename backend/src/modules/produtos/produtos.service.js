@@ -15,6 +15,19 @@ export async function getProdutosById(id) {
     try {
         return await prisma.produtos.findUnique({
             where: { id: Number(id) },
+            include: {
+                estoque: {
+                    include: {
+                        loja: {
+                            select: {
+                                id: true,
+                                nome: true,
+                                tipo: true,
+                            }
+                        }
+                    }
+                }
+            }
         });
     } catch (err) {
         console.error('error: ', err);
@@ -24,7 +37,7 @@ export async function getProdutosById(id) {
 
 /* ------------------------------- CRIAR ------------------------------- */
 export async function createProdutos(data) {
-    const { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo } = data;
+    const { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo, imagem_url } = data;
 
     if (fabricacao > validade) {
         throw new Error('Data de fabricação inválida.');
@@ -50,7 +63,7 @@ export async function createProdutos(data) {
 
 /* ------------------------------- ATUALIZAR ------------------------------- */
 export async function updateProdutos(id, data) {
-    const { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo } = data;
+    const { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo, imagem_url } = data;
 
     if (ativo !== true && ativo !== false) {
         throw new Error('Ativo inválido.');
