@@ -61,19 +61,13 @@ export default function ProductDetails() {
 
   // Função para construir a URL completa da imagem
   const getImagemUrl = (imagemUrl) => {
-    if (!imagemUrl) {
-      console.log('Imagem URL é nula ou vazia');
-      return null;
-    }
+    if (!imagemUrl) return null;
     // Se já é uma URL completa, retorna como está
     if (imagemUrl.startsWith('http://') || imagemUrl.startsWith('https://')) {
-      console.log('URL completa da imagem:', imagemUrl);
       return imagemUrl;
     }
     // Se é uma URL relativa, adiciona a URL da API
-    const fullUrl = `${API_URL}${imagemUrl}`;
-    console.log('URL construída da imagem:', fullUrl);
-    return fullUrl;
+    return `${API_URL}${imagemUrl}`;
   };
 
   if (loading) {
@@ -196,14 +190,9 @@ export default function ProductDetails() {
                         alt={`Imagem do produto ${produto.nome}`}
                         className="object-contain w-full h-full max-h-[500px] p-6"
                         onError={(e) => {
-                          console.error('Erro ao carregar imagem:', e.target.src);
-                          console.error('URL da imagem que falhou:', getImagemUrl(produto.imagem_url));
                           e.target.style.display = 'none';
                           const placeholder = e.target.parentElement.querySelector('.img-placeholder');
                           if (placeholder) placeholder.style.display = 'flex';
-                        }}
-                        onLoad={() => {
-                          console.log('Imagem carregada com sucesso:', getImagemUrl(produto.imagem_url));
                         }}
                       />
                       <div className="hidden img-placeholder text-center text-[#2A4E73] opacity-60 w-full h-full flex-col items-center justify-center">

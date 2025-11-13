@@ -82,7 +82,6 @@ enum Funcao {
  */
 model produtos {
     id           Int                   @id @default(autoincrement())
-    imagem       String?
     nome         String
     marca        String
     categoria    String

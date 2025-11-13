@@ -56,15 +56,11 @@ app.use(cookieParser());
 
 // Servir arquivos estáticos (imagens) - DEVE estar DEPOIS do CORS
 // __dirname aponta para backend/src, então precisamos subir um nível para backend
-const uploadsPath = path.join(__dirname, '../uploads');
-console.log('📁 Servindo arquivos estáticos de:', uploadsPath);
-
-app.use('/uploads', express.static(uploadsPath, {
-    setHeaders: (res, filePath) => {
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+    setHeaders: (res) => {
         // Configurar headers apropriados para imagens
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Cache-Control', 'public, max-age=31536000');
-        console.log('📸 Servindo imagem:', filePath);
     }
 }));
 
