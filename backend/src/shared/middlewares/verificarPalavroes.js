@@ -1,30 +1,29 @@
-import Filter from "bad-words";
+import { Filter } from "bad-words";
+import 'dotenv/config';
 
-// Cria o filtro padrão (inglês)
+// cria filtro padrão (inglês)
 const filtro = new Filter();
 
-// Adiciona palavrões em português manualmente
-filtro.addWords(
-	// TODO:
-	// adicionar lista de palavrões no .env depois
-);
+// carrega lista PT-BR do .env usando SPLIT
+const listaPTBR = (process.env.BAD_WORDS || "")
+	.split(",")               // divide por vírgula
+	.map(p => p.trim())       // remove espaços extras
+	.filter(Boolean);         // remove strings vazias
 
-// Middleware de verificação
+// adiciona ao filtro
+filtro.addWords(...listaPTBR);
+
 export default function verificarPalavroes(req, res, next) {
 	try {
-		// Transforma o body inteiro em texto plano
 		const textoPlano = JSON.stringify(req.body || {}).toLowerCase();
 
-		// Verifica se contém palavrões
-		const contem = filtro.isProfane(textoPlano);
-
-		if (contem) {
+		if (filtro.isProfane(textoPlano)) {
 			return res.status(400).json({
 				mensagem: "O texto contém palavras impróprias. Por favor, revise o conteúdo.",
 			});
 		}
 
-		next(); // tudo certo
+		next();
 	} catch (err) {
 		console.error("Erro ao verificar palavrões:", err.message);
 		res.status(500).json({ mensagem: "Erro ao verificar conteúdo impróprio." });
