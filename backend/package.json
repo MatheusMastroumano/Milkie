@@ -9,7 +9,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "node prisma/seed.js",
-    "test:api": "node playground/test_all_routes.js"
+    "test:api": "node playground/test_all_routes.js",
+    "api": "node --watch src/app.js"
   },
   "keywords": [],
   "author": "",
