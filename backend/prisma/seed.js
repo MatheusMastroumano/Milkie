@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../src/shared/config/database.js';
 import bcrypt from 'bcrypt';
-
-const prisma = new PrismaClient();
 
 async function main() {
 	// Limpa dados em ordem de dependência (ambiente de DEV)
