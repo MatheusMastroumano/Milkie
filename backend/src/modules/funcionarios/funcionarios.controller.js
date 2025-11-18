@@ -30,11 +30,11 @@ export async function getFuncionariosByIdController(req, res) {
 /* ---------------------------------- CRIAR --------------------------------- */
 export async function createFuncionariosController(req, res) {
     try {
-        const { loja_id, nome, cpf, email, telefone, idade, cargo, salario, ativo } = req.body;
+        const { loja_id, nome, cpf, email, telefone, idade, cargo, salario, ativo, imagem } = req.body;
 
         if (!loja_id) return res.status(400).json({ mensagem: 'Loja não informada' });
 
-        const funcionarioData = { loja_id, nome, cpf, email, telefone, idade, cargo, salario, ativo };
+        const funcionarioData = { loja_id, nome, cpf, email, telefone, idade, cargo, salario, ativo, imagem };
 
         const funcionario = await funcionariosService.createFuncionarios(funcionarioData);
 
@@ -53,20 +53,21 @@ export async function updateFuncionariosController(req, res) {
 
         if (!funcionario) {
             res.status(404).json({ mensagem: 'Funcionario nao encontrado' });
+            return;
         }
+
+        const { loja_id, nome, cpf, email, telefone, idade, cargo, salario, ativo, imagem } = req.body;
 
         if (!loja_id) return res.status(400).json({ mensagem: 'Loja não informada' });
 
-        const { loja_id, nome, cpf, email, telefone, idade, cargo, salario, ativo } = req.body;
-
-        const funcionarioData = { loja_id, nome, cpf, email, telefone, idade, cargo, salario, ativo };
+        const funcionarioData = { loja_id, nome, cpf, email, telefone, idade, cargo, salario, ativo, imagem };
 
         const updatedFuncionario = await funcionariosService.updateFuncionarios(funcionarioId, funcionarioData);
 
         res.status(200).json({ mensagem: 'Funcionario atualizado com sucesso', updatedFuncionario });
     } catch (err) {
-        console.error('Erro ao criar funcionários: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao criar funcionários: ', err });
+        console.error('Erro ao atualizar funcionários: ', err.message);
+        res.status(500).json({ mensagem: 'Erro ao atualizar funcionários: ', erro: err.message });
     }
 }
 

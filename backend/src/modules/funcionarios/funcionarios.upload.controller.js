@@ -1,4 +1,4 @@
-import upload from '../../shared/config/upload.js';
+import upload from '../../shared/config/upload-funcionarios.js';
 
 // Middleware de upload (single = um arquivo, campo 'imagem')
 export const uploadImagem = upload.single('imagem');
@@ -11,7 +11,7 @@ export async function uploadImagemController(req, res) {
     }
 
     // Retorna a URL da imagem
-    const imagemUrl = `/uploads/produtos/${req.file.filename}`;
+    const imagemUrl = `/uploads/funcionarios/${req.file.filename}`;
     
     res.status(200).json({ 
       mensagem: 'Imagem enviada com sucesso',
@@ -25,5 +25,4 @@ export async function uploadImagemController(req, res) {
     });
   }
 }
-
 

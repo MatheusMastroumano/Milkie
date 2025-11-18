@@ -2,15 +2,17 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Header from '@/components/Header/page';
 import Footer from '@/components/Footer/page';
-import { apiJson } from '@/lib/api';
+import { apiJson, apiFormData } from '@/lib/api';
 
 
 
 export default function Funcionarios() {
+  const router = useRouter();
   const [lojas, setLojas] = useState([]);
   const [funcionarios, setFuncionarios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,9 @@ export default function Funcionarios() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const [imagemSelecionada, setImagemSelecionada] = useState(null);
+  const [previewImagem, setPreviewImagem] = useState(null);
+  const [uploadingImagem, setUploadingImagem] = useState(false);
   const allowedCargos = ['admin', 'gerente', 'caixa'];
 
   // Fetch lojas and funcionários on mount
@@ -127,18 +132,57 @@ export default function Funcionarios() {
     return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImagemSelecionada(file);
+      // Criar preview da imagem
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImagem(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUploadImagem = async () => {
+    if (!imagemSelecionada) return null;
+
+    try {
+      setUploadingImagem(true);
+      const formData = new FormData();
+      formData.append('imagem', imagemSelecionada);
+
+      const response = await apiFormData('/funcionarios/upload-imagem', formData);
+      return response.imagem_url;
+    } catch (error) {
+      showAlert('error', `Erro ao fazer upload da imagem: ${error.message}`);
+      return null;
+    } finally {
+      setUploadingImagem(false);
+    }
+  };
+
   const handleAddFuncionario = async (e) => {
     e.preventDefault();
 
     if (!validateForm(novoFuncionario)) return;
 
     try {
+      // Fazer upload da imagem se houver
+      let imagemUrl = null;
+      if (imagemSelecionada) {
+        imagemUrl = await handleUploadImagem();
+        if (!imagemUrl) return; // Se o upload falhar, não continua
+      }
+
       const funcionarioData = {
         ...novoFuncionario,
         idade: parseInt(novoFuncionario.idade),
         salario: parseFloat(novoFuncionario.salario),
         loja_id: parseInt(novoFuncionario.loja_id),
         telefone: novoFuncionario.telefone.replace(/\D/g, ''),
+        imagem: imagemUrl || null,
       };
 
       console.log('Sending funcionarioData:', funcionarioData);
@@ -161,6 +205,8 @@ export default function Funcionarios() {
         loja_id: '',
         ativo: true,
       });
+      setImagemSelecionada(null);
+      setPreviewImagem(null);
       setErrors({});
       setIsAddModalOpen(false);
       setSelectedLojaId(novoFuncionario.loja_id); // Show added funcionario in selected loja
@@ -234,7 +280,14 @@ export default function Funcionarios() {
       loja_id: '',
       ativo: true,
     });
+    setImagemSelecionada(null);
+    setPreviewImagem(null);
     setErrors({});
+  };
+
+  const handleViewFuncionario = (funcionario) => {
+    localStorage.setItem('funcionarioDetails', JSON.stringify(funcionario));
+    router.push(`/matriz/funcionarios/${funcionario.id}`);
   };
 
   const handleDeleteFuncionario = async (id) => {
@@ -427,7 +480,11 @@ export default function Funcionarios() {
                   </thead>
                   <tbody>
                     {filteredFuncionarios.map((func) => (
-                      <tr key={func.id} className="border-b border-gray-200 hover:bg-[#CFE8F9]">
+                      <tr
+                        key={func.id}
+                        className="border-b border-gray-200 hover:bg-[#CFE8F9] cursor-pointer"
+                        onClick={() => handleViewFuncionario(func)}
+                      >
                         <td className="px-3 sm:px-4 py-2 sm:py-3">{func.id}</td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[150px] sm:max-w-[200px]">
                           {func.nome}
@@ -447,7 +504,7 @@ export default function Funcionarios() {
                             {func.ativo ? 'Ativo' : 'Inativo'}
                           </span>
                         </td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3 text-center space-x-2">
+                        <td className="px-3 sm:px-4 py-2 sm:py-3 text-center space-x-2" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => openEditFuncionario(func)}
                             className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
@@ -778,6 +835,33 @@ export default function Funcionarios() {
                       </p>
                     )}
                   </div>
+
+                  {isAddModalOpen && (
+                    <div>
+                      <label htmlFor="add-imagem" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                        Foto do Funcionário
+                      </label>
+                      <input
+                        id="add-imagem"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      />
+                      {previewImagem && (
+                        <div className="mt-2">
+                          <img 
+                            src={previewImagem} 
+                            alt="Preview" 
+                            className="max-w-full h-32 object-contain rounded-md border border-gray-300"
+                          />
+                        </div>
+                      )}
+                      {uploadingImagem && (
+                        <p className="text-xs text-[#2A4E73] mt-1">Enviando imagem...</p>
+                      )}
+                    </div>
+                  )}
 
                   {isModalOpen && (
                     <div>
