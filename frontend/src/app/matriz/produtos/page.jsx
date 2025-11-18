@@ -16,6 +16,7 @@ export default function Produtos() {
   const [loading, setLoading] = useState(true);
   const [lojaId, setLojaId] = useState(null);
   const [lojas, setLojas] = useState([]);
+  const [fornecedores, setFornecedores] = useState([]);
   const [novoProduto, setNovoProduto] = useState({
     nome: '',
     marca: '',
@@ -26,6 +27,7 @@ export default function Produtos() {
     validade: '',
     imagem_url: '',
     ativo: true,
+    fornecedores_ids: [],
   });
   const [imagemSelecionada, setImagemSelecionada] = useState(null);
   const [previewImagem, setPreviewImagem] = useState(null);
@@ -76,6 +78,18 @@ export default function Produtos() {
       }
     };
     fetchLojas();
+  }, []);
+
+  useEffect(() => {
+    const fetchFornecedores = async () => {
+      try {
+        const data = await apiJson('/fornecedores');
+        setFornecedores(data.fornecedores || data || []);
+      } catch (error) {
+        console.error('Erro ao carregar fornecedores:', error);
+      }
+    };
+    fetchFornecedores();
   }, []);
 
   const showAlert = (type, message) => {
@@ -157,15 +171,50 @@ export default function Produtos() {
         if (!imagemUrl) return; // Se o upload falhar, não continua
       }
 
+      // Garantir que fornecedores_ids seja um array válido de números
+      let fornecedoresIds = [];
+      if (Array.isArray(novoProduto.fornecedores_ids) && novoProduto.fornecedores_ids.length > 0) {
+        fornecedoresIds = novoProduto.fornecedores_ids
+          .map(id => {
+            const numId = typeof id === 'string' ? Number(id) : id;
+            return isNaN(numId) ? null : numId;
+          })
+          .filter(id => id !== null && id > 0);
+      }
+
+      console.log('Frontend - Estado novoProduto.fornecedores_ids:', novoProduto.fornecedores_ids);
+      console.log('Frontend - Fornecedores IDs processados:', fornecedoresIds);
+
+      const payload = {
+        nome: novoProduto.nome,
+        marca: novoProduto.marca,
+        categoria: novoProduto.categoria,
+        descricao: novoProduto.descricao,
+        sku: novoProduto.sku,
+        fabricacao: novoProduto.fabricacao || null,
+        validade: novoProduto.validade || null,
+        imagem_url: imagemUrl || null,
+        ativo: novoProduto.ativo !== undefined ? novoProduto.ativo : true
+      };
+
+      // Sempre incluir fornecedores_ids, mesmo que seja null ou array vazio
+      if (fornecedoresIds.length > 0) {
+        payload.fornecedores_ids = fornecedoresIds;
+      } else {
+        payload.fornecedores_ids = null;
+      }
+
+      console.log('Frontend - Payload completo enviado:', JSON.stringify(payload, null, 2));
+      console.log('Frontend - Tipo de fornecedores_ids no payload:', typeof payload.fornecedores_ids);
+      console.log('Frontend - É array?', Array.isArray(payload.fornecedores_ids));
+      console.log('Frontend - Valor de fornecedores_ids:', payload.fornecedores_ids);
+
       const { produto: novo } = await apiJson('/produtos', {
         method: 'POST',
-        body: JSON.stringify({
-          ...novoProduto,
-          imagem_url: imagemUrl || null,
-          fabricacao: novoProduto.fabricacao || null,
-          validade: novoProduto.validade || null,
-        }),
+        body: JSON.stringify(payload),
       });
+
+      console.log('Frontend - Produto recebido do backend:', novo);
 
       setProdutos(prev => [...prev, novo]);
       closeModal();
@@ -186,6 +235,7 @@ export default function Produtos() {
           ...editProduto,
           fabricacao: editProduto.fabricacao || null,
           validade: editProduto.validade || null,
+          fornecedores_ids: editProduto.fornecedores_ids || [],
         }),
       });
 
@@ -227,10 +277,19 @@ export default function Produtos() {
   };
 
   const openEditProduto = (produto) => {
+    // Extrair fornecedores_ids do campo JSON ou da relação
+    let fornecedoresIds = [];
+    if (produto.fornecedores_ids && Array.isArray(produto.fornecedores_ids)) {
+      fornecedoresIds = produto.fornecedores_ids.map(id => id.toString());
+    } else if (produto.fornecedores && Array.isArray(produto.fornecedores)) {
+      fornecedoresIds = produto.fornecedores.map(fp => fp.fornecedor_id?.toString() || fp.fornecedor?.id?.toString()).filter(Boolean);
+    }
+    
     setEditProduto({
       ...produto,
       fabricacao: produto.fabricacao?.split('T')[0] || '',
       validade: produto.validade?.split('T')[0] || '',
+      fornecedores_ids: fornecedoresIds,
     });
     setIsModalOpen(true);
     setErrors({});
@@ -263,6 +322,7 @@ export default function Produtos() {
     setNovoProduto({
       nome: '', marca: '', categoria: '', descricao: '', sku: '',
       fabricacao: '', validade: '', imagem_url: '', ativo: true,
+      fornecedores_ids: [],
     });
     setImagemSelecionada(null);
     setPreviewImagem(null);
@@ -343,6 +403,7 @@ export default function Produtos() {
                     <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Nome</th>
                     <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Marca</th>
                     <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Categoria</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Fornecedores</th>
                     <th className="px-3 sm:px-4 py-2 sm:py-3 text-center rounded-tr-md">Ações</th>
                   </tr>
                 </thead>
@@ -357,6 +418,19 @@ export default function Produtos() {
                       <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[180px]">{p.nome}</td>
                       <td className="px-3 sm:px-4 py-2 sm:py-3">{p.marca || '-'}</td>
                       <td className="px-3 sm:px-4 py-2 sm:py-3">{p.categoria || '-'}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-3">
+                        {p.fornecedores && p.fornecedores.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {p.fornecedores.map((fp, idx) => (
+                              <span key={idx} className="inline-block px-2 py-1 text-xs bg-[#2A4E73] text-white rounded">
+                                {fp.fornecedor?.nome || 'N/A'}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-sm">-</span>
+                        )}
+                      </td>
                       <td className="px-3 sm:px-4 py-2 sm:py-3 text-center space-x-2" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => openEditProduto(p)}
@@ -528,6 +602,79 @@ export default function Produtos() {
                       }
                       className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-2">
+                      Fornecedores
+                    </label>
+                    <div className="border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto bg-white">
+                      {fornecedores.filter(f => f.ativo).length === 0 ? (
+                        <p className="text-sm text-gray-500">Nenhum fornecedor ativo cadastrado</p>
+                      ) : (
+                        fornecedores.filter(f => f.ativo).map(fornecedor => {
+                          const fornecedorIdStr = fornecedor.id.toString();
+                          const fornecedorIdNum = fornecedor.id;
+                          
+                          // Verificar se está selecionado - comparar tanto string quanto número
+                          const currentIds = isAddModalOpen
+                            ? (novoProduto.fornecedores_ids || [])
+                            : (editProduto?.fornecedores_ids || []);
+                          
+                          const isSelected = currentIds.some(id => 
+                            id === fornecedorIdStr || 
+                            id === fornecedorIdNum || 
+                            Number(id) === fornecedorIdNum ||
+                            String(id) === fornecedorIdStr
+                          );
+                          
+                          return (
+                            <label
+                              key={fornecedor.id}
+                              className="flex items-center space-x-2 py-2 px-2 hover:bg-[#CFE8F9] rounded cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  let newIds;
+                                  if (e.target.checked) {
+                                    // Adicionar o ID como string para manter consistência
+                                    if (!currentIds.includes(fornecedorIdStr) && !currentIds.includes(fornecedorIdNum)) {
+                                      newIds = [...currentIds, fornecedorIdStr];
+                                    } else {
+                                      newIds = currentIds;
+                                    }
+                                  } else {
+                                    // Remover o ID (tanto string quanto número)
+                                    newIds = currentIds.filter(id => 
+                                      id !== fornecedorIdStr && 
+                                      id !== fornecedorIdNum &&
+                                      Number(id) !== fornecedorIdNum &&
+                                      String(id) !== fornecedorIdStr
+                                    );
+                                  }
+                                  
+                                  console.log('Checkbox alterado - Fornecedor ID:', fornecedorIdStr, 'Checked:', e.target.checked);
+                                  console.log('IDs antes:', currentIds);
+                                  console.log('IDs depois:', newIds);
+                                  
+                                  if (isAddModalOpen) {
+                                    setNovoProduto({ ...novoProduto, fornecedores_ids: newIds });
+                                  } else {
+                                    setEditProduto({ ...editProduto, fornecedores_ids: newIds });
+                                  }
+                                }}
+                                className="h-4 w-4 text-[#2A4E73] focus:ring-[#CFE8F9] border-gray-300 rounded"
+                              />
+                              <span className="text-sm text-[#2A4E73]">
+                                {fornecedor.nome} - {fornecedor.cnpj_cpf}
+                              </span>
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
 
                   {isAddModalOpen && (

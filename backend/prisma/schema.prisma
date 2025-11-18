@@ -81,20 +81,21 @@ enum Funcao {
  * independente de estoque, loja, etc (fica mais modular e escalável)
  */
 model produtos {
-    id           Int                   @id @default(autoincrement())
-    nome         String
-    marca        String
-    categoria    String
-    descricao    String
-    sku          String                @unique
-    fabricacao   DateTime
-    validade     DateTime
-    imagem_url   String?
-    ativo        Boolean               @default(true)
-    criado_em    DateTime              @default(now())
-    estoque      estoque[]
-    venda_itens  venda_itens[]
-    fornecedores fornecedor_produtos[]
+    id              Int                   @id @default(autoincrement())
+    nome            String
+    marca           String
+    categoria       String
+    descricao       String
+    sku             String                @unique
+    fabricacao      DateTime
+    validade        DateTime
+    imagem_url      String?
+    fornecedores_ids Json?                // Array de IDs dos fornecedores [1, 2, 3]
+    ativo           Boolean               @default(true)
+    criado_em       DateTime              @default(now())
+    estoque         estoque[]
+    venda_itens     venda_itens[]
+    fornecedores    fornecedor_produtos[] // Mantido para compatibilidade
 }
 
 /**

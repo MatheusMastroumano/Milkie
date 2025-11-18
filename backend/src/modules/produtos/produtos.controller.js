@@ -30,11 +30,35 @@ export async function getProdutosByIdController(req, res) {
 /* ------------------------------- CRIAR ------------------------------- */
 export async function createProdutosController(req, res) {
     try {
-        const { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo, imagem_url } = req.body;
+        console.log('=== CREATE PRODUTO CONTROLLER ===');
+        console.log('Body completo recebido:', JSON.stringify(req.body, null, 2));
+        console.log('Tipo do body:', typeof req.body);
+        
+        const { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo, imagem_url, fornecedores_ids } = req.body;
 
-        const produtoData = { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo, imagem_url };
+        console.log('Fornecedores IDs recebidos:', fornecedores_ids);
+        console.log('Tipo:', typeof fornecedores_ids);
+        console.log('É array?', Array.isArray(fornecedores_ids));
+        console.log('Valor:', JSON.stringify(fornecedores_ids));
+
+        const produtoData = { 
+            nome, 
+            marca, 
+            categoria, 
+            descricao, 
+            sku, 
+            fabricacao, 
+            validade, 
+            ativo, 
+            imagem_url, 
+            fornecedores_ids: fornecedores_ids !== undefined ? fornecedores_ids : null
+        };
+
+        console.log('ProdutoData antes de chamar service:', JSON.stringify(produtoData, null, 2));
 
         const produto = await produtosService.createProdutos(produtoData);
+
+        console.log('Produto criado com fornecedores_ids:', produto.fornecedores_ids);
 
         res.status(201).json({ mensagem: 'Produto criado com sucesso', produto });
     } catch (err) {
@@ -53,9 +77,9 @@ export async function updateProdutosController(req, res) {
             return res.status(404).json({ mensagem: 'Produto nao encontrado' });
         }
 
-        const { nome, marca, categoria, descricao, sku, ativo, imagem_url } = req.body;
+        const { nome, marca, categoria, descricao, sku, ativo, imagem_url, fornecedores_ids } = req.body;
 
-        const produtoData = { nome, marca, categoria, descricao, sku, ativo, imagem_url };
+        const produtoData = { nome, marca, categoria, descricao, sku, ativo, imagem_url, fornecedores_ids };
 
         const updatedProduto = await produtosService.updateProdutos(produtoId, produtoData);
 
