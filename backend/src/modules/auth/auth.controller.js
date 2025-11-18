@@ -67,18 +67,24 @@ export async function checkAuthController(req, res) {
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
 
-        // Se o token não tiver loja_id, buscar do banco (via relação com funcionário)
+        // Buscar dados completos do usuário e funcionário
         let lojaId = decoded.loja_id ?? null;
-        if (!lojaId) {
-            try {
-                const u = await prisma.usuarios.findUnique({
-                    where: { id: decoded.id },
-                    include: { funcionario: true },
-                });
-                lojaId = u?.loja_id ?? u?.funcionario?.loja_id ?? null;
-            } catch (_) {
-                // ignora, retornará null
+        let funcionarioImagem = null;
+        let funcionarioNome = null;
+
+        try {
+            const u = await prisma.usuarios.findUnique({
+                where: { id: decoded.id },
+                include: { funcionario: true },
+            });
+            
+            if (u) {
+                lojaId = u.loja_id ?? u.funcionario?.loja_id ?? lojaId;
+                funcionarioImagem = u.funcionario?.imagem ?? null;
+                funcionarioNome = u.funcionario?.nome ?? null;
             }
+        } catch (_) {
+            // ignora, retornará valores padrão
         }
 
         return res.json({
@@ -87,10 +93,63 @@ export async function checkAuthController(req, res) {
                 id: decoded.id,
                 funcao: decoded.funcao,
                 username: decoded.username,
-                loja_id: lojaId
+                loja_id: lojaId,
+                funcionario_imagem: funcionarioImagem,
+                funcionario_nome: funcionarioNome
             }
         });
     } catch (err) {
         return res.status(401).json({ authenticated: false, erro: 'token inválido ou expirado' });
+    }
+}
+
+/* ------------------------------- CHANGE PASSWORD ------------------------------- */
+export async function changePasswordController(req, res) {
+    try {
+        const userId = req.user?.id;
+        const { senhaAtual, novaSenha } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({ mensagem: 'Usuário não autenticado' });
+        }
+
+        if (!senhaAtual || !novaSenha) {
+            return res.status(400).json({ mensagem: 'Senha atual e nova senha são obrigatórias' });
+        }
+
+        if (novaSenha.length < 6) {
+            return res.status(400).json({ mensagem: 'A nova senha deve ter pelo menos 6 caracteres' });
+        }
+
+        // Buscar o usuário
+        const usuario = await prisma.usuarios.findUnique({
+            where: { id: userId }
+        });
+
+        if (!usuario) {
+            return res.status(404).json({ mensagem: 'Usuário não encontrado' });
+        }
+
+        // Verificar se a senha atual está correta
+        const senhaCorreta = await bcrypt.compare(senhaAtual, usuario.senha_hash);
+
+        if (!senhaCorreta) {
+            return res.status(401).json({ mensagem: 'Senha atual incorreta' });
+        }
+
+        // Hash da nova senha
+        const saltRounds = 10;
+        const novaSenhaHash = await bcrypt.hash(novaSenha, saltRounds);
+
+        // Atualizar a senha
+        await prisma.usuarios.update({
+            where: { id: userId },
+            data: { senha_hash: novaSenhaHash }
+        });
+
+        return res.status(200).json({ mensagem: 'Senha alterada com sucesso' });
+    } catch (err) {
+        console.error('Erro ao alterar senha: ', err.message);
+        return res.status(500).json({ mensagem: 'Erro ao alterar senha', erro: err.message });
     }
 }

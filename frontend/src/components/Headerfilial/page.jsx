@@ -14,8 +14,36 @@ export default function Navbar() {
   const [isFinanceiroOpen, setIsFinanceiroOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [userFoto, setUserFoto] = useState(null);
+  const [userNome, setUserNome] = useState('');
+  const [userFuncao, setUserFuncao] = useState('');
   
   const navRef = useRef(null);
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const auth = await apiJson('/auth/check-auth');
+        if (auth?.authenticated && auth?.user) {
+          setUserFoto(auth.user.funcionario_imagem);
+          setUserNome(auth.user.funcionario_nome || auth.user.username);
+          setUserFuncao(auth.user.funcao);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados do usuário:', error);
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  const getImagemUrl = (imagemUrl) => {
+    if (!imagemUrl) return null;
+    if (imagemUrl.startsWith('http://') || imagemUrl.startsWith('https://')) {
+      return imagemUrl;
+    }
+    return `${API_URL}${imagemUrl}`;
+  };
 
   // Função para fechar todos os dropdowns e abrir apenas o selecionado
   const toggleDropdown = (dropdown) => {
@@ -272,11 +300,20 @@ export default function Navbar() {
                   onClick={() => toggleDropdown('User')}
                 >
                   <span className="sr-only">Abrir menu do usuário</span>
-                  <img
-                    src="/profile-image.jpg" // Substitua por sua imagem de perfil
-                    className="w-6 h-6 xl:w-7 xl:h-7 rounded-full bg-[#AD343E] object-cover"
-                    alt="Foto de Perfil"
-                  />
+                  {getImagemUrl(userFoto) ? (
+                    <img
+                      src={getImagemUrl(userFoto)}
+                      className="w-8 h-8 xl:w-10 xl:h-10 rounded-full bg-[#AD343E] object-cover border-2 border-white"
+                      alt="Foto de Perfil"
+                      onError={(e) => {
+                        e.target.src = '/profile-image.jpg';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 xl:w-10 xl:h-10 rounded-full bg-[#AD343E] flex items-center justify-center text-white text-sm xl:text-base font-bold">
+                      {userNome ? userNome.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  )}
                   <svg className="w-4 h-4 ml-1 text-[#FFFFFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                   </svg>
@@ -388,15 +425,24 @@ export default function Navbar() {
                 <div className="border-t border-[#3A5A7A] pt-4 mt-4">
                   <div className="flex items-center justify-start space-x-3 mb-4 px-4">
                     <div className="flex-shrink-0">
-                      <img
-                        src="/profile-image.jpg" // Substitua por sua imagem de perfil
-                        className="w-10 h-10 rounded-full bg-[#AD343E] object-cover"
-                        alt="Foto de Perfil"
-                      />
+                      {getImagemUrl(userFoto) ? (
+                        <img
+                          src={getImagemUrl(userFoto)}
+                          className="w-14 h-14 rounded-full bg-[#AD343E] object-cover border-2 border-white"
+                          alt="Foto de Perfil"
+                          onError={(e) => {
+                            e.target.src = '/profile-image.jpg';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-full bg-[#AD343E] flex items-center justify-center text-white text-lg font-bold">
+                          {userNome ? userNome.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-base font-medium text-[#FFFFFF] truncate">John Doe</span>
-                      <span className="text-sm text-[#CFE8F9] truncate">Administrator</span>
+                      <span className="text-base font-medium text-[#FFFFFF] truncate">{userNome || 'Usuário'}</span>
+                      <span className="text-sm text-[#CFE8F9] truncate capitalize">{userFuncao || 'Usuário'}</span>
                     </div>
                   </div>
                   <ul className="space-y-1">

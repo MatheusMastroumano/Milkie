@@ -53,8 +53,9 @@ export default function Produtos() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-[#FFFFFF] pt-14 sm:pt-16 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6">
+      <main className="min-h-screen bg-[#FFFFFF] pt-20 pb-20 flex flex-col items-center justify-start transition-all duration-300">
+  <div className="w-full max-w-3xl px-4 flex flex-col items-center text-center">
+
           <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-6 text-center">
             Produtos - {lojaNome || `Loja ${lojaId || ''}`}
           </h1>
