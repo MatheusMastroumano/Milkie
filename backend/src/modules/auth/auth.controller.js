@@ -123,7 +123,7 @@ export async function changePasswordController(req, res) {
 
         // Buscar o usuário
         const usuario = await prisma.usuarios.findUnique({
-            where: { id: userId }
+            where: { id: Number(userId) }
         });
 
         if (!usuario) {
@@ -143,7 +143,7 @@ export async function changePasswordController(req, res) {
 
         // Atualizar a senha
         await prisma.usuarios.update({
-            where: { id: userId },
+            where: { id: Number(userId) },
             data: { senha_hash: novaSenhaHash }
         });
 
