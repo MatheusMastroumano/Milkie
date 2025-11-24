@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 import { CookieJar } from 'tough-cookie';
 import fetchCookie from 'fetch-cookie';
 
-const API_URL = process.env.API_URL || 'http://localhost:3001';
+const API_URL = process.env.API_URL || 'http://localhost:8080';
 const USERNAME = process.env.TEST_USER || 'admin';
 const PASSWORD = process.env.TEST_PASS || 'admin123';
 

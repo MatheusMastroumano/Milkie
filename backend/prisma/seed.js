@@ -2,35 +2,64 @@ import prisma from '../src/shared/config/database.js';
 import bcrypt from 'bcrypt';
 
 async function main() {
-	// Limpa dados em ordem de dependência (ambiente de DEV)
-	await prisma.venda_pagamentos.deleteMany().catch(() => {});
-	await prisma.venda_itens.deleteMany().catch(() => {});
-	await prisma.vendas.deleteMany().catch(() => {});
-	await prisma.caixa.deleteMany().catch(() => {});
-	await prisma.estoque.deleteMany().catch(() => {});
-	await prisma.fornecedor_produtos.deleteMany().catch(() => {});
-	await prisma.usuarios.deleteMany().catch(() => {});
-	await prisma.funcionarios.deleteMany().catch(() => {});
-	await prisma.fornecedores.deleteMany().catch(() => {});
-	await prisma.produtos.deleteMany().catch(() => {});
-	await prisma.lojas.deleteMany().catch(() => {});
+	console.log('🌱 Iniciando seed do banco de dados...\n');
 
-	// Cria loja matriz
-	const loja = await prisma.lojas.create({
+	// Limpa dados em ordem de dependência (ambiente de DEV)
+	console.log('🧹 Limpando dados antigos...');
+	await prisma.venda_pagamentos.deleteMany().catch(() => { });
+	await prisma.venda_itens.deleteMany().catch(() => { });
+	await prisma.vendas.deleteMany().catch(() => { });
+	await prisma.caixa.deleteMany().catch(() => { });
+	await prisma.estoque.deleteMany().catch(() => { });
+	await prisma.fornecedor_produtos.deleteMany().catch(() => { });
+	await prisma.usuarios.deleteMany().catch(() => { });
+	await prisma.funcionarios.deleteMany().catch(() => { });
+	await prisma.fornecedores.deleteMany().catch(() => { });
+	await prisma.produtos.deleteMany().catch(() => { });
+	await prisma.lojas.deleteMany().catch(() => { });
+	console.log('✅ Dados antigos removidos\n');
+
+	// ==================== LOJAS ====================
+	console.log('🏪 Criando lojas...');
+	const lojaMatriz = await prisma.lojas.create({
 		data: {
-			nome: 'Loja Matriz',
+			nome: 'Loja Matriz - Centro',
 			tipo: 'matriz',
 			CEP: '01001000',
 			numero: 100,
-			complemento: 'Centro',
+			complemento: 'Sala 1',
 			ativo: true,
 		},
 	});
 
-	// Cria funcionário e usuário admin
-	const funcionario = await prisma.funcionarios.create({
+	const lojaFilial1 = await prisma.lojas.create({
 		data: {
-			loja_id: loja.id,
+			nome: 'Loja Filial - Zona Norte',
+			tipo: 'filial',
+			CEP: '02001000',
+			numero: 250,
+			complemento: 'Loja 5',
+			ativo: true,
+		},
+	});
+
+	const lojaFilial2 = await prisma.lojas.create({
+		data: {
+			nome: 'Loja Filial - Zona Sul',
+			tipo: 'filial',
+			CEP: '04001000',
+			numero: 380,
+			complemento: 'Térreo',
+			ativo: true,
+		},
+	});
+	console.log(`✅ ${3} lojas criadas\n`);
+
+	// ==================== FUNCIONÁRIOS ====================
+	console.log('👥 Criando funcionários...');
+	const funcionarioAdmin = await prisma.funcionarios.create({
+		data: {
+			loja_id: lojaMatriz.id,
 			nome: 'Admin Principal',
 			cpf: '11122233344',
 			email: 'admin@example.com',
@@ -42,95 +71,420 @@ async function main() {
 		},
 	});
 
-	const senha_hash = await bcrypt.hash('admin123', 10);
-	await prisma.usuarios.create({
+	const funcionarioGerente1 = await prisma.funcionarios.create({
 		data: {
-			funcionario_id: funcionario.id,
-			loja_id: loja.id,
-			funcao: 'admin',
-			username: 'admin',
-			senha_hash,
+			loja_id: lojaMatriz.id,
+			nome: 'Maria Silva',
+			cpf: '22233344455',
+			email: 'maria.silva@example.com',
+			telefone: '11999991111',
+			idade: 28,
+			cargo: 'Gerente',
+			salario: '5000.00',
 			ativo: true,
 		},
 	});
 
-	// Fornecedor
-	const fornecedor = await prisma.fornecedores.create({
+	const funcionarioGerente2 = await prisma.funcionarios.create({
 		data: {
-			nome: 'Fornecedor Padrão',
+			loja_id: lojaFilial1.id,
+			nome: 'João Santos',
+			cpf: '33344455566',
+			email: 'joao.santos@example.com',
+			telefone: '11999992222',
+			idade: 32,
+			cargo: 'Gerente',
+			salario: '4500.00',
+			ativo: true,
+		},
+	});
+
+	const funcionarioCaixa1 = await prisma.funcionarios.create({
+		data: {
+			loja_id: lojaMatriz.id,
+			nome: 'Ana Costa',
+			cpf: '44455566677',
+			email: 'ana.costa@example.com',
+			telefone: '11999993333',
+			idade: 24,
+			cargo: 'Caixa',
+			salario: '2500.00',
+			ativo: true,
+		},
+	});
+
+	const funcionarioCaixa2 = await prisma.funcionarios.create({
+		data: {
+			loja_id: lojaFilial1.id,
+			nome: 'Pedro Oliveira',
+			cpf: '55566677788',
+			email: 'pedro.oliveira@example.com',
+			telefone: '11999994444',
+			idade: 22,
+			cargo: 'Caixa',
+			salario: '2300.00',
+			ativo: true,
+		},
+	});
+
+	const funcionarioCaixa3 = await prisma.funcionarios.create({
+		data: {
+			loja_id: lojaFilial2.id,
+			nome: 'Carla Mendes',
+			cpf: '66677788899',
+			email: 'carla.mendes@example.com',
+			telefone: '11999995555',
+			idade: 26,
+			cargo: 'Caixa',
+			salario: '2400.00',
+			ativo: true,
+		},
+	});
+	console.log(`✅ ${6} funcionários criados\n`);
+
+	// ==================== USUÁRIOS ====================
+	console.log('🔐 Criando usuários...');
+	const senhaHashAdmin = await bcrypt.hash('admin123', 10);
+	const senhaHashGerente = await bcrypt.hash('gerente123', 10);
+	const senhaHashCaixa = await bcrypt.hash('caixa123', 10);
+
+	const usuarioAdmin = await prisma.usuarios.create({
+		data: {
+			funcionario_id: funcionarioAdmin.id,
+			loja_id: lojaMatriz.id,
+			funcao: 'admin',
+			username: 'admin',
+			senha_hash: senhaHashAdmin,
+			ativo: true,
+		},
+	});
+
+	const usuarioGerente1 = await prisma.usuarios.create({
+		data: {
+			funcionario_id: funcionarioGerente1.id,
+			loja_id: lojaMatriz.id,
+			funcao: 'gerente',
+			username: 'maria.gerente',
+			senha_hash: senhaHashGerente,
+			ativo: true,
+		},
+	});
+
+	const usuarioGerente2 = await prisma.usuarios.create({
+		data: {
+			funcionario_id: funcionarioGerente2.id,
+			loja_id: lojaFilial1.id,
+			funcao: 'gerente',
+			username: 'joao.gerente',
+			senha_hash: senhaHashGerente,
+			ativo: true,
+		},
+	});
+
+	const usuarioCaixa1 = await prisma.usuarios.create({
+		data: {
+			funcionario_id: funcionarioCaixa1.id,
+			loja_id: lojaMatriz.id,
+			funcao: 'caixa',
+			username: 'ana.caixa',
+			senha_hash: senhaHashCaixa,
+			ativo: true,
+		},
+	});
+
+	const usuarioCaixa2 = await prisma.usuarios.create({
+		data: {
+			funcionario_id: funcionarioCaixa2.id,
+			loja_id: lojaFilial1.id,
+			funcao: 'caixa',
+			username: 'pedro.caixa',
+			senha_hash: senhaHashCaixa,
+			ativo: true,
+		},
+	});
+
+	const usuarioCaixa3 = await prisma.usuarios.create({
+		data: {
+			funcionario_id: funcionarioCaixa3.id,
+			loja_id: lojaFilial2.id,
+			funcao: 'caixa',
+			username: 'carla.caixa',
+			senha_hash: senhaHashCaixa,
+			ativo: true,
+		},
+	});
+	console.log(`✅ ${6} usuários criados\n`);
+
+	// ==================== FORNECEDORES ====================
+	console.log('🏭 Criando fornecedores...');
+	const fornecedor1 = await prisma.fornecedores.create({
+		data: {
+			nome: 'Distribuidora ABC Ltda',
 			cnpj_cpf: '12345678000100',
 			ativo: true,
 		},
 	});
 
-	// Produtos
-	const produtos = await prisma.$transaction([
-		prisma.produtos.create({
+	const fornecedor2 = await prisma.fornecedores.create({
+		data: {
+			nome: 'Importadora XYZ S.A.',
+			cnpj_cpf: '98765432000111',
+			ativo: true,
+		},
+	});
+
+	const fornecedor3 = await prisma.fornecedores.create({
+		data: {
+			nome: 'Fábrica Nacional de Produtos',
+			cnpj_cpf: '11223344000155',
+			ativo: true,
+		},
+	});
+	console.log(`✅ ${3} fornecedores criados\n`);
+
+	// ==================== PRODUTOS ====================
+	console.log('📦 Criando produtos...');
+
+	const produtosComFornecedores = [
+		{
 			data: {
-				nome: 'Camiseta Básica',
+				nome: 'Camiseta Básica Branca',
 				marca: 'Milkie',
 				categoria: 'Vestuário',
 				descricao: 'Camiseta 100% algodão',
 				sku: 'CAM-001',
-				fabricacao: new Date(),
-				validade: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+				fabricacao: new Date('2024-01-01'),
+				validade: new Date('2026-01-01'),
 				ativo: true,
 			},
-		}),
-		prisma.produtos.create({
+			fornecedores: [fornecedor1.id, fornecedor3.id],
+		},
+		
+		{
 			data: {
-				nome: 'Caneca Personalizada',
+				nome: 'Camiseta Básica Preta',
+				marca: 'Milkie',
+				categoria: 'Vestuário',
+				descricao: 'Camiseta 100% algodão premium',
+				sku: 'CAM-002',
+				fabricacao: new Date('2024-01-01'),
+				validade: new Date('2026-01-01'),
+				ativo: true,
+			},
+			fornecedores_ids: [fornecedor1.id, fornecedor3.id],
+		},
+
+		{
+			data: {
+				nome: 'Calça Jeans Slim',
+				marca: 'Milkie',
+				categoria: 'Vestuário',
+				descricao: 'Calça jeans com corte slim fit',
+				sku: 'CAL-001',
+				fabricacao: new Date('2024-02-01'),
+				validade: new Date('2026-02-01'),
+				ativo: true,
+			},
+			fornecedores_ids: [fornecedor3.id],
+		},
+
+		{
+			data: {
+				nome: 'Caneca Personalizada 300ml',
 				marca: 'Milkie',
 				categoria: 'Acessórios',
 				descricao: 'Caneca de cerâmica 300ml',
-				sku: 'CAN-001',
-				fabricacao: new Date(),
-				validade: new Date(new Date().setFullYear(new Date().getFullYear() + 2)),
+				sku: 'CPM-001',
+				fabricacao: new Date('2024-01-15'),
+				validade: new Date('2027-01-15'),
 				ativo: true,
 			},
-		}),
-	]);
-
-	// Relaciona fornecedor aos produtos
-	await prisma.fornecedor_produtos.createMany({
-		data: produtos.map((p) => ({
-			fornecedor_id: fornecedor.id,
-			produto_id: p.id,
-		})),
-	});
-
-	// Cria estoque com preço
-	await prisma.estoque.createMany({
-		data: [
-			{
-				produto_id: produtos[0].id,
-				loja_id: loja.id,
-				preco: '49.90',
-				quantidade: 50,
-				valido_de: new Date(),
+			fornecedores_ids: [fornecedor2.id],
+		},
+		
+		{
+			data: {
+				nome: 'Queijo Mineiro',
+				marca: 'Milkie',
+				categoria: 'Laticinio',
+				descricao: 'Queijo feito em minas gerais',
+				sku: 'QMM-001',
+				fabricacao: new Date('2024-03-01'),
+				validade: new Date('2026-03-01'),
+				ativo: true,
 			},
-			{
-				produto_id: produtos[1].id,
-				loja_id: loja.id,
-				preco: '39.90',
-				quantidade: 30,
-				valido_de: new Date(),
+			fornecedores_ids: [fornecedor1.id],
+		},
+		
+		{
+			data: {
+				nome: 'Mochila Milkie',
+				marca: 'Milkie',
+				categoria: 'Acessórios',
+				descricao: 'Mochila resistente 20 litros',
+				sku: 'MOC-001',
+				fabricacao: new Date('2024-02-15'),
+				validade: new Date('2026-02-15'),
+				ativo: true,
 			},
-		],
-	});
+			fornecedores_ids: [fornecedor2.id, fornecedor3.id],
+		},
+		
+		{
+			data: {
+				nome: 'Leite 1L',
+				marca: 'Milkie',
+				categoria: 'Laticinio',
+				descricao: 'Leite de 1 litro',
+				sku: 'LML-001',
+				fabricacao: new Date('2024-01-20'),
+				validade: new Date('2026-01-20'),
+				ativo: true,
+			},
+			fornecedores_ids: [fornecedor2.id],
+		},
 
-	console.log('🌱 Seed concluído com sucesso.');
-	console.log('Credenciais de login -> username: admin | senha: admin123');
+		{
+			data: {
+				nome: 'Suporte para Notebook',
+				marca: 'TechGear',
+				categoria: 'Tecnologia',
+				descricao: 'Suporte ergonômico ajustável',
+				sku: 'TEC-002',
+				fabricacao: new Date('2024-03-10'),
+				validade: new Date('2027-03-10'),
+		
+				ativo: true,
+			},
+			fornecedores_ids: [fornecedor2.id],
+		},
+
+		{
+			data: {
+				nome: 'Caderno Universitário 200 folhas',
+				marca: 'StudyMax',
+				categoria: 'Papelaria',
+				descricao: 'Caderno espiral 10 matérias',
+				sku: 'PAP-001',
+				fabricacao: new Date('2024-01-05'),
+				validade: new Date('2025-12-31'),
+				ativo: true,
+			},
+			fornecedores_ids: [fornecedor1.id],
+		},
+
+		{
+			data: {
+				nome: 'Estojo Escolar Duplo',
+				marca: 'StudyMax',
+				categoria: 'Papelaria',
+				descricao: 'Estojo com dois compartimentos',
+				sku: 'PAP-002',
+				fabricacao: new Date('2024-02-01'),
+				validade: new Date('2026-02-01'),
+				ativo: true,
+		
+			},
+			fornecedores_ids: [fornecedor1.id, fornecedor3.id],
+		}
+	];
+
+const produtos = await prisma.$transaction(
+ produtosComFornecedores.map(p => prisma.produtos.create({ data: p.data }))
+);
+
+	console.log(`✅ ${produtos.length} produtos criados\n`);
+
+	// ==================== RELACIONAMENTO FORNECEDOR-PRODUTOS ====================
+	console.log('🔗 Criando relacionamentos fornecedor-produtos...');
+	const relacionamentos = [];
+	for (const produto of produtos) {
+		if (produto.fornecedores_ids && Array.isArray(produto.fornecedores_ids)) {
+			for (const fornecedorId of produto.fornecedores_ids) {
+				relacionamentos.push({
+					fornecedor_id: fornecedorId,
+					produto_id: produto.id,
+				});
+			}
+		}
+	}
+	await prisma.fornecedor_produtos.createMany({ data: relacionamentos });
+	console.log(`✅ ${relacionamentos.length} relacionamentos criados\n`);
+
+	// ==================== ESTOQUE ====================
+	console.log('📊 Criando estoque...');
+	const estoqueData = [];
+
+	// Estoque da Matriz
+	estoqueData.push(
+		{ produto_id: produtos[0].id, loja_id: lojaMatriz.id, preco: '49.90', quantidade: 50, valido_de: new Date() },
+		{ produto_id: produtos[1].id, loja_id: lojaMatriz.id, preco: '49.90', quantidade: 45, valido_de: new Date() },
+		{ produto_id: produtos[2].id, loja_id: lojaMatriz.id, preco: '129.90', quantidade: 30, valido_de: new Date() },
+		{ produto_id: produtos[3].id, loja_id: lojaMatriz.id, preco: '39.90', quantidade: 60, valido_de: new Date() },
+		{ produto_id: produtos[4].id, loja_id: lojaMatriz.id, preco: '59.90', quantidade: 40, valido_de: new Date() },
+		{ produto_id: produtos[5].id, loja_id: lojaMatriz.id, preco: '149.90', quantidade: 25, valido_de: new Date() },
+		{ produto_id: produtos[6].id, loja_id: lojaMatriz.id, preco: '79.90', quantidade: 35, valido_de: new Date() },
+		{ produto_id: produtos[7].id, loja_id: lojaMatriz.id, preco: '89.90', quantidade: 20, valido_de: new Date() },
+		{ produto_id: produtos[8].id, loja_id: lojaMatriz.id, preco: '29.90', quantidade: 80, valido_de: new Date() },
+		{ produto_id: produtos[9].id, loja_id: lojaMatriz.id, preco: '24.90', quantidade: 70, valido_de: new Date() }
+	);
+
+	// Estoque da Filial 1
+	estoqueData.push(
+		{ produto_id: produtos[0].id, loja_id: lojaFilial1.id, preco: '49.90', quantidade: 35, valido_de: new Date() },
+		{ produto_id: produtos[1].id, loja_id: lojaFilial1.id, preco: '49.90', quantidade: 30, valido_de: new Date() },
+		{ produto_id: produtos[3].id, loja_id: lojaFilial1.id, preco: '39.90', quantidade: 40, valido_de: new Date() },
+		{ produto_id: produtos[4].id, loja_id: lojaFilial1.id, preco: '59.90', quantidade: 25, valido_de: new Date() },
+		{ produto_id: produtos[6].id, loja_id: lojaFilial1.id, preco: '79.90', quantidade: 20, valido_de: new Date() },
+		{ produto_id: produtos[8].id, loja_id: lojaFilial1.id, preco: '29.90', quantidade: 50, valido_de: new Date() }
+	);
+
+	// Estoque da Filial 2
+	estoqueData.push(
+		{ produto_id: produtos[0].id, loja_id: lojaFilial2.id, preco: '49.90', quantidade: 40, valido_de: new Date() },
+		{ produto_id: produtos[2].id, loja_id: lojaFilial2.id, preco: '129.90', quantidade: 20, valido_de: new Date() },
+		{ produto_id: produtos[5].id, loja_id: lojaFilial2.id, preco: '149.90', quantidade: 15, valido_de: new Date() },
+		{ produto_id: produtos[7].id, loja_id: lojaFilial2.id, preco: '89.90', quantidade: 12, valido_de: new Date() },
+		{ produto_id: produtos[9].id, loja_id: lojaFilial2.id, preco: '24.90', quantidade: 45, valido_de: new Date() }
+	);
+
+	await prisma.estoque.createMany({ data: estoqueData });
+	console.log(`✅ ${estoqueData.length} itens de estoque criados\n`);
+
+	// ==================== RESUMO ====================
+	console.log('\n═══════════════════════════════════════════════════');
+	console.log('🎉 Seed concluído com sucesso!');
+	console.log('═══════════════════════════════════════════════════');
+	console.log('\n📋 RESUMO:');
+	console.log(`  🏪 Lojas: ${3}`);
+	console.log(`  👥 Funcionários: ${6}`);
+	console.log(`  🔐 Usuários: ${6}`);
+	console.log(`  🏭 Fornecedores: ${3}`);
+	console.log(`  📦 Produtos: ${produtos.length}`);
+	console.log(`  📊 Itens em Estoque: ${estoqueData.length}`);
+	console.log('\n🔑 CREDENCIAIS DE ACESSO:');
+	console.log('  ┌─────────────────────────────────────────┐');
+	console.log('  │ ADMIN                                   │');
+	console.log('  │ Username: admin                         │');
+	console.log('  │ Senha: admin123                         │');
+	console.log('  ├─────────────────────────────────────────┤');
+	console.log('  │ GERENTES                                │');
+	console.log('  │ Username: maria.gerente / joao.gerente  │');
+	console.log('  │ Senha: gerente123                       │');
+	console.log('  ├─────────────────────────────────────────┤');
+	console.log('  │ CAIXAS                                  │');
+	console.log('  │ Username: ana.caixa / pedro.caixa /     │');
+	console.log('  │           carla.caixa                   │');
+	console.log('  │ Senha: caixa123                         │');
+	console.log('  └─────────────────────────────────────────┘');
+	console.log('\n═══════════════════════════════════════════════════\n');
 }
 
 main()
 	.catch((e) => {
-		console.error(e);
+		console.error('\n❌ Erro ao executar seed:', e);
 		process.exit(1);
 	})
 	.finally(async () => {
 		await prisma.$disconnect();
 	});
-
-
-
