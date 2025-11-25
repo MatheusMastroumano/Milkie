@@ -7,14 +7,14 @@ export default function moduleAccess(moduleName) {
 
     if (!role) {
       console.error(`[moduleAccess] Usuário não autenticado para módulo ${moduleName}`);
-      return res.status(401).json({ error: "Usuário não autenticado" });
+      return res.status(401).json({ mensagem: "Usuário não autenticado", erro: "Usuário não autenticado" });
     }
 
     const allowedRoles = MODULE_PERMISSIONS[moduleName];
 
     if (!allowedRoles) {
       console.error(`[moduleAccess] Módulo ${moduleName} não encontrado nas permissões`);
-      return res.status(500).json({ error: `Módulo ${moduleName} não configurado` });
+      return res.status(500).json({ mensagem: `Módulo ${moduleName} não configurado`, erro: `Módulo ${moduleName} não configurado` });
     }
 
     // Normalizar para comparação case-insensitive
@@ -24,7 +24,8 @@ export default function moduleAccess(moduleName) {
     if (!normalizedAllowedRoles.includes(normalizedRole)) {
       console.error(`[moduleAccess] Acesso negado: role="${normalizedRole}" não está em [${normalizedAllowedRoles.join(', ')}] para módulo ${moduleName}`);
       return res.status(403).json({ 
-        error: `Acesso negado ao módulo ${moduleName}`,
+        mensagem: `Acesso negado ao módulo ${moduleName}. Você precisa ser ${allowedRoles.join(' ou ')}`,
+        erro: `Acesso negado ao módulo ${moduleName}`,
         role: normalizedRole,
         allowedRoles: normalizedAllowedRoles
       });

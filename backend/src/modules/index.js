@@ -27,6 +27,9 @@ export { default as vendasRoutes } from './vendas/index.js';
 export { default as vendaItensRoutes } from './venda_itens/index.js';
 export { default as vendaPagamentosRoutes } from './venda_pagamentos/index.js';
 export { default as caixaRoutes } from './caixa/index.js';
+export { default as despesasRoutes } from './despesas/index.js';
+export { default as pagamentosFornecedoresRoutes } from './pagamentos_fornecedores/index.js';
+export { default as pagamentosFuncionariosRoutes } from './pagamentos_funcionarios/index.js';
 
 // auth
 export { default as authRotas } from './auth/index.js';

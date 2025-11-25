@@ -7,7 +7,11 @@ const validate = (schema) => (req, res, next) => {
     const parsed = schema.safeParse(req.body);
 
     if (!parsed.success) {
-        return res.status(400).json({ mensagem: parsed.error.format() });
+        const errors = parsed.error.errors.map(err => {
+            const path = err.path.join('.');
+            return `${path}: ${err.message}`;
+        }).join(', ');
+        return res.status(400).json({ mensagem: `Erro de validação: ${errors}`, erro: errors });
     }
 
     req.body = parsed.data

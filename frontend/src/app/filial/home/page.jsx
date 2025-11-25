@@ -1,45 +1,131 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import Header from "@/components/Headerfilial/page";
+import { apiJson } from "@/lib/api";
 
 export default function Home() {
-  const [activeCard, setActiveCard] = useState(null);
   const [timeFilter, setTimeFilter] = useState("7d");
+  const [loading, setLoading] = useState(true);
+  const [filialId, setFilialId] = useState(null);
   const [animatedValues, setAnimatedValues] = useState({
-    lojas: 0,
     funcionarios: 0,
     produtos: 0,
-    vendas: 0
+    vendas: 0,
+    receitaTotal: 0
   });
 
-  // Dados de exemplo
-  const lojas = [
-    { id: 1, nome: 'Loja Centro', tipo: 'Matriz', endereco: 'Rua Principal, 123' },
-    { id: 2, nome: 'Loja Sul', tipo: 'Filial', endereco: 'Av. Sul, 456' },
-    { id: 3, nome: 'Loja Norte', tipo: 'Filial', endereco: 'Rua Norte, 789' },
-    { id: 4, nome: 'Loja Oeste', tipo: 'Filial', endereco: 'Av. Oeste, 321' },
-  ];
+  // Dados do backend
+  const [funcionarios, setFuncionarios] = useState([]);
+  const [produtos, setProdutos] = useState([]);
+  const [vendas, setVendas] = useState([]);
+  const [vendaItens, setVendaItens] = useState([]);
+  const [vendaPagamentos, setVendaPagamentos] = useState([]);
+  const [estoque, setEstoque] = useState([]);
+  const [lojaInfo, setLojaInfo] = useState(null);
 
-  const vendas = [
-    { id: 1, loja_id: 1, data: '2025-09-30', itens: [{ produto: 'Camiseta Básica', categoria: 'Roupas', quantidade: 5, preco: 29.99, total: 149.95 }, { produto: 'Calça Jeans', categoria: 'Roupas', quantidade: 2, preco: 79.99, total: 159.98 }], total_geral: 309.93 },
-    { id: 2, loja_id: 2, data: '2025-09-30', itens: [{ produto: 'Camiseta Básica', categoria: 'Roupas', quantidade: 3, preco: 29.99, total: 89.97 }, { produto: 'Calça Jeans', categoria: 'Roupas', quantidade: 4, preco: 79.99, total: 319.96 }], total_geral: 409.93 },
-    { id: 3, loja_id: 3, data: '2025-09-30', itens: [{ produto: 'Camiseta Básica', categoria: 'Roupas', quantidade: 1, preco: 29.99, total: 29.99 }], total_geral: 200.99 },
-    { id: 4, loja_id: 4, data: '2025-09-30', itens: [{ produto: 'Calça Jeans', categoria: 'Roupas', quantidade: 3, preco: 79.99, total: 239.97 }], total_geral: 239.97 },
-    { id: 5, loja_id: 1, data: '2025-09-29', itens: [{ produto: 'Camiseta Básica', categoria: 'Roupas', quantidade: 4, preco: 29.99, total: 119.96 }], total_geral: 119.96 },
-    { id: 6, loja_id: 1, data: '2025-09-28', itens: [{ produto: 'Camiseta Básica', categoria: 'Roupas', quantidade: 2, preco: 29.99, total: 59.98 }, { produto: 'Calça Jeans', categoria: 'Roupas', quantidade: 1, preco: 79.99, total: 79.99 }], total_geral: 139.97 },
-    { id: 7, loja_id: 2, data: '2025-09-28', itens: [{ produto: 'Camiseta Básica', categoria: 'Roupas', quantidade: 3, preco: 29.99, total: 89.97 }], total_geral: 89.97 },
-    { id: 8, loja_id: 1, data: '2025-09-27', itens: [{ produto: 'Calça Jeans', categoria: 'Roupas', quantidade: 2, preco: 79.99, total: 159.98 }], total_geral: 159.98 },
-    { id: 9, loja_id: 3, data: '2025-09-27', itens: [{ produto: 'Camiseta Básica', categoria: 'Roupas', quantidade: 5, preco: 29.99, total: 149.95 }], total_geral: 149.95 },
-    { id: 10, loja_id: 2, data: '2025-09-26', itens: [{ produto: 'Calça Jeans', categoria: 'Roupas', quantidade: 3, preco: 79.99, total: 239.97 }], total_geral: 239.97 },
-  ];
+  // Obter ID da filial do usuário logado
+  useEffect(() => {
+    (async () => {
+      try {
+        const auth = await apiJson('/auth/check-auth');
+        setFilialId(Number(auth?.user?.loja_id) || null);
+      } catch {
+        setFilialId(null);
+      }
+    })();
+  }, []);
 
-  // Métricas
-  const totalLojas = lojas.length;
-  const totalFuncionarios = 32;
-  const totalProdutos = [...new Set(vendas.flatMap(v => v.itens.map(i => i.produto)))].length;
-  const totalVendasHoje = vendas.filter(v => v.data === '2025-09-30').reduce((s, v) => s + v.total_geral, 0);
+  // Carregar dados do backend
+  useEffect(() => {
+    if (filialId) {
+      carregarDados();
+    }
+  }, [timeFilter, filialId]);
+
+  const carregarDados = async () => {
+    try {
+      setLoading(true);
+      const [lojasRes, funcionariosRes, produtosRes, vendasRes, itensRes, pagamentosRes, estoqueRes] = await Promise.all([
+        apiJson('/lojas').catch(() => ({ lojas: [] })),
+        apiJson('/funcionarios').catch(() => ({ funcionarios: [] })),
+        apiJson('/produtos').catch(() => ({ produtos: [] })),
+        apiJson('/vendas').catch(() => ({ vendas: [] })),
+        apiJson('/venda-itens').catch(() => ({ vendaItens: [] })),
+        apiJson('/venda-pagamentos').catch(() => ({ vendaPagamentos: [] })),
+        apiJson('/estoque').catch(() => ({ estoque: [] }))
+      ]);
+
+      const lojas = lojasRes.lojas || [];
+      const loja = lojas.find(l => l.id === filialId);
+      setLojaInfo(loja);
+
+      setFuncionarios((funcionariosRes.funcionarios || []).filter(f => f.loja_id === filialId));
+      setProdutos(produtosRes.produtos || []);
+      setVendas((vendasRes.vendas || []).filter(v => v.loja_id === filialId));
+      setVendaItens(itensRes.vendaItens || itensRes.venda_itens || []);
+      setVendaPagamentos(pagamentosRes.vendaPagamentos || pagamentosRes.venda_pagamentos || []);
+      setEstoque((estoqueRes.estoque || []).filter(e => e.loja_id === filialId));
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filtrar vendas por período
+  const getFilteredVendas = () => {
+    const now = new Date();
+    let startDate = new Date();
+    
+    if (timeFilter === "24h") {
+      startDate.setHours(now.getHours() - 24);
+    } else if (timeFilter === "7d") {
+      startDate.setDate(now.getDate() - 7);
+    } else if (timeFilter === "30d") {
+      startDate.setDate(now.getDate() - 30);
+    }
+    
+    return vendas.filter(v => {
+      const vendaDate = new Date(v.data);
+      return vendaDate >= startDate;
+    });
+  };
+
+  const vendasFiltradas = getFilteredVendas();
+
+  // Calcular métricas
+  const totalFuncionarios = funcionarios.filter(f => f.ativo).length;
+  const produtosEmEstoque = estoque.filter(e => e.quantidade > 0).length;
+  const receitaTotal = vendasFiltradas.reduce((sum, v) => sum + Number(v.valor_total || 0), 0);
+  const totalVendas = vendasFiltradas.length;
+
+  // Calcular comparação com período anterior
+  const getPreviousPeriodVendas = () => {
+    const now = new Date();
+    let startDate = new Date();
+    let endDate = new Date();
+    
+    if (timeFilter === "24h") {
+      startDate.setHours(now.getHours() - 48);
+      endDate.setHours(now.getHours() - 24);
+    } else if (timeFilter === "7d") {
+      startDate.setDate(now.getDate() - 14);
+      endDate.setDate(now.getDate() - 7);
+    } else if (timeFilter === "30d") {
+      startDate.setDate(now.getDate() - 60);
+      endDate.setDate(now.getDate() - 30);
+    }
+    
+    return vendas.filter(v => {
+      const vendaDate = new Date(v.data);
+      return vendaDate >= startDate && vendaDate < endDate;
+    });
+  };
+
+  const vendasPeriodoAnterior = getPreviousPeriodVendas();
+  const receitaAnterior = vendasPeriodoAnterior.reduce((sum, v) => sum + Number(v.valor_total || 0), 0);
+  const variacaoReceita = receitaAnterior > 0 ? ((receitaTotal - receitaAnterior) / receitaAnterior * 100) : 0;
 
   // Animação dos números
   useEffect(() => {
@@ -52,55 +138,144 @@ export default function Home() {
       step++;
       const progress = step / steps;
       setAnimatedValues({
-        lojas: Math.floor(totalLojas * progress),
         funcionarios: Math.floor(totalFuncionarios * progress),
-        produtos: Math.floor(totalProdutos * progress),
-        vendas: totalVendasHoje * progress
+        produtos: Math.floor(produtosEmEstoque * progress),
+        vendas: Math.floor(totalVendas * progress),
+        receitaTotal: receitaTotal * progress
       });
 
       if (step >= steps) clearInterval(timer);
     }, interval);
 
     return () => clearInterval(timer);
-  }, [totalLojas, totalFuncionarios, totalProdutos, totalVendasHoje]);
+  }, [totalFuncionarios, produtosEmEstoque, totalVendas, receitaTotal]);
 
   // Dados para gráficos
-  const getLast7Days = () => {
-    const dates = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(2025, 8, 30 - i);
-      dates.push(date.toISOString().split('T')[0]);
+  const getDaysArray = () => {
+    const days = [];
+    const now = new Date();
+    const daysCount = timeFilter === "24h" ? 24 : timeFilter === "7d" ? 7 : 30;
+    
+    for (let i = daysCount - 1; i >= 0; i--) {
+      const date = new Date(now);
+      if (timeFilter === "24h") {
+        date.setHours(now.getHours() - i);
+        days.push({ date: date.toISOString(), label: `${date.getHours()}h` });
+      } else {
+        date.setDate(now.getDate() - i);
+        days.push({ date: date.toISOString().split('T')[0], label: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) });
+      }
     }
-    return dates;
+    return days;
   };
 
-  const last7Days = getLast7Days();
-  const salesByDay = last7Days.map(date => ({
-    date: date.slice(5),
-    total: vendas.filter(v => v.data === date).reduce((s, v) => s + v.total_geral, 0)
-  }));
+  const daysArray = getDaysArray();
+  const salesByDay = daysArray.map(day => {
+    const total = vendasFiltradas
+      .filter(v => {
+        const vendaDate = new Date(v.data);
+        if (timeFilter === "24h") {
+          return vendaDate.getHours() === new Date(day.date).getHours() && 
+                 vendaDate.toDateString() === new Date(day.date).toDateString();
+        }
+        return vendaDate.toISOString().split('T')[0] === day.date;
+      })
+      .reduce((sum, v) => sum + Number(v.valor_total || 0), 0);
+    return { ...day, total };
+  });
 
-  const salesByStore = lojas.map(loja => ({
-    nome: loja.nome.split(' ')[1],
-    total: vendas.filter(v => v.loja_id === loja.id && v.data === '2025-09-30').reduce((s, v) => s + v.total_geral, 0)
-  }));
+  // Top produtos
+  const produtosMap = {};
+  vendaItens.forEach(item => {
+    const venda = vendasFiltradas.find(v => v.id === item.venda_id);
+    if (venda) {
+      const produto = produtos.find(p => p.id === item.produto_id);
+      if (produto) {
+        if (!produtosMap[produto.id]) {
+          produtosMap[produto.id] = {
+            id: produto.id,
+            nome: produto.nome,
+            categoria: produto.categoria,
+            quantidade: 0,
+            receita: 0
+          };
+        }
+        produtosMap[produto.id].quantidade += Number(item.quantidade || 0);
+        produtosMap[produto.id].receita += Number(item.subtotal || 0);
+      }
+    }
+  });
 
-  const productPerformance = [
-    { produto: 'Camiseta Básica', vendas: 18, receita: 539.82 },
-    { produto: 'Calça Jeans', receita: 959.88, vendas: 12 }
-  ];
+  const topProdutos = Object.values(produtosMap)
+    .sort((a, b) => b.receita - a.receita)
+    .slice(0, 5);
 
-  const menuItems = [
-    { icon: 'store', label: 'Lojas', href: '/matriz/lojas', color: 'from-blue-500 to-blue-600' },
-    { icon: 'users', label: 'Funcionários', href: '/matriz/funcionarios', color: 'from-purple-500 to-purple-600' },
-    { icon: 'package', label: 'Produtos', href: '/matriz/produtos', color: 'from-green-500 to-green-600' },
-    { icon: 'truck', label: 'Fornecedores', href: '/matriz/fornecedores', color: 'from-orange-500 to-orange-600' },
-    { icon: 'box', label: 'Estoque', href: '/matriz/estoque', color: 'from-teal-500 to-teal-600' },
-    { icon: 'cart', label: 'Vendas', href: '/sales/view', color: 'from-pink-500 to-pink-600' },
-    { icon: 'dollar', label: 'Financeiro', href: '/finance/manage', color: 'from-yellow-500 to-yellow-600' },
-    { icon: 'file', label: 'Relatórios', href: '/finance/relatorios', color: 'from-red-500 to-red-600' },
-    { icon: 'settings', label: 'Configurações', href: '/settings', color: 'from-gray-500 to-gray-600' }
-  ];
+  // Vendas por categoria
+  const categoriasMap = {};
+  vendaItens.forEach(item => {
+    const venda = vendasFiltradas.find(v => v.id === item.venda_id);
+    if (venda) {
+      const produto = produtos.find(p => p.id === item.produto_id);
+      if (produto && produto.categoria) {
+        if (!categoriasMap[produto.categoria]) {
+          categoriasMap[produto.categoria] = { receita: 0, quantidade: 0 };
+        }
+        categoriasMap[produto.categoria].receita += Number(item.subtotal || 0);
+        categoriasMap[produto.categoria].quantidade += Number(item.quantidade || 0);
+      }
+    }
+  });
+
+  const vendasPorCategoria = Object.entries(categoriasMap)
+    .map(([categoria, dados]) => ({ categoria, receita: dados.receita, quantidade: dados.quantidade }))
+    .sort((a, b) => b.receita - a.receita);
+
+  // Ticket médio ao longo do tempo
+  const ticketMedioPorDia = daysArray.map(day => {
+    const vendasDoDia = vendasFiltradas.filter(v => {
+      const vendaDate = new Date(v.data);
+      if (timeFilter === "24h") {
+        return vendaDate.getHours() === new Date(day.date).getHours() && 
+               vendaDate.toDateString() === new Date(day.date).toDateString();
+      }
+      return vendaDate.toISOString().split('T')[0] === day.date;
+    });
+    
+    if (vendasDoDia.length === 0) {
+      return { ...day, ticketMedio: 0, quantidade: 0 };
+    }
+    
+    const receitaTotal = vendasDoDia.reduce((sum, v) => sum + Number(v.valor_total || 0), 0);
+    const ticketMedio = receitaTotal / vendasDoDia.length;
+    
+    return { ...day, ticketMedio, quantidade: vendasDoDia.length };
+  });
+
+  // Vendas por dia da semana
+  const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const vendasPorDiaSemana = diasSemana.map((dia, idx) => {
+    const total = vendasFiltradas
+      .filter(v => {
+        const vendaDate = new Date(v.data);
+        return vendaDate.getDay() === idx;
+      })
+      .reduce((sum, v) => sum + Number(v.valor_total || 0), 0);
+    return { dia, total };
+  });
+
+  // Produtos com estoque baixo
+  const produtosEstoqueBaixo = estoque
+    .filter(e => e.quantidade < 10)
+    .map(e => {
+      const produto = produtos.find(p => p.id === e.produto_id);
+      return {
+        nome: produto?.nome || 'Produto desconhecido',
+        quantidade: e.quantidade,
+        preco: Number(e.preco || 0)
+      };
+    })
+    .slice(0, 5);
+
 
   const Icon = ({ name, className = "w-6 h-6" }) => {
     const icons = {
@@ -117,50 +292,41 @@ export default function Home() {
       trendDown: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />,
       arrowUp: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />,
       activity: <><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></>,
-      chart: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      chart: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />,
+      alert: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />,
+      check: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
     };
     return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">{icons[name]}</svg>;
   };
 
-  const StatCard = ({ icon, title, value, change, isPositive, gradient, delay }) => (
-    <div 
-      className={`relative overflow-hidden bg-gradient-to-br ${gradient} rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 cursor-pointer group`}
-      style={{ animationDelay: `${delay}ms` }}
-      onMouseEnter={() => setActiveCard(title)}
-      onMouseLeave={() => setActiveCard(null)}
-    >
-      <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
-      <div className="relative z-10">
-        <div className="flex justify-between items-start mb-4">
-          <div className="p-3 bg-white bg-opacity-20 rounded-xl backdrop-blur-sm">
-            <Icon name={icon} className="w-6 h-6 text-white" />
-          </div>
-          {change && (
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${isPositive ? 'bg-green-400 bg-opacity-30' : 'bg-red-400 bg-opacity-30'} text-white`}>
-              <Icon name={isPositive ? 'arrowUp' : 'trendDown'} className="w-3 h-3" />
-              {change}%
-            </div>
-          )}
+  const StatCard = ({ icon, title, value, change, isPositive }) => (
+    <div className="bg-[#F7FAFC] rounded-lg shadow-md p-6 hover:shadow-lg transition-all duration-300">
+      <div className="flex justify-between items-start mb-4">
+        <div className="p-3 bg-[#2A4E73] rounded-lg">
+          <Icon name={icon} className="w-6 h-6 text-white" />
         </div>
-        <h3 className="text-white text-opacity-90 text-sm font-medium mb-2">{title}</h3>
-        <p className="text-white text-3xl font-bold">{value}</p>
+        {change !== undefined && (
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${isPositive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            <Icon name={isPositive ? 'arrowUp' : 'trendDown'} className="w-3 h-3" />
+            {Math.abs(change).toFixed(1)}%
+          </div>
+        )}
       </div>
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-white bg-opacity-30">
-        <div className={`h-full bg-white transition-all duration-1000 ${activeCard === title ? 'w-full' : 'w-0'}`}></div>
-      </div>
+      <h3 className="text-[#2A4E73] text-sm font-medium mb-2">{title}</h3>
+      <p className="text-[#2A4E73] text-3xl font-bold">{value}</p>
     </div>
   );
 
-  // Renderizar gráfico de linha avançado
-  const renderAdvancedLineChart = () => {
-    const w = 600, h = 300, p = 50;
+  // Renderizar gráfico de linha temporal
+  const renderLineChart = () => {
+    const w = 800, h = 300, p = 50;
     const plotW = w - 2 * p, plotH = h - 2 * p;
     const max = Math.max(...salesByDay.map(d => d.total), 100);
     
     const points = salesByDay.map((d, i) => {
-      const x = p + (i / (salesByDay.length - 1)) * plotW;
+      const x = p + (i / Math.max(salesByDay.length - 1, 1)) * plotW;
       const y = h - p - (d.total / max) * plotH;
-      return { x, y, value: d.total };
+      return { x, y, value: d.total, label: d.label };
     });
 
     const pathData = points.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x},${pt.y}`).join(' ');
@@ -169,11 +335,11 @@ export default function Home() {
     return (
       <svg width="100%" height="300px" viewBox={`0 0 ${w} ${h}`} className="overflow-visible">
         <defs>
-          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="areaGradFilial" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#4B5EAA" stopOpacity="0.4"/>
             <stop offset="100%" stopColor="#4B5EAA" stopOpacity="0.05"/>
           </linearGradient>
-          <filter id="glow">
+          <filter id="glowFilial">
             <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
             <feMerge>
               <feMergeNode in="coloredBlur"/>
@@ -199,17 +365,21 @@ export default function Home() {
         ))}
         
         {/* Labels X */}
-        {salesByDay.map((d, i) => (
-          <text key={i} x={p + (i / (salesByDay.length - 1)) * plotW} y={h - p + 25} fill="#9CA3AF" textAnchor="middle" fontSize="12">
-            {d.date}
-          </text>
-        ))}
+        {salesByDay.map((d, i) => {
+          if (salesByDay.length > 10 && i % Math.ceil(salesByDay.length / 8) !== 0) return null;
+          const x = p + (i / Math.max(salesByDay.length - 1, 1)) * plotW;
+          return (
+            <text key={i} x={x} y={h - p + 25} fill="#9CA3AF" textAnchor="middle" fontSize="10">
+              {d.label}
+            </text>
+          );
+        })}
         
         {/* Área preenchida */}
-        <path d={areaData} fill="url(#areaGrad)"/>
+        <path d={areaData} fill="url(#areaGradFilial)"/>
         
         {/* Linha principal */}
-        <path d={pathData} fill="none" stroke="#4B5EAA" strokeWidth="3" filter="url(#glow)"/>
+        <path d={pathData} fill="none" stroke="#4B5EAA" strokeWidth="3" filter="url(#glowFilial)"/>
         
         {/* Pontos */}
         {points.map((pt, i) => (
@@ -222,19 +392,27 @@ export default function Home() {
     );
   };
 
-  // Renderizar gráfico de barras avançado
-  const renderAdvancedBarChart = () => {
+  // Renderizar gráfico de barras (vendas por categoria)
+  const renderCategoryBarChart = () => {
     const w = 500, h = 300, p = 50;
     const plotW = w - 2 * p, plotH = h - 2 * p;
-    const max = Math.max(...salesByStore.map(s => s.total), 100);
-    const barW = (plotW / salesByStore.length) * 0.7;
+    const max = Math.max(...vendasPorCategoria.map(c => c.receita), 100);
+    const barW = vendasPorCategoria.length > 0 ? (plotW / vendasPorCategoria.length) * 0.7 : 50;
+    
+    if (vendasPorCategoria.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-[300px] text-[#6B7280]">
+          Sem dados disponíveis
+        </div>
+      );
+    }
     
     return (
       <svg width="100%" height="300px" viewBox={`0 0 ${w} ${h}`}>
         <defs>
-          <linearGradient id="barGrad1" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#A83B3B"/>
-            <stop offset="100%" stopColor="#822727"/>
+          <linearGradient id="categoryBarGradFilial" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#4B5EAA"/>
+            <stop offset="100%" stopColor="#2A4E73"/>
           </linearGradient>
         </defs>
         
@@ -255,17 +433,17 @@ export default function Home() {
         ))}
         
         {/* Barras */}
-        {salesByStore.map((store, i) => {
-          const x = p + i * (plotW / salesByStore.length) + (plotW / salesByStore.length - barW) / 2;
-          const barH = (store.total / max) * plotH;
+        {vendasPorCategoria.map((cat, i) => {
+          const x = p + i * (plotW / Math.max(vendasPorCategoria.length, 1)) + (plotW / Math.max(vendasPorCategoria.length, 1) - barW) / 2;
+          const barH = (cat.receita / max) * plotH;
           const y = h - p - barH;
           
           return (
             <g key={i}>
-              <rect x={x} y={y} width={barW} height={barH} fill="url(#barGrad1)" rx="8" className="hover:opacity-80 transition-opacity cursor-pointer"/>
-              <text x={x + barW / 2} y={h - p + 20} fill="#9CA3AF" textAnchor="middle" fontSize="12">{store.nome}</text>
-              <text x={x + barW / 2} y={y - 10} fill="#FFF" textAnchor="middle" fontSize="12" fontWeight="bold">
-                R$ {store.total.toFixed(0)}
+              <rect x={x} y={y} width={barW} height={barH} fill="url(#categoryBarGradFilial)" rx="8" className="hover:opacity-80 transition-opacity cursor-pointer"/>
+              <text x={x + barW / 2} y={h - p + 20} fill="#9CA3AF" textAnchor="middle" fontSize="10">{cat.categoria.length > 10 ? cat.categoria.substring(0, 10) + '...' : cat.categoria}</text>
+              <text x={x + barW / 2} y={y - 10} fill="#FFF" textAnchor="middle" fontSize="11" fontWeight="bold">
+                R$ {cat.receita.toFixed(0)}
               </text>
             </g>
           );
@@ -274,7 +452,129 @@ export default function Home() {
     );
   };
 
-return (
+  // Renderizar gráfico de ticket médio
+  const renderTicketMedioChart = () => {
+    const w = 800, h = 300, p = 50;
+    const plotW = w - 2 * p, plotH = h - 2 * p;
+    const max = Math.max(...ticketMedioPorDia.map(d => d.ticketMedio), 100);
+    
+    const points = ticketMedioPorDia.map((d, i) => {
+      const x = p + (i / Math.max(ticketMedioPorDia.length - 1, 1)) * plotW;
+      const y = h - p - (d.ticketMedio / max) * plotH;
+      return { x, y, value: d.ticketMedio, label: d.label };
+    });
+
+    const pathData = points.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x},${pt.y}`).join(' ');
+    const areaData = `${pathData} L ${w - p},${h - p} L ${p},${h - p} Z`;
+
+    return (
+      <svg width="100%" height="300px" viewBox={`0 0 ${w} ${h}`} className="overflow-visible">
+        <defs>
+          <linearGradient id="ticketAreaGradFilial" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10B981" stopOpacity="0.4"/>
+            <stop offset="100%" stopColor="#10B981" stopOpacity="0.05"/>
+          </linearGradient>
+          <filter id="ticketGlowFilial">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        
+        {/* Grid */}
+        {[0, 1, 2, 3, 4].map(i => (
+          <line key={i} x1={p} y1={p + (plotH / 4) * i} x2={w - p} y2={p + (plotH / 4) * i} stroke="#6B7280" strokeWidth="1" strokeDasharray="5,5" opacity="0.3"/>
+        ))}
+        
+        {/* Eixos */}
+        <line x1={p} y1={p} x2={p} y2={h - p} stroke="#6B7280" strokeWidth="2"/>
+        <line x1={p} y1={h - p} x2={w - p} y2={h - p} stroke="#6B7280" strokeWidth="2"/>
+        
+        {/* Labels Y */}
+        {[0, 1, 2, 3, 4].map(i => (
+          <text key={i} x={p - 10} y={h - p - (plotH / 4) * i + 5} fill="#9CA3AF" textAnchor="end" fontSize="12">
+            R$ {((max / 4) * i).toFixed(0)}
+          </text>
+        ))}
+        
+        {/* Labels X */}
+        {ticketMedioPorDia.map((d, i) => {
+          if (ticketMedioPorDia.length > 10 && i % Math.ceil(ticketMedioPorDia.length / 8) !== 0) return null;
+          const x = p + (i / Math.max(ticketMedioPorDia.length - 1, 1)) * plotW;
+          return (
+            <text key={i} x={x} y={h - p + 25} fill="#9CA3AF" textAnchor="middle" fontSize="10">
+              {d.label}
+            </text>
+          );
+        })}
+        
+        {/* Área preenchida */}
+        <path d={areaData} fill="url(#ticketAreaGradFilial)"/>
+        
+        {/* Linha principal */}
+        <path d={pathData} fill="none" stroke="#10B981" strokeWidth="3" filter="url(#ticketGlowFilial)"/>
+        
+        {/* Pontos */}
+        {points.map((pt, i) => (
+          <g key={i}>
+            <circle cx={pt.x} cy={pt.y} r="6" fill="#1F2937" stroke="#10B981" strokeWidth="3"/>
+            <circle cx={pt.x} cy={pt.y} r="3" fill="#10B981"/>
+          </g>
+        ))}
+      </svg>
+    );
+  };
+
+  // Renderizar gráfico de barras horizontais (vendas por dia da semana)
+  const renderHorizontalBarChart = () => {
+    const w = 500, h = 250, p = 50;
+    const plotW = w - 2 * p, plotH = h - 2 * p;
+    const max = Math.max(...vendasPorDiaSemana.map(v => v.total), 100);
+    const barH = (plotH / vendasPorDiaSemana.length) * 0.7;
+    
+    return (
+      <svg width="100%" height="250px" viewBox={`0 0 ${w} ${h}`}>
+        <defs>
+          <linearGradient id="barGradFilial" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#10B981"/>
+            <stop offset="100%" stopColor="#34D399"/>
+          </linearGradient>
+        </defs>
+        
+        {vendasPorDiaSemana.map((item, i) => {
+          const y = p + i * (plotH / vendasPorDiaSemana.length) + (plotH / vendasPorDiaSemana.length - barH) / 2;
+          const barW = (item.total / max) * plotW;
+          
+          return (
+            <g key={i}>
+              <rect x={p} y={y} width={barW} height={barH} fill="url(#barGradFilial)" rx="4" className="hover:opacity-80 transition-opacity cursor-pointer"/>
+              <text x={p - 10} y={y + barH / 2 + 4} fill="#6B7280" textAnchor="end" fontSize="12" fontWeight="500">
+                {item.dia}
+              </text>
+              <text x={p + barW + 10} y={y + barH / 2 + 4} fill="#1F2937" textAnchor="start" fontSize="11" fontWeight="bold">
+                R$ {item.total.toFixed(2)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    );
+  };
+
+  if (loading || !filialId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#F9FAFB] via-[#E5E7EB] to-[#F9FAFB] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4B5EAA] mx-auto"></div>
+          <p className="mt-4 text-[#6B7280]">Carregando dados...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
     <div className="min-h-screen bg-gradient-to-br from-[#F9FAFB] via-[#E5E7EB] to-[#F9FAFB]">
       <br></br>
       <br></br>
@@ -282,12 +582,12 @@ return (
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Header Section */}
-        <div className="flex justify-between items-center pt-4">
-          <div className="text-center w-full">
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-6 text-center">
-            Gerenciamento de Funcionários
-          </h1>
-            <p className="text-[#4B5EAA] text-sm mt-1">Bem-vindo de volta! Aqui está seu resumo de hoje.</p>
+        <div className="flex flex-col sm:flex-row justify-between items-center pt-4 gap-4">
+          <div className="text-center sm:text-left w-full">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-2">
+              Dashboard - {lojaInfo?.nome || 'Filial'}
+            </h1>
+            <p className="text-[#4B5EAA] text-sm">Visão geral do desempenho da filial</p>
           </div>
           <select 
             value={timeFilter}
@@ -300,116 +600,175 @@ return (
           </select>
         </div>
 
-        {/* Cards de Métricas */}
+        {/* Cards de Métricas - Dados da Filial */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
-            icon="store"
-            title="Lojas Ativas"
-            value={animatedValues.lojas}
-            change={8.2}
-            isPositive={true}
-            gradient="from-[#4B5EAA] to-[#6B7280]"
-            delay={0}
-          />
-          <StatCard 
             icon="users"
-            title="Funcionários"
+            title="Funcionários da Filial"
             value={animatedValues.funcionarios}
-            change={3.1}
+            change={undefined}
             isPositive={true}
-            gradient="from-[#A83B3B] to-[#DC2626]"
-            delay={100}
           />
           <StatCard 
             icon="package"
-            title="Produtos"
+            title="Produtos em Estoque"
             value={`${animatedValues.produtos} itens`}
-            change={12.5}
+            change={undefined}
             isPositive={true}
-            gradient="from-[#10B981] to-[#34D399]"
-            delay={200}
+          />
+          <StatCard 
+            icon="cart"
+            title="Vendas da Filial"
+            value={animatedValues.vendas}
+            change={undefined}
+            isPositive={true}
           />
           <StatCard 
             icon="dollar"
-            title="Vendas Hoje"
-            value={`R$ ${animatedValues.vendas.toFixed(2)}`}
-            change={15.3}
-            isPositive={true}
-            gradient="from-[#F59E0B] to-[#FBBF24]"
-            delay={300}
+            title="Receita da Filial"
+            value={`R$ ${animatedValues.receitaTotal.toFixed(2)}`}
+            change={variacaoReceita}
+            isPositive={variacaoReceita >= 0}
           />
         </div>
 
-        {/* Gráficos */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB] text-center">
+        {/* Gráficos Principais - Dados da Filial */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB]">
             <div className="mb-6">
-              <h3 className="text-xl font-semibold text-[#1F2937] flex items-center justify-center gap-2">
+              <h3 className="text-xl font-semibold text-[#1F2937] flex items-center gap-2">
                 <Icon name="activity" className="w-5 h-5 text-[#4B5EAA]" />
-                Tendência de Vendas
+                Tendência de Vendas da Filial
               </h3>
-              <p className="text-[#6B7280] text-sm mt-1">Últimos 7 dias</p>
+              <p className="text-[#6B7280] text-sm mt-1">
+                {timeFilter === "24h" ? "Últimas 24 horas" : timeFilter === "7d" ? "Últimos 7 dias" : "Últimos 30 dias"}
+              </p>
             </div>
-            {renderAdvancedLineChart()}
+            {renderLineChart()}
           </div>
 
-          <div className="bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB] text-center">
-            <h3 className="text-xl font-semibold text-[#1F2937] mb-6 flex items-center justify-center gap-2">
-              <Icon name="chart" className="w-5 h-5 text-[#A83B3B]" />
-              Vendas por Loja
+          <div className="bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB]">
+            <h3 className="text-xl font-semibold text-[#1F2937] mb-6 flex items-center gap-2">
+              <Icon name="package" className="w-5 h-5 text-[#4B5EAA]" />
+              Vendas por Categoria (Filial)
             </h3>
-            {renderAdvancedBarChart()}
+            {renderCategoryBarChart()}
+            {vendasPorCategoria.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {vendasPorCategoria.slice(0, 5).map((cat, i) => {
+                  const total = vendasPorCategoria.reduce((sum, c) => sum + c.receita, 0);
+                  const percentage = (cat.receita / total) * 100;
+                  return (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-[#4B5EAA]"></div>
+                        <span className="text-[#1F2937]">{cat.categoria}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[#6B7280] text-xs">{cat.quantidade.toFixed(0)} un.</span>
+                        <span className="text-[#6B7280] font-semibold">{percentage.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Top Produtos */}
+        {/* Segunda Linha de Gráficos - Operacionais da Filial */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB]">
+            <h3 className="text-xl font-semibold text-[#1F2937] mb-6 flex items-center gap-2">
+              <Icon name="activity" className="w-5 h-5 text-[#F59E0B]" />
+              Vendas por Dia da Semana
+            </h3>
+            {renderHorizontalBarChart()}
+          </div>
+
+          <div className="bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB]">
+            <h3 className="text-xl font-semibold text-[#1F2937] mb-6 flex items-center gap-2">
+              <Icon name="alert" className="w-5 h-5 text-[#DC2626]" />
+              Alerta: Estoque Baixo
+            </h3>
+            {produtosEstoqueBaixo.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm text-[#DC2626] font-semibold mb-3">
+                  {produtosEstoqueBaixo.length} produto(s) com estoque abaixo de 10 unidades
+                </p>
+                {produtosEstoqueBaixo.map((produto, idx) => (
+                  <div key={idx} className="bg-[#FEF2F2] rounded-lg p-4 border border-[#FECACA] hover:border-[#DC2626] transition-colors">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4 className="text-[#1F2937] font-semibold">{produto.nome}</h4>
+                        <p className="text-[#6B7280] text-sm">Quantidade atual: {produto.quantidade} unidades</p>
+                        <p className="text-[#DC2626] text-xs mt-1 font-semibold">⚠️ Necessita reposição</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[#DC2626] font-bold text-2xl">{produto.quantidade}</p>
+                        <p className="text-[#6B7280] text-xs">unidades</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-[#6B7280] py-8">
+                <Icon name="check" className="w-12 h-12 mx-auto mb-2 text-[#10B981]" />
+                <p className="font-semibold">Estoque em níveis adequados</p>
+                <p className="text-xs mt-1">Todos os produtos estão acima do limite mínimo</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Ticket Médio da Filial */}
         <div className="bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB]">
-          <h3 className="text-xl font-semibold text-[#1F2937] mb-6 text-center">Top Produtos</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {productPerformance.map((product, idx) => (
-              <div key={idx} className="bg-[#F9FAFB] bg-opacity-50 rounded-xl p-4 hover:bg-opacity-70 transition-all cursor-pointer group">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h4 className="text-[#1F2937] font-semibold">{product.produto}</h4>
-                    <p className="text-[#6B7280] text-sm">{product.vendas} unidades vendidas</p>
-                  </div>
-                  <Icon name="trendUp" className="w-5 h-5 text-[#10B981] group-hover:scale-125 transition-transform" />
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold text-[#1F2937] flex items-center gap-2">
+              <Icon name="dollar" className="w-5 h-5 text-[#10B981]" />
+              Ticket Médio da Filial
+            </h3>
+            <p className="text-[#6B7280] text-sm mt-1">
+              Valor médio por venda desta filial no período selecionado
+            </p>
+          </div>
+          {ticketMedioPorDia.some(d => d.ticketMedio > 0) ? (
+            <>
+              {renderTicketMedioChart()}
+              <div className="mt-4 flex justify-center gap-6 text-sm">
+                <div className="text-center">
+                  <p className="text-[#6B7280]">Ticket Médio da Filial</p>
+                  <p className="text-[#1F2937] font-bold text-lg">
+                    R$ {(() => {
+                      const vendasComTicket = ticketMedioPorDia.filter(d => d.ticketMedio > 0);
+                      return vendasComTicket.length > 0 
+                        ? (ticketMedioPorDia.reduce((sum, d) => sum + d.ticketMedio, 0) / vendasComTicket.length).toFixed(2)
+                        : '0.00';
+                    })()}
+                  </p>
                 </div>
-                <div className="flex justify-between items-end">
-                  <span className="text-2xl font-bold text-[#1F2937]">R$ {product.receita.toFixed(2)}</span>
-                  <div className="w-20 h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-[#10B981] to-[#34D399] rounded-full" style={{ width: `${(product.receita / 1000) * 100}%` }}></div>
-                  </div>
+                <div className="text-center">
+                  <p className="text-[#6B7280]">Vendas da Filial</p>
+                  <p className="text-[#1F2937] font-bold text-lg">
+                    {ticketMedioPorDia.reduce((sum, d) => sum + d.quantidade, 0)}
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <div className="text-center text-[#6B7280] py-8">
+              Sem vendas no período selecionado
+            </div>
+          )}
         </div>
 
-        {/* Menu de Ações Rápidas */}
-        <div className="bg-[#FFFFFF] bg-opacity-50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-[#E5E7EB]">
-          <h3 className="text-xl font-semibold text-[#1F2937] mb-6 text-center">⚡ Ações Rápidas</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {menuItems.map((item, idx) => (
-              <Link key={idx} href={item.href}>
-                <button className="group relative overflow-hidden bg-[#F9FAFB] bg-opacity-50 hover:bg-opacity-70 rounded-xl p-6 transition-all duration-300 hover:scale-105 hover:shadow-xl w-full">
-                  <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-20 transition-opacity duration-300`}></div>
-                  <div className="relative z-10 flex flex-col items-center gap-3">
-                    <div className={`p-3 bg-gradient-to-br ${item.color} rounded-xl group-hover:scale-110 transition-transform duration-300`}>
-                      <Icon name={item.icon} className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-[#1F2937] text-sm font-medium text-center">{item.label}</span>
-                  </div>
-                </button>
-              </Link>
-            ))}
-          </div>
-        </div>
       </main>
 
       {/* Footer */}
       <footer className="mt-12 pb-8 text-center text-[#6B7280] text-sm">
         <p>© 2025 Sistema de Gestão. Todos os direitos reservados.</p>
+        <p className="mt-1 text-xs">Última atualização: {new Date().toLocaleString('pt-BR')}</p>
       </footer>
     </div>
   );

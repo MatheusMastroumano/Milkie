@@ -4,70 +4,88 @@ import { useState, useEffect } from 'react';
 import Header from "@/components/Header/page";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, XCircle, X, Download, Filter, Plus, Users, FileText, TrendingUp, Building } from 'lucide-react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { apiJson } from '@/lib/api';
 
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState('despesas');
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [filtroData, setFiltroData] = useState({ inicio: '', fim: '' });
   const [loading, setLoading] = useState(true);
+  const [lojaId, setLojaId] = useState(null);
 
-  // Estados para Despesas (usando vendas como base)
+  // Estados para Despesas
   const [despesas, setDespesas] = useState([]);
   const [novaDespesa, setNovaDespesa] = useState({ descricao: '', valor: '', data: '', categoria: 'Fixas' });
 
   // Estados para Fornecedores
-  const [fornecedores, setFornecedores] = useState([]);
-  const [novoFornecedor, setNovoFornecedor] = useState({ nome: '', valor: '', vencimento: '' });
+  const [fornecedoresLista, setFornecedoresLista] = useState([]);
+  const [pagamentosFornecedores, setPagamentosFornecedores] = useState([]);
+  const [novoPagamentoFornecedor, setNovoPagamentoFornecedor] = useState({ fornecedor_id: '', valor: '', vencimento: '' });
 
   // Estados para Folha de Pagamento
-  const [funcionarios, setFuncionarios] = useState([]);
-  const [novoFuncionario, setNovoFuncionario] = useState({ nome: '', cargo: '', salario: '', comissao: '' });
+  const [funcionariosLista, setFuncionariosLista] = useState([]);
+  const [pagamentosFuncionarios, setPagamentosFuncionarios] = useState([]);
+  const [novoPagamentoFuncionario, setNovoPagamentoFuncionario] = useState({ funcionario_id: '', salario: '', comissao: '' });
+
+  // Obter loja_id do usuário autenticado
+  useEffect(() => {
+    (async () => {
+      try {
+        const auth = await apiJson('/auth/check-auth');
+        setLojaId(auth?.user?.loja_id || null);
+      } catch {
+        setLojaId(null);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
-    carregarDados();
-  }, []);
+    if (lojaId !== null) {
+      carregarDados();
+    }
+  }, [lojaId]);
 
   const carregarDados = async () => {
     try {
       setLoading(true);
-      const [fornecedoresRes, funcionariosRes, vendasRes] = await Promise.all([
-        fetch(`${API_URL}/fornecedores`).then(r => r.ok ? r.json() : { fornecedores: [] }).catch(() => ({ fornecedores: [] })),
-        fetch(`${API_URL}/funcionarios`).then(r => r.ok ? r.json() : { funcionarios: [] }).catch(() => ({ funcionarios: [] })),
-        fetch(`${API_URL}/vendas`).then(r => r.ok ? r.json() : { vendas: [] }).catch(() => ({ vendas: [] }))
+      const [despesasRes, pagamentosFornecedoresRes, pagamentosFuncionariosRes, fornecedoresRes, funcionariosRes] = await Promise.all([
+        apiJson('/despesas').catch(() => ({ despesas: [] })),
+        apiJson('/pagamentos-fornecedores').catch(() => ({ pagamentos_fornecedores: [] })),
+        apiJson('/pagamentos-funcionarios').catch(() => ({ pagamentos_funcionarios: [] })),
+        apiJson('/fornecedores').catch(() => ({ fornecedores: [] })),
+        apiJson('/funcionarios').catch(() => ({ funcionarios: [] }))
       ]);
 
-      setFornecedores((fornecedoresRes.fornecedores || []).map(f => ({
-        id: f.id,
-        nome: f.nome,
-        valor: 0, // Valor seria calculado baseado em compras/contratos
-        vencimento: new Date().toISOString().split('T')[0],
-        status: f.ativo ? 'Pendente' : 'Pago'
+      setDespesas((despesasRes.despesas || []).map(d => ({
+        id: d.id,
+        descricao: d.descricao,
+        valor: parseFloat(d.valor || 0),
+        data: d.data ? (typeof d.data === 'string' ? d.data.split('T')[0] : new Date(d.data).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+        categoria: d.categoria,
+        status: d.status === 'pago' ? 'Pago' : 'Pendente'
       })));
 
-      setFuncionarios((funcionariosRes.funcionarios || []).map(f => ({
-        id: f.id,
-        nome: f.nome,
-        cargo: f.cargo,
-        salario: parseFloat(f.salario || 0),
-        comissao: 0, // Comissão seria calculada baseada em vendas
-        status: f.ativo ? 'Pendente' : 'Pago'
+      setPagamentosFornecedores((pagamentosFornecedoresRes.pagamentos_fornecedores || []).map(p => ({
+        id: p.id,
+        fornecedor_id: p.fornecedor_id,
+        fornecedor_nome: p.fornecedor?.nome || '',
+        valor: parseFloat(p.valor || 0),
+        vencimento: p.vencimento ? (typeof p.vencimento === 'string' ? p.vencimento.split('T')[0] : new Date(p.vencimento).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+        status: p.status === 'pago' ? 'Pago' : 'Pendente'
       })));
 
-      // Usar vendas como base para despesas (receitas negativas)
-      const vendas = vendasRes.vendas || [];
-      setDespesas(vendas.map((v) => {
-        const dataVenda = v.data ? (typeof v.data === 'string' ? v.data.split('T')[0] : new Date(v.data).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0];
-        return {
-          id: `venda-${v.id}`,
-          descricao: `Venda #${v.id}`,
-          valor: -parseFloat(v.valor_total || 0), // Negativo para representar saída
-          data: dataVenda,
-          categoria: 'Variáveis',
-          status: 'Pago'
-        };
-      }));
+      setPagamentosFuncionarios((pagamentosFuncionariosRes.pagamentos_funcionarios || []).map(p => ({
+        id: p.id,
+        funcionario_id: p.funcionario_id,
+        funcionario_nome: p.funcionario?.nome || '',
+        funcionario_cargo: p.funcionario?.cargo || '',
+        salario: parseFloat(p.salario || 0),
+        comissao: parseFloat(p.comissao || 0),
+        status: p.status === 'pago' ? 'Pago' : 'Pendente'
+      })));
+
+      setFornecedoresLista(fornecedoresRes.fornecedores || []);
+      setFuncionariosLista(funcionariosRes.funcionarios || []);
     } catch (error) {
       console.error('Erro ao carregar dados financeiros:', error);
       showAlert('error', 'Erro ao carregar dados financeiros');
@@ -99,80 +117,147 @@ export default function Financeiro() {
   };
 
   // Funções para Despesas
-  const adicionarDespesa = (e) => {
+  const adicionarDespesa = async (e) => {
     e.preventDefault();
-    if (!novaDespesa.descricao || !novaDespesa.valor || !novaDespesa.data) {
-      showAlert('error', 'Preencha todos os campos obrigatórios');
-      return;
-    }
-
-    const nova = {
-      id: `despesa-${Date.now()}`,
-      ...novaDespesa,
-      valor: parseFloat(novaDespesa.valor),
-      status: 'Pendente'
-    };
-
-    setDespesas([...despesas, nova]);
-    showAlert('success', 'Despesa cadastrada com sucesso!');
-    setNovaDespesa({ descricao: '', valor: '', data: '', categoria: 'Fixas' });
-  };
-
-  const pagarDespesa = (id) => {
-    setDespesas(despesas.map(d => 
-      d.id === id ? { ...d, status: 'Pago' } : d
-    ));
-    showAlert('success', 'Despesa marcada como paga!');
-  };
-
-  // Funções para Fornecedores
-  const adicionarFornecedor = async (e) => {
-    e.preventDefault();
-    if (!novoFornecedor.nome || !novoFornecedor.valor || !novoFornecedor.vencimento) {
+    if (!novaDespesa.descricao || !novaDespesa.valor || !novaDespesa.data || !lojaId) {
       showAlert('error', 'Preencha todos os campos obrigatórios');
       return;
     }
 
     try {
-      const response = await fetch(`${API_URL}/fornecedores`, {
+      const valorNumerico = parseFloat(novaDespesa.valor);
+      if (isNaN(valorNumerico) || valorNumerico <= 0) {
+        showAlert('error', 'Valor deve ser um número positivo');
+        return;
+      }
+
+      await apiJson('/despesas', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nome: novoFornecedor.nome,
-          cnpj_cpf: '',
-          ativo: true
+          loja_id: Number(lojaId),
+          descricao: novaDespesa.descricao.trim(),
+          valor: valorNumerico,
+          data: novaDespesa.data,
+          categoria: novaDespesa.categoria,
+          status: 'pendente'
         })
       });
 
-      if (!response.ok) throw new Error('Erro ao adicionar fornecedor');
-
+      showAlert('success', 'Despesa cadastrada com sucesso!');
+      setNovaDespesa({ descricao: '', valor: '', data: '', categoria: 'Fixas' });
       await carregarDados();
-      showAlert('success', 'Fornecedor cadastrado com sucesso!');
-      setNovoFornecedor({ nome: '', valor: '', vencimento: '' });
     } catch (error) {
-      showAlert('error', `Erro ao adicionar fornecedor: ${error.message}`);
+      console.error('Erro ao cadastrar despesa:', error);
+      const errorMessage = error.message || 'Erro desconhecido ao cadastrar despesa';
+      showAlert('error', `Erro ao cadastrar despesa: ${errorMessage}`);
     }
   };
 
-  const pagarFornecedor = (id) => {
-    setFornecedores(fornecedores.map(f => 
-      f.id === id ? { ...f, status: 'Pago' } : f
-    ));
-    showAlert('success', 'Pagamento ao fornecedor realizado!');
+  const pagarDespesa = async (id) => {
+    try {
+      await apiJson(`/despesas/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'pago' })
+      });
+      showAlert('success', 'Despesa marcada como paga!');
+      await carregarDados();
+    } catch (error) {
+      showAlert('error', `Erro ao atualizar despesa: ${error.message}`);
+    }
+  };
+
+  // Funções para Fornecedores
+  const adicionarPagamentoFornecedor = async (e) => {
+    e.preventDefault();
+    if (!novoPagamentoFornecedor.fornecedor_id || !novoPagamentoFornecedor.valor || !novoPagamentoFornecedor.vencimento || !lojaId) {
+      showAlert('error', 'Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    try {
+      await apiJson('/pagamentos-fornecedores', {
+        method: 'POST',
+        body: JSON.stringify({
+          fornecedor_id: parseInt(novoPagamentoFornecedor.fornecedor_id),
+          loja_id: lojaId,
+          valor: parseFloat(novoPagamentoFornecedor.valor),
+          vencimento: novoPagamentoFornecedor.vencimento,
+          status: 'pendente'
+        })
+      });
+
+      showAlert('success', 'Pagamento de fornecedor cadastrado com sucesso!');
+      setNovoPagamentoFornecedor({ fornecedor_id: '', valor: '', vencimento: '' });
+      await carregarDados();
+    } catch (error) {
+      showAlert('error', `Erro ao cadastrar pagamento: ${error.message}`);
+    }
+  };
+
+  const pagarFornecedor = async (id) => {
+    try {
+      await apiJson(`/pagamentos-fornecedores/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ 
+          status: 'pago',
+          data_pagamento: new Date().toISOString()
+        })
+      });
+      showAlert('success', 'Pagamento ao fornecedor realizado!');
+      await carregarDados();
+    } catch (error) {
+      showAlert('error', `Erro ao atualizar pagamento: ${error.message}`);
+    }
   };
 
   // Funções para Folha de Pagamento
-  const adicionarFuncionario = (e) => {
+  const adicionarPagamentoFuncionario = async (e) => {
     e.preventDefault();
-    showAlert('error', 'Para adicionar funcionário, use a página de Funcionários');
-    // Funcionários devem ser adicionados na página específica
+    if (!novoPagamentoFuncionario.funcionario_id || !novoPagamentoFuncionario.salario || !lojaId) {
+      showAlert('error', 'Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    try {
+      const funcionario = funcionariosLista.find(f => f.id === parseInt(novoPagamentoFuncionario.funcionario_id));
+      if (!funcionario) {
+        showAlert('error', 'Funcionário não encontrado');
+        return;
+      }
+
+      await apiJson('/pagamentos-funcionarios', {
+        method: 'POST',
+        body: JSON.stringify({
+          funcionario_id: parseInt(novoPagamentoFuncionario.funcionario_id),
+          loja_id: lojaId,
+          salario: parseFloat(novoPagamentoFuncionario.salario),
+          comissao: parseFloat(novoPagamentoFuncionario.comissao || 0),
+          status: 'pendente'
+        })
+      });
+
+      showAlert('success', 'Pagamento de funcionário cadastrado com sucesso!');
+      setNovoPagamentoFuncionario({ funcionario_id: '', salario: '', comissao: '' });
+      await carregarDados();
+    } catch (error) {
+      showAlert('error', `Erro ao cadastrar pagamento: ${error.message}`);
+    }
   };
 
-  const pagarFuncionario = (id) => {
-    setFuncionarios(funcionarios.map(f => 
-      f.id === id ? { ...f, status: 'Pago' } : f
-    ));
-    showAlert('success', 'Pagamento realizado com sucesso!');
+  const pagarFuncionario = async (id) => {
+    try {
+      await apiJson(`/pagamentos-funcionarios/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ 
+          status: 'pago',
+          data_pagamento: new Date().toISOString()
+        })
+      });
+      showAlert('success', 'Pagamento realizado com sucesso!');
+      await carregarDados();
+    } catch (error) {
+      showAlert('error', `Erro ao atualizar pagamento: ${error.message}`);
+    }
   };
 
   // Funções para Relatórios
@@ -183,12 +268,12 @@ export default function Financeiro() {
 
   // Cálculos para os cards
   const totalDespesas = Math.abs(despesas.reduce((sum, d) => sum + Math.abs(d.valor), 0));
-  const totalFornecedores = fornecedores.reduce((sum, f) => sum + f.valor, 0);
-  const totalFolha = funcionarios.reduce((sum, f) => sum + f.salario + f.comissao, 0);
+  const totalFornecedores = pagamentosFornecedores.reduce((sum, f) => sum + f.valor, 0);
+  const totalFolha = pagamentosFuncionarios.reduce((sum, f) => sum + f.salario + f.comissao, 0);
   const totalPendentes = 
     despesas.filter(d => d.status === 'Pendente').reduce((sum, d) => sum + Math.abs(d.valor), 0) +
-    fornecedores.filter(f => f.status === 'Pendente').reduce((sum, f) => sum + f.valor, 0) +
-    funcionarios.filter(f => f.status === 'Pendente').reduce((sum, f) => sum + f.salario + f.comissao, 0);
+    pagamentosFornecedores.filter(f => f.status === 'Pendente').reduce((sum, f) => sum + f.valor, 0) +
+    pagamentosFuncionarios.filter(f => f.status === 'Pendente').reduce((sum, f) => sum + f.salario + f.comissao, 0);
 
   return (
     <>
@@ -350,6 +435,7 @@ export default function Financeiro() {
                     <label className="block text-sm font-medium text-[#2A4E73] mb-2">Valor *</label>
                     <input
                       type="number"
+                      step="0.01"
                       value={novaDespesa.valor}
                       onChange={(e) => setNovaDespesa({ ...novaDespesa, valor: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A4E73] focus:border-transparent"
@@ -399,37 +485,45 @@ export default function Financeiro() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {despesas.map((despesa) => (
-                        <tr key={despesa.id} className="hover:bg-[#E6F2FF]">
-                          <td className="px-4 py-3">{despesa.descricao}</td>
-                          <td className="px-4 py-3">
-                            <span className="px-2 py-1 text-xs bg-[#CFE8F9] text-[#2A4E73] rounded-full">
-                              {despesa.categoria}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">{new Date(despesa.data).toLocaleDateString()}</td>
-                          <td className="px-4 py-3 text-right font-medium">R$ {Math.abs(despesa.valor).toLocaleString()}</td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              despesa.status === 'Pago' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {despesa.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            {despesa.status === 'Pendente' && (
-                              <button
-                                onClick={() => pagarDespesa(despesa.id)}
-                                className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#1E3A5C] transition-all"
-                              >
-                                Marcar como Pago
-                              </button>
-                            )}
+                      {despesas.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                            Nenhuma despesa cadastrada
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        despesas.map((despesa) => (
+                          <tr key={despesa.id} className="hover:bg-[#E6F2FF]">
+                            <td className="px-4 py-3">{despesa.descricao}</td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-1 text-xs bg-[#CFE8F9] text-[#2A4E73] rounded-full">
+                                {despesa.categoria}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">{new Date(despesa.data).toLocaleDateString()}</td>
+                            <td className="px-4 py-3 text-right font-medium">R$ {Math.abs(despesa.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                despesa.status === 'Pago' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {despesa.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {despesa.status === 'Pendente' && (
+                                <button
+                                  onClick={() => pagarDespesa(despesa.id)}
+                                  className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#1E3A5C] transition-all"
+                                >
+                                  Marcar como Pago
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -441,23 +535,27 @@ export default function Financeiro() {
               <div className="space-y-6">
                 <h2 className="text-xl font-bold text-[#2A4E73]">Controle de Fornecedores</h2>
                 
-                <form onSubmit={adicionarFornecedor} className="grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 bg-white rounded-lg border">
+                <form onSubmit={adicionarPagamentoFornecedor} className="grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 bg-white rounded-lg border">
                   <div className="lg:col-span-4">
                     <label className="block text-sm font-medium text-[#2A4E73] mb-2">Fornecedor *</label>
-                    <input
-                      type="text"
-                      value={novoFornecedor.nome}
-                      onChange={(e) => setNovoFornecedor({ ...novoFornecedor, nome: e.target.value })}
+                    <select
+                      value={novoPagamentoFornecedor.fornecedor_id}
+                      onChange={(e) => setNovoPagamentoFornecedor({ ...novoPagamentoFornecedor, fornecedor_id: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A4E73] focus:border-transparent"
-                      placeholder="Nome do fornecedor"
-                    />
+                    >
+                      <option value="">Selecione um fornecedor</option>
+                      {fornecedoresLista.filter(f => f.ativo).map(f => (
+                        <option key={f.id} value={f.id}>{f.nome}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="lg:col-span-3">
                     <label className="block text-sm font-medium text-[#2A4E73] mb-2">Valor *</label>
                     <input
                       type="number"
-                      value={novoFornecedor.valor}
-                      onChange={(e) => setNovoFornecedor({ ...novoFornecedor, valor: e.target.value })}
+                      step="0.01"
+                      value={novoPagamentoFornecedor.valor}
+                      onChange={(e) => setNovoPagamentoFornecedor({ ...novoPagamentoFornecedor, valor: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A4E73] focus:border-transparent"
                       placeholder="R$ 0,00"
                     />
@@ -466,8 +564,8 @@ export default function Financeiro() {
                     <label className="block text-sm font-medium text-[#2A4E73] mb-2">Vencimento *</label>
                     <input
                       type="date"
-                      value={novoFornecedor.vencimento}
-                      onChange={(e) => setNovoFornecedor({ ...novoFornecedor, vencimento: e.target.value })}
+                      value={novoPagamentoFornecedor.vencimento}
+                      onChange={(e) => setNovoPagamentoFornecedor({ ...novoPagamentoFornecedor, vencimento: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A4E73] focus:border-transparent"
                     />
                   </div>
@@ -491,32 +589,40 @@ export default function Financeiro() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {fornecedores.map((fornecedor) => (
-                        <tr key={fornecedor.id} className="hover:bg-[#E6F2FF]">
-                          <td className="px-4 py-3 font-medium">{fornecedor.nome}</td>
-                          <td className="px-4 py-3">{new Date(fornecedor.vencimento).toLocaleDateString()}</td>
-                          <td className="px-4 py-3 text-right">R$ {fornecedor.valor.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              fornecedor.status === 'Pago' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {fornecedor.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            {fornecedor.status === 'Pendente' && (
-                              <button
-                                onClick={() => pagarFornecedor(fornecedor.id)}
-                                className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#1E3A5C] transition-all"
-                              >
-                                Registrar Pagamento
-                              </button>
-                            )}
+                      {pagamentosFornecedores.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
+                            Nenhum pagamento de fornecedor cadastrado
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        pagamentosFornecedores.map((fornecedor) => (
+                          <tr key={fornecedor.id} className="hover:bg-[#E6F2FF]">
+                            <td className="px-4 py-3 font-medium">{fornecedor.fornecedor_nome}</td>
+                            <td className="px-4 py-3">{new Date(fornecedor.vencimento).toLocaleDateString()}</td>
+                            <td className="px-4 py-3 text-right">R$ {fornecedor.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                fornecedor.status === 'Pago' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {fornecedor.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {fornecedor.status === 'Pendente' && (
+                                <button
+                                  onClick={() => pagarFornecedor(fornecedor.id)}
+                                  className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#1E3A5C] transition-all"
+                                >
+                                  Registrar Pagamento
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -528,33 +634,34 @@ export default function Financeiro() {
               <div className="space-y-6">
                 <h2 className="text-xl font-bold text-[#2A4E73]">Folha de Pagamento</h2>
                 
-                <form onSubmit={adicionarFuncionario} className="grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 bg-white rounded-lg border">
+                <form onSubmit={adicionarPagamentoFuncionario} className="grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 bg-white rounded-lg border">
                   <div className="lg:col-span-3">
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-2">Nome *</label>
-                    <input
-                      type="text"
-                      value={novoFuncionario.nome}
-                      onChange={(e) => setNovoFuncionario({ ...novoFuncionario, nome: e.target.value })}
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-2">Funcionário *</label>
+                    <select
+                      value={novoPagamentoFuncionario.funcionario_id}
+                      onChange={(e) => {
+                        const func = funcionariosLista.find(f => f.id === parseInt(e.target.value));
+                        setNovoPagamentoFuncionario({ 
+                          ...novoPagamentoFuncionario, 
+                          funcionario_id: e.target.value,
+                          salario: func ? func.salario.toString() : ''
+                        });
+                      }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A4E73] focus:border-transparent"
-                      placeholder="Nome do funcionário"
-                    />
+                    >
+                      <option value="">Selecione um funcionário</option>
+                      {funcionariosLista.filter(f => f.ativo).map(f => (
+                        <option key={f.id} value={f.id}>{f.nome} - {f.cargo}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="lg:col-span-3">
-                    <label className="block text-sm font-medium text-[#2A4E73] mb-2">Cargo *</label>
-                    <input
-                      type="text"
-                      value={novoFuncionario.cargo}
-                      onChange={(e) => setNovoFuncionario({ ...novoFuncionario, cargo: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A4E73] focus:border-transparent"
-                      placeholder="Cargo"
-                    />
-                  </div>
-                  <div className="lg:col-span-2">
                     <label className="block text-sm font-medium text-[#2A4E73] mb-2">Salário *</label>
                     <input
                       type="number"
-                      value={novoFuncionario.salario}
-                      onChange={(e) => setNovoFuncionario({ ...novoFuncionario, salario: e.target.value })}
+                      step="0.01"
+                      value={novoPagamentoFuncionario.salario}
+                      onChange={(e) => setNovoPagamentoFuncionario({ ...novoPagamentoFuncionario, salario: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A4E73] focus:border-transparent"
                       placeholder="R$ 0,00"
                     />
@@ -563,8 +670,9 @@ export default function Financeiro() {
                     <label className="block text-sm font-medium text-[#2A4E73] mb-2">Comissão</label>
                     <input
                       type="number"
-                      value={novoFuncionario.comissao}
-                      onChange={(e) => setNovoFuncionario({ ...novoFuncionario, comissao: e.target.value })}
+                      step="0.01"
+                      value={novoPagamentoFuncionario.comissao}
+                      onChange={(e) => setNovoPagamentoFuncionario({ ...novoPagamentoFuncionario, comissao: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A4E73] focus:border-transparent"
                       placeholder="R$ 0,00"
                     />
@@ -591,34 +699,42 @@ export default function Financeiro() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {funcionarios.map((func) => (
-                        <tr key={func.id} className="hover:bg-[#E6F2FF]">
-                          <td className="px-4 py-3 font-medium">{func.nome}</td>
-                          <td className="px-4 py-3">{func.cargo}</td>
-                          <td className="px-4 py-3 text-right">R$ {func.salario.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-right">R$ {func.comissao.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-right font-bold">R$ {(func.salario + func.comissao).toLocaleString()}</td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              func.status === 'Pago' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {func.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            {func.status === 'Pendente' && (
-                              <button
-                                onClick={() => pagarFuncionario(func.id)}
-                                className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#1E3A5C] transition-all"
-                              >
-                                Efetuar Pagamento
-                              </button>
-                            )}
+                      {pagamentosFuncionarios.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                            Nenhum pagamento de funcionário cadastrado
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        pagamentosFuncionarios.map((func) => (
+                          <tr key={func.id} className="hover:bg-[#E6F2FF]">
+                            <td className="px-4 py-3 font-medium">{func.funcionario_nome}</td>
+                            <td className="px-4 py-3">{func.funcionario_cargo}</td>
+                            <td className="px-4 py-3 text-right">R$ {func.salario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-4 py-3 text-right">R$ {func.comissao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-4 py-3 text-right font-bold">R$ {(func.salario + func.comissao).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                func.status === 'Pago' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {func.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {func.status === 'Pendente' && (
+                                <button
+                                  onClick={() => pagarFuncionario(func.id)}
+                                  className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#1E3A5C] transition-all"
+                                >
+                                  Efetuar Pagamento
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>

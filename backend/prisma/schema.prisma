@@ -1,5 +1,6 @@
 datasource db {
     provider = "mysql"
+    url = "mysql://root:@localhost:3306/milkie"
 }
 
 generator client {
@@ -23,6 +24,9 @@ model lojas {
     vendas       vendas[]
     caixa        caixa[]
     funcionarios funcionarios[]
+    despesas     despesas[]
+    pagamentos_fornecedores pagamentos_fornecedores[]
+    pagamentos_funcionarios pagamentos_funcionarios[]
 }
 
 enum TipoLoja {
@@ -50,6 +54,7 @@ model funcionarios {
 
     loja     lojas      @relation(fields: [loja_id], references: [id], onDelete: Cascade)
     usuarios usuarios[]
+    pagamentos pagamentos_funcionarios[]
 }
 
 // agora sim, só usuários com acesso ao sistema (caixa, gerente e admin)
@@ -124,6 +129,7 @@ model fornecedores {
     ativo     Boolean               @default(true)
     criado_em DateTime              @default(now())
     produtos  fornecedor_produtos[]
+    pagamentos pagamentos_fornecedores[]
 }
 
 /**
@@ -210,4 +216,54 @@ model caixa {
 enum StatusCaixa {
     aberto
     fechado
+}
+
+/**
+ * ---------------------- // módulo financeiro ----------------------
+ */
+
+model despesas {
+    id        Int      @id @default(autoincrement())
+    loja_id   Int
+    descricao String
+    valor     Decimal  @db.Decimal(10, 2)
+    data      DateTime
+    categoria String
+    status    StatusPagamento @default(pendente)
+    criado_em DateTime @default(now())
+
+    loja lojas @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+}
+
+model pagamentos_fornecedores {
+    id             Int      @id @default(autoincrement())
+    fornecedor_id  Int
+    loja_id        Int
+    valor          Decimal  @db.Decimal(10, 2)
+    vencimento     DateTime
+    data_pagamento DateTime?
+    status         StatusPagamento @default(pendente)
+    criado_em      DateTime @default(now())
+
+    fornecedor fornecedores @relation(fields: [fornecedor_id], references: [id], onDelete: Cascade)
+    loja       lojas        @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+}
+
+model pagamentos_funcionarios {
+    id             Int      @id @default(autoincrement())
+    funcionario_id Int
+    loja_id        Int
+    salario        Decimal  @db.Decimal(10, 2)
+    comissao       Decimal  @db.Decimal(10, 2) @default(0)
+    data_pagamento DateTime?
+    status         StatusPagamento @default(pendente)
+    criado_em      DateTime @default(now())
+
+    funcionario funcionarios @relation(fields: [funcionario_id], references: [id], onDelete: Cascade)
+    loja        lojas        @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+}
+
+enum StatusPagamento {
+    pendente
+    pago
 }

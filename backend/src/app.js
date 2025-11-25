@@ -26,6 +26,8 @@ import {
     produtosRoutes,           estoqueRoutes,      fornecedoresRoutes,
     fornecedorProdutosRoutes, vendasRoutes,       vendaItensRoutes, 
     vendaPagamentosRoutes,    caixaRoutes,
+    despesasRoutes,           pagamentosFornecedoresRoutes,
+    pagamentosFuncionariosRoutes,
 
     authRotas
 } from './modules/index.js';
@@ -91,6 +93,9 @@ app.use('/vendas', vendasRoutes);
 app.use('/venda-itens', vendaItensRoutes);
 app.use('/venda-pagamentos', vendaPagamentosRoutes);
 app.use('/caixa', caixaRoutes);
+app.use('/despesas', despesasRoutes);
+app.use('/pagamentos-fornecedores', pagamentosFornecedoresRoutes);
+app.use('/pagamentos-funcionarios', pagamentosFuncionariosRoutes);
 
 // auth
 app.use('/auth', authRotas);

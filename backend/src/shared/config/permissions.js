@@ -26,6 +26,7 @@ const MODULE_PERMISSIONS = {
     venda_itens: ['admin', 'gerente', 'caixa'],
     venda_pagamentos: ['admin', 'gerente', 'caixa'],
     vendas: ['admin', 'gerente', 'caixa'],
+    financeiro: ['admin', 'gerente'],
 };
 
 export default MODULE_PERMISSIONS;
