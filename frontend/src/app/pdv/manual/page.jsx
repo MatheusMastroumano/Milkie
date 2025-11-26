@@ -31,12 +31,11 @@ export default function PDVManual() {
                 setCarregando(true);
                 const resp = await apiJson(`/estoque?loja_id=${lojaId}`);
                 const data = resp;
-                const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
                 const lista = (data.estoque || []).map((e) => ({
                     id: e.produto_id,
                     nome: e.produto?.nome || `Produto ${e.produto_id}`,
                     descricao: e.produto?.descricao || '',
-                    img: e.produto?.imagem_url ? `${BASE_URL}${e.produto.imagem_url}` : '/file.svg',
+                    img: "/produto.png",
                     preco: Number(e.preco),
                     quantidade: Number(e.quantidade || 0),
                 }));

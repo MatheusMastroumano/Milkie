@@ -18,7 +18,7 @@ const MODULE_PERMISSIONS = {
     caixa: ['admin', 'gerente', 'caixa'],
     estoque: ['admin', 'gerente', 'caixa'],
     fornecedor_produtos: ['admin'],
-    fornecedores: ['admin'],
+    fornecedores: ['admin', 'gerente'],
     funcionarios: ['admin', 'gerente'],
     lojas: ['admin', 'gerente', 'caixa'],
     produtos: ['admin', 'gerente'],

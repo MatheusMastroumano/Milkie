@@ -33,19 +33,6 @@ export default function Pagamento() {
                 const auth = await apiJson('/auth/check-auth');
                 setLojaId(prev => (prev != null ? prev : (auth?.user?.loja_id ?? null)));
                 setUsuarioId(prev => (prev != null ? prev : (auth?.user?.id ?? null)));
-
-                // Enriquecer itens com imagem do produto
-                try {
-                    const produtosResp = await apiJson('/produtos');
-                    const lista = produtosResp.produtos || produtosResp || [];
-                    const imagemMap = new Map(lista.map(p => [Number(p.id), p.imagem_url || null]));
-                    setItens(prev => prev.map(i => ({
-                        ...i,
-                        imagem_url: imagemMap.get(Number(i.id)) || null
-                    })));
-                } catch (_) {
-                    // silencioso: se falhar, seguimos sem imagens
-                }
             } catch (_) {}
         })();
     }, []);
@@ -170,14 +157,7 @@ export default function Pagamento() {
                                 ) : (
                                     itens.map((i) => (
                                         <div key={i.id} className="flex justify-between items-center py-2 border-b border-gray-200">
-                                            <div className="flex items-center gap-3">
-                                                <img
-                                                    src={i.imagem_url ? `${API_URL}${i.imagem_url}` : (i.img || '/file.svg')}
-                                                    alt={i.nome}
-                                                    className="w-10 h-10 rounded object-cover bg-white border border-gray-200"
-                                                />
-                                                <span className="text-sm text-gray-600">{i.nome} x{i.quantidade}</span>
-                                            </div>
+                                            <span className="text-sm text-gray-600">{i.nome} x{i.quantidade}</span>
                                             <span className="text-sm font-medium text-[#2A4E73]">R$ {(i.preco * i.quantidade).toFixed(2)}</span>
                                         </div>
                                     ))
