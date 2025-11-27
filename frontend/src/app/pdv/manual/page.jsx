@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiJson } from "@/lib/api";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 export default function PDVManual() {
     const router = useRouter();
     const [lojaId, setLojaId] = useState(null);
@@ -26,6 +28,18 @@ export default function PDVManual() {
 
     useEffect(() => {
         if (!lojaId) return;
+        
+        // Função para construir a URL completa da imagem
+        const getImagemUrl = (imagemUrl) => {
+            if (!imagemUrl) return null; // Retorna null para usar placeholder
+            // Se já é uma URL completa, retorna como está
+            if (imagemUrl.startsWith('http://') || imagemUrl.startsWith('https://')) {
+                return imagemUrl;
+            }
+            // Se é uma URL relativa, adiciona a URL da API
+            return `${API_URL}${imagemUrl}`;
+        };
+        
         const carregar = async () => {
             try {
                 setCarregando(true);
@@ -35,7 +49,7 @@ export default function PDVManual() {
                     id: e.produto_id,
                     nome: e.produto?.nome || `Produto ${e.produto_id}`,
                     descricao: e.produto?.descricao || '',
-                    img: "/produto.png",
+                    img: getImagemUrl(e.produto?.imagem_url),
                     preco: Number(e.preco),
                     quantidade: Number(e.quantidade || 0),
                 }));
@@ -183,9 +197,32 @@ export default function PDVManual() {
                                     <div className="space-y-2">
                                         {listaCompras.map((item) => (
                                             <div key={item.id} onClick={() => setSelectedItemId(item.id)} className={`rounded-md p-3 border bg-white hover:shadow ${selectedItemId === item.id ? 'border-[#2A4E73]' : 'border-gray-200'} cursor-pointer`}>
-                                                <div className="flex justify-between text-sm">
-                                                    <div className="truncate max-w-[60%] text-[#2A4E73] font-medium">{item.nome}</div>
-                                                    <div className="text-[#2A4E73] font-semibold">R$ {(item.preco * item.quantidade).toFixed(2)}</div>
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+                                                        {item.img ? (
+                                                            <img 
+                                                                src={item.img} 
+                                                                alt={item.nome}
+                                                                className="w-full h-full object-cover rounded"
+                                                                onError={(e) => {
+                                                                    e.target.style.display = 'none';
+                                                                    const placeholder = e.target.nextElementSibling;
+                                                                    if (placeholder) placeholder.style.display = 'flex';
+                                                                }}
+                                                            />
+                                                        ) : null}
+                                                        <div className={`${item.img ? 'hidden' : 'flex'} items-center justify-center w-full h-full text-gray-400`}>
+                                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 0 012.828 0L16 16m-2-2l1.586-1.586a2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 0 002-2V6a2 0 00-2-2H6a2 0 00-2 2v12a2 0 002 2z" />
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex justify-between text-sm">
+                                                            <div className="truncate max-w-[60%] text-[#2A4E73] font-medium">{item.nome}</div>
+                                                            <div className="text-[#2A4E73] font-semibold">R$ {(item.preco * item.quantidade).toFixed(2)}</div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <div className="flex items-center justify-between mt-1 text-xs text-gray-600">
                                                     <span>{item.quantidade}.00 Unidades × R$ {item.preco.toFixed(2)} / Unidade</span>
@@ -283,8 +320,24 @@ export default function PDVManual() {
                                             onClick={() => adicionarProduto(produto)}
                                             className="bg-white rounded-lg shadow-sm p-3 border border-gray-200 hover:shadow-md transition-shadow text-left"
                                         >
-                                            <div className="relative">
-                                                <img className="w-full h-28 object-cover rounded-md" src={produto.img} alt={produto.nome} />
+                                            <div className="relative bg-gray-100 rounded-md flex items-center justify-center h-28">
+                                                {produto.img ? (
+                                                    <img 
+                                                        className="w-full h-full object-cover rounded-md" 
+                                                        src={produto.img} 
+                                                        alt={produto.nome}
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            const placeholder = e.target.nextElementSibling;
+                                                            if (placeholder) placeholder.style.display = 'flex';
+                                                        }}
+                                                    />
+                                                ) : null}
+                                                <div className={`${produto.img ? 'hidden' : 'flex'} items-center justify-center w-full h-full text-gray-400`}>
+                                                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 0 012.828 0L16 16m-2-2l1.586-1.586a2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 0 002-2V6a2 0 00-2-2H6a2 0 00-2 2v12a2 0 002 2z" />
+                                                    </svg>
+                                                </div>
                                             </div>
                                             <div className="mt-2 truncate text-sm font-semibold text-[#2A4E73]">{produto.nome}</div>
                                             <div className="text-xs text-gray-600 truncate">R$ {produto.preco.toFixed(2)}/Unidade</div>

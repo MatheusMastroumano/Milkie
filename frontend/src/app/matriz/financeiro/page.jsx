@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Header from "@/components/Header/page";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, XCircle, X, Download, Filter, Plus, Users, FileText, TrendingUp, Building } from 'lucide-react';
+import { CheckCircle, XCircle, X, Download, Filter, Plus, Users, FileText, TrendingUp, Building, Trash2 } from 'lucide-react';
 import { apiJson } from '@/lib/api';
 import { 
   gerarPDFDespesas, 
@@ -173,6 +173,23 @@ export default function Financeiro() {
     }
   };
 
+  const excluirDespesa = async (id) => {
+    const despesa = despesas.find(d => d.id === id);
+    if (!window.confirm(`Tem certeza que deseja excluir a despesa "${despesa?.descricao || 'esta despesa'}"?`)) {
+      return;
+    }
+
+    try {
+      await apiJson(`/despesas/${id}`, {
+        method: 'DELETE'
+      });
+      showAlert('success', 'Despesa excluída com sucesso!');
+      await carregarDados();
+    } catch (error) {
+      showAlert('error', `Erro ao excluir despesa: ${error.message}`);
+    }
+  };
+
   // Funções para Fornecedores
   const adicionarPagamentoFornecedor = async (e) => {
     e.preventDefault();
@@ -214,6 +231,23 @@ export default function Financeiro() {
       await carregarDados();
     } catch (error) {
       showAlert('error', `Erro ao atualizar pagamento: ${error.message}`);
+    }
+  };
+
+  const excluirPagamentoFornecedor = async (id) => {
+    const pagamento = pagamentosFornecedores.find(p => p.id === id);
+    if (!window.confirm(`Tem certeza que deseja excluir o pagamento do fornecedor "${pagamento?.fornecedor_nome || 'este fornecedor'}"?`)) {
+      return;
+    }
+
+    try {
+      await apiJson(`/pagamentos-fornecedores/${id}`, {
+        method: 'DELETE'
+      });
+      showAlert('success', 'Pagamento de fornecedor excluído com sucesso!');
+      await carregarDados();
+    } catch (error) {
+      showAlert('error', `Erro ao excluir pagamento: ${error.message}`);
     }
   };
 
@@ -264,6 +298,23 @@ export default function Financeiro() {
       await carregarDados();
     } catch (error) {
       showAlert('error', `Erro ao atualizar pagamento: ${error.message}`);
+    }
+  };
+
+  const excluirPagamentoFuncionario = async (id) => {
+    const pagamento = pagamentosFuncionarios.find(p => p.id === id);
+    if (!window.confirm(`Tem certeza que deseja excluir o pagamento do funcionário "${pagamento?.funcionario_nome || 'este funcionário'}"?`)) {
+      return;
+    }
+
+    try {
+      await apiJson(`/pagamentos-funcionarios/${id}`, {
+        method: 'DELETE'
+      });
+      showAlert('success', 'Pagamento de funcionário excluído com sucesso!');
+      await carregarDados();
+    } catch (error) {
+      showAlert('error', `Erro ao excluir pagamento: ${error.message}`);
     }
   };
 
@@ -546,14 +597,23 @@ export default function Financeiro() {
                               </span>
                             </td>
                             <td className="px-4 py-3 text-center">
-                              {despesa.status === 'Pendente' && (
+                              <div className="flex items-center justify-center gap-2">
+                                {despesa.status === 'Pendente' && (
+                                  <button
+                                    onClick={() => pagarDespesa(despesa.id)}
+                                    className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#1E3A5C] transition-all"
+                                  >
+                                    Marcar como Pago
+                                  </button>
+                                )}
                                 <button
-                                  onClick={() => pagarDespesa(despesa.id)}
-                                  className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#1E3A5C] transition-all"
+                                  onClick={() => excluirDespesa(despesa.id)}
+                                  className="px-3 py-1 text-xs bg-[#AD343E] text-white rounded hover:bg-[#8B2A32] transition-all flex items-center gap-1"
+                                  title="Excluir despesa"
                                 >
-                                  Marcar como Pago
+                                  <Trash2 className="h-3 w-3" />
                                 </button>
-                              )}
+                              </div>
                             </td>
                           </tr>
                         ))
@@ -645,14 +705,23 @@ export default function Financeiro() {
                               </span>
                             </td>
                             <td className="px-4 py-3 text-center">
-                              {fornecedor.status === 'Pendente' && (
+                              <div className="flex items-center justify-center gap-2">
+                                {fornecedor.status === 'Pendente' && (
+                                  <button
+                                    onClick={() => pagarFornecedor(fornecedor.id)}
+                                    className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#1E3A5C] transition-all"
+                                  >
+                                    Registrar Pagamento
+                                  </button>
+                                )}
                                 <button
-                                  onClick={() => pagarFornecedor(fornecedor.id)}
-                                  className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#1E3A5C] transition-all"
+                                  onClick={() => excluirPagamentoFornecedor(fornecedor.id)}
+                                  className="px-3 py-1 text-xs bg-[#AD343E] text-white rounded hover:bg-[#8B2A32] transition-all flex items-center gap-1"
+                                  title="Excluir pagamento"
                                 >
-                                  Registrar Pagamento
+                                  <Trash2 className="h-3 w-3" />
                                 </button>
-                              )}
+                              </div>
                             </td>
                           </tr>
                         ))
@@ -757,14 +826,23 @@ export default function Financeiro() {
                               </span>
                             </td>
                             <td className="px-4 py-3 text-center">
-                              {func.status === 'Pendente' && (
+                              <div className="flex items-center justify-center gap-2">
+                                {func.status === 'Pendente' && (
+                                  <button
+                                    onClick={() => pagarFuncionario(func.id)}
+                                    className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#1E3A5C] transition-all"
+                                  >
+                                    Efetuar Pagamento
+                                  </button>
+                                )}
                                 <button
-                                  onClick={() => pagarFuncionario(func.id)}
-                                  className="px-3 py-1 text-xs bg-[#2A4E73] text-white rounded hover:bg-[#1E3A5C] transition-all"
+                                  onClick={() => excluirPagamentoFuncionario(func.id)}
+                                  className="px-3 py-1 text-xs bg-[#AD343E] text-white rounded hover:bg-[#8B2A32] transition-all flex items-center gap-1"
+                                  title="Excluir pagamento"
                                 >
-                                  Efetuar Pagamento
+                                  <Trash2 className="h-3 w-3" />
                                 </button>
-                              )}
+                              </div>
                             </td>
                           </tr>
                         ))

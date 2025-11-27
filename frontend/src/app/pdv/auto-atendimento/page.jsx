@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiJson } from "@/lib/api";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 export default function PDVAutoAtendimento() {
     const router = useRouter();
     const [lojaId, setLojaId] = useState(null);
@@ -25,8 +27,20 @@ export default function PDVAutoAtendimento() {
         })();
     }, []);
 
+    // Função para construir a URL completa da imagem
+    const getImagemUrl = (imagemUrl) => {
+        if (!imagemUrl) return null; // Retorna null para usar placeholder
+        // Se já é uma URL completa, retorna como está
+        if (imagemUrl.startsWith('http://') || imagemUrl.startsWith('https://')) {
+            return imagemUrl;
+        }
+        // Se é uma URL relativa, adiciona a URL da API
+        return `${API_URL}${imagemUrl}`;
+    };
+
     useEffect(() => {
         if (!lojaId) return;
+        
         const carregar = async () => {
             try {
                 setCarregando(true);
@@ -35,7 +49,7 @@ export default function PDVAutoAtendimento() {
                     id: e.produto_id,
                     nome: e.produto?.nome || `Produto ${e.produto_id}`,
                     descricao: e.produto?.descricao || '',
-                    img: "/produto.png",
+                    img: getImagemUrl(e.produto?.imagem_url),
                     preco: Number(e.preco),
                     quantidade: Number(e.quantidade || 0),
                 }));
@@ -160,12 +174,24 @@ export default function PDVAutoAtendimento() {
                                         {listaCompras.map((item) => (
                                             <div key={item.id} className="rounded-md p-3 border bg-white shadow-sm">
                                             <div className="flex items-center space-x-3">
-                                                <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                                                    <img 
-                                                        src={item.img} 
-                                                        alt={item.nome}
-                                                        className="w-full h-full object-cover"
-                                                    />
+                                                <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                                    {item.img ? (
+                                                        <img 
+                                                            src={item.img} 
+                                                            alt={item.nome}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                e.target.style.display = 'none';
+                                                                const placeholder = e.target.nextElementSibling;
+                                                                if (placeholder) placeholder.style.display = 'flex';
+                                                            }}
+                                                        />
+                                                    ) : null}
+                                                    <div className={`${item.img ? 'hidden' : 'flex'} items-center justify-center w-full h-full text-gray-400`}>
+                                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 0 012.828 0L16 16m-2-2l1.586-1.586a2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 0 002-2V6a2 0 00-2-2H6a2 0 00-2 2v12a2 0 002 2z" />
+                                                        </svg>
+                                                    </div>
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                         <div className="text-sm font-medium text-[#2A4E73] truncate">{item.nome}</div>
@@ -238,12 +264,24 @@ export default function PDVAutoAtendimento() {
                                             className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-all duration-200 text-left group"
                                         >
                                             <div className="relative mb-3">
-                                                <div className="w-full h-24 bg-gray-100 rounded-md overflow-hidden">
-                                                    <img 
-                                                        src={produto.img} 
-                                                        alt={produto.nome}
-                                                        className="w-full h-full object-cover"
-                                                    />
+                                                <div className="w-full h-24 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
+                                                    {produto.img ? (
+                                                        <img 
+                                                            src={produto.img} 
+                                                            alt={produto.nome}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                e.target.style.display = 'none';
+                                                                const placeholder = e.target.nextElementSibling;
+                                                                if (placeholder) placeholder.style.display = 'flex';
+                                                            }}
+                                                        />
+                                                    ) : null}
+                                                    <div className={`${produto.img ? 'hidden' : 'flex'} items-center justify-center w-full h-full text-gray-400`}>
+                                                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 0 012.828 0L16 16m-2-2l1.586-1.586a2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 0 002-2V6a2 0 00-2-2H6a2 0 00-2 2v12a2 0 002 2z" />
+                                                        </svg>
+                                                    </div>
                                                 </div>
                                                 <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 rounded-md flex items-center justify-center">
                                                     <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">

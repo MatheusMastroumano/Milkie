@@ -116,7 +116,7 @@ export default function Pagamento() {
             }
             
             alert('Venda finalizada com sucesso!');
-            router.push('/matriz/pdv');
+            router.push('/pdv');
         } catch (error) {
             console.error('Erro ao finalizar venda:', error);
             alert(`Erro ao finalizar venda: ${error.message}`);

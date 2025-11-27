@@ -77,9 +77,9 @@ export async function updateProdutosController(req, res) {
             return res.status(404).json({ mensagem: 'Produto nao encontrado' });
         }
 
-        const { nome, marca, categoria, descricao, sku, ativo, imagem_url, fornecedores_ids } = req.body;
+        const { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo, imagem_url, fornecedores_ids } = req.body;
 
-        const produtoData = { nome, marca, categoria, descricao, sku, ativo, imagem_url, fornecedores_ids };
+        const produtoData = { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo, imagem_url, fornecedores_ids };
 
         const updatedProduto = await produtosService.updateProdutos(produtoId, produtoData);
 

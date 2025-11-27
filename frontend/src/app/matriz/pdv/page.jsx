@@ -101,11 +101,6 @@ export default function VendasFilial() {
     }
   };
 
-  // Função para iniciar nova venda (redirecionamento para PDV)
-  const iniciarNovaVenda = () => {
-    router.push('/pdv');
-  };
-
   // Função para visualizar detalhes da venda
   const visualizarVenda = (venda) => {
     // Pode implementar uma página de detalhes se necessário
@@ -261,16 +256,6 @@ export default function VendasFilial() {
                   </button>
                 </nav>
               </div>
-            </div>
-
-            {/* Botão Nova Venda */}
-            <div className="mb-6">
-              <button
-                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                onClick={iniciarNovaVenda}
-              >
-                Nova Venda
-              </button>
             </div>
 
             {/* Cards de Resumo */}

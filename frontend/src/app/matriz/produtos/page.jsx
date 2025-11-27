@@ -99,8 +99,8 @@ export default function Produtos() {
 
   const validateProdutoForm = (produto) => {
     const newErrors = {};
-    if (!produto.nome.trim()) newErrors.nome = 'Nome obrigatório';
-    if (!produto.sku.trim()) newErrors.sku = 'SKU obrigatório';
+    if (!produto.nome?.trim()) newErrors.nome = 'Nome obrigatório';
+    if (!produto.sku?.trim()) newErrors.sku = 'SKU obrigatório';
     else if (produtos.some(p => p.sku === produto.sku && (!editProduto || p.id !== editProduto.id))) {
       newErrors.sku = 'SKU já existe';
     }
@@ -229,19 +229,57 @@ export default function Produtos() {
     if (!validateProdutoForm(editProduto)) return;
 
     try {
-      await apiJson(`/produtos/${editProduto.id}`, {
+      // Fazer upload da imagem se houver uma nova imagem selecionada
+      let imagemUrl = editProduto.imagem_url;
+      if (imagemSelecionada) {
+        imagemUrl = await handleUploadImagem();
+        if (!imagemUrl) {
+          showAlert('error', 'Erro ao fazer upload da imagem. Tente novamente.');
+          return;
+        }
+      }
+
+      // Processar fornecedores_ids - converter strings para números
+      let fornecedoresIds = [];
+      if (Array.isArray(editProduto.fornecedores_ids) && editProduto.fornecedores_ids.length > 0) {
+        fornecedoresIds = editProduto.fornecedores_ids
+          .map(id => {
+            const numId = typeof id === 'string' ? Number(id) : id;
+            return isNaN(numId) ? null : numId;
+          })
+          .filter(id => id !== null && id > 0);
+      }
+
+      const payload = {
+        nome: editProduto.nome,
+        marca: editProduto.marca,
+        categoria: editProduto.categoria,
+        descricao: editProduto.descricao,
+        sku: editProduto.sku,
+        fabricacao: editProduto.fabricacao || null,
+        validade: editProduto.validade || null,
+        ativo: editProduto.ativo !== undefined ? editProduto.ativo : true,
+        imagem_url: imagemUrl || null,
+      };
+
+      // Sempre incluir fornecedores_ids, mesmo que seja null ou array vazio
+      if (fornecedoresIds.length > 0) {
+        payload.fornecedores_ids = fornecedoresIds;
+      } else {
+        payload.fornecedores_ids = null;
+      }
+
+      const { updatedProduto } = await apiJson(`/produtos/${editProduto.id}`, {
         method: 'PUT',
-        body: JSON.stringify({
-          ...editProduto,
-          fabricacao: editProduto.fabricacao || null,
-          validade: editProduto.validade || null,
-          fornecedores_ids: editProduto.fornecedores_ids || [],
-        }),
+        body: JSON.stringify(payload),
       });
 
-      setProdutos(prev => prev.map(p => p.id === editProduto.id ? editProduto : p));
+      // Recarregar produtos para obter os dados atualizados com fornecedores
+      const { produtos: produtosAtualizados } = await apiJson(`/produtos?loja_id=${lojaId}`);
+      setProdutos(produtosAtualizados || []);
+
       closeModal();
-      showAlert('success', 'Produto atualizado!');
+      showAlert('success', 'Produto atualizado com sucesso!');
     } catch (error) {
       showAlert('error', error.message);
     }
@@ -291,6 +329,9 @@ export default function Produtos() {
       validade: produto.validade?.split('T')[0] || '',
       fornecedores_ids: fornecedoresIds,
     });
+    // Limpar imagem selecionada e preview ao abrir edição
+    setImagemSelecionada(null);
+    setPreviewImagem(null);
     setIsModalOpen(true);
     setErrors({});
   };
@@ -705,18 +746,57 @@ export default function Produtos() {
                   )}
 
                   {isModalOpen && (
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-[#2A4E73]">
+                    <>
+                      <div>
+                        <label htmlFor="edit-imagem" className="block text-sm font-medium text-[#2A4E73] mb-1">
+                          Nova Imagem do Produto (opcional)
+                        </label>
                         <input
-                          type="checkbox"
-                          checked={editProduto?.ativo}
-                          onChange={(e) => setEditProduto({ ...editProduto, ativo: e.target.checked })}
-                          className="mr-2 h-4 w-4 text-[#2A4E73] focus:ring-[#CFE8F9]"
-                          aria-label="Produto ativo"
+                          id="edit-imagem"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                         />
-                        Produto Ativo
-                      </label>
-                    </div>
+                        {previewImagem && (
+                          <div className="mt-2">
+                            <img 
+                              src={previewImagem} 
+                              alt="Preview" 
+                              className="max-w-full h-32 object-contain rounded-md border border-gray-300"
+                            />
+                          </div>
+                        )}
+                        {editProduto?.imagem_url && !previewImagem && (
+                          <div className="mt-2">
+                            <p className="text-xs text-gray-600 mb-1">Imagem atual:</p>
+                            <img 
+                              src={editProduto.imagem_url.startsWith('http') ? editProduto.imagem_url : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${editProduto.imagem_url}`}
+                              alt="Imagem atual"
+                              className="max-w-full h-32 object-contain rounded-md border border-gray-300"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                        {uploadingImagem && (
+                          <p className="text-xs text-[#2A4E73] mt-1">Enviando imagem...</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="flex items-center text-sm font-medium text-[#2A4E73]">
+                          <input
+                            type="checkbox"
+                            checked={editProduto?.ativo}
+                            onChange={(e) => setEditProduto({ ...editProduto, ativo: e.target.checked })}
+                            className="mr-2 h-4 w-4 text-[#2A4E73] focus:ring-[#CFE8F9]"
+                            aria-label="Produto ativo"
+                          />
+                          Produto Ativo
+                        </label>
+                      </div>
+                    </>
                   )}
 
                   <div className="flex gap-3 pt-3">

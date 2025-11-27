@@ -184,8 +184,29 @@ export async function createProdutos(data) {
 export async function updateProdutos(id, data) {
     const { nome, marca, categoria, descricao, sku, fabricacao, validade, ativo, imagem_url, fornecedores_ids } = data;
 
+    // Validar datas apenas se forem fornecidas
+    if (fabricacao && validade) {
+        const dataFabricacao = new Date(fabricacao);
+        const dataValidade = new Date(validade);
+        
+        if (dataFabricacao > dataValidade) {
+            throw new Error('Data de fabricação inválida.');
+        }
+    }
+
     if (ativo !== true && ativo !== false) {
         throw new Error('Ativo inválido.');
+    }
+
+    // Validar se SKU já existe no banco de dados (exceto para o produto atual)
+    if (sku) {
+        const produtoExistente = await prisma.produtos.findUnique({
+            where: { sku: sku },
+        });
+
+        if (produtoExistente && produtoExistente.id !== Number(id)) {
+            throw new Error('Já existe um produto cadastrado com este SKU.');
+        }
     }
 
     try {
