@@ -502,7 +502,7 @@ export default function Funcionarios() {
 
                   <div>
                     <label htmlFor={isAddModalOpen ? "add-email" : "edit-email"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                      Email (opcional)
+                      Email
                     </label>
                     <input
                       id={isAddModalOpen ? "add-email" : "edit-email"}

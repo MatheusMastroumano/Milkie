@@ -56,16 +56,56 @@ export async function getEstoqueById(produto_id, loja_id) {
 
 /* ---------------------------------- CRIAR --------------------------------- */
 export async function createEstoque(data) {
-    const { quantidade } = data;
+    const { produto_id, loja_id, quantidade } = data;
 
     if (quantidade < 0) {
         throw new Error('quantidade inválida.');
     }
 
     try {
-        return await prisma.estoque.create({
-            data: data,
+        // Verificar se já existe estoque deste produto nesta loja
+        const estoqueExistente = await prisma.estoque.findUnique({
+            where: {
+                produto_id_loja_id: {
+                    produto_id: Number(produto_id),
+                    loja_id: Number(loja_id),
+                },
+            },
         });
+
+        if (estoqueExistente) {
+            // Se já existe, somar a quantidade existente com a nova quantidade
+            const novaQuantidade = estoqueExistente.quantidade + quantidade;
+            
+            return await prisma.estoque.update({
+                where: {
+                    produto_id_loja_id: {
+                        produto_id: Number(produto_id),
+                        loja_id: Number(loja_id),
+                    },
+                },
+                data: {
+                    quantidade: novaQuantidade,
+                    // Manter o preço existente se não foi fornecido um novo, ou atualizar se foi fornecido
+                    preco: data.preco !== undefined ? data.preco : estoqueExistente.preco,
+                    // Atualizar validade se fornecida, caso contrário manter a existente
+                    valido_ate: data.valido_ate !== undefined ? data.valido_ate : estoqueExistente.valido_ate,
+                },
+                include: {
+                    produto: true,
+                    loja: true,
+                },
+            });
+        } else {
+            // Se não existe, criar novo registro
+            return await prisma.estoque.create({
+                data: data,
+                include: {
+                    produto: true,
+                    loja: true,
+                },
+            });
+        }
     } catch (err) {
         console.error('error: ', err);
         throw new Error(err.message);

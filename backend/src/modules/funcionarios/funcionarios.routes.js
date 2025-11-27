@@ -17,6 +17,7 @@ router.use(authMiddleware, moduleAccess('funcionarios'));
 router.post('/upload-imagem', uploadImagem, uploadImagemController);
 
 router.get('/', funcionariosController.getFuncionariosController);
+router.get('/verificar-cpf/:cpf', funcionariosController.verificarCpfController);
 router.get('/:id', funcionariosController.getFuncionariosByIdController);
 router.post('/', validate(funcionarioSchema), funcionariosController.createFuncionariosController);
 router.put('/:id', validate(funcionarioSchema.partial()), funcionariosController.updateFuncionariosController);

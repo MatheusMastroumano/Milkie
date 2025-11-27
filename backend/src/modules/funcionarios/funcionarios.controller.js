@@ -27,6 +27,29 @@ export async function getFuncionariosByIdController(req, res) {
     }
 }
 
+/* ------------------------------ VERIFICAR CPF ----------------------------- */
+export async function verificarCpfController(req, res) {
+    try {
+        const { cpf } = req.params;
+        const funcionarioId = req.query.funcionarioId; // Para verificação em edição
+        
+        const funcionario = await funcionariosService.getFuncionarioByCpf(cpf);
+        
+        if (funcionario) {
+            // Se está editando e o CPF pertence ao próprio funcionário, não é duplicado
+            if (funcionarioId && funcionario.id === parseInt(funcionarioId)) {
+                return res.status(200).json({ existe: false, mensagem: 'CPF válido' });
+            }
+            return res.status(200).json({ existe: true, mensagem: 'Este CPF já está cadastrado' });
+        }
+        
+        res.status(200).json({ existe: false, mensagem: 'CPF disponível' });
+    } catch (err) {
+        console.error('Erro ao verificar CPF: ', err.message);
+        res.status(500).json({ mensagem: 'Erro ao verificar CPF', erro: err.message });
+    }
+}
+
 /* ---------------------------------- CRIAR --------------------------------- */
 export async function createFuncionariosController(req, res) {
     try {

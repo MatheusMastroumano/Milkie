@@ -39,9 +39,24 @@ export async function createFuncionarios(data) {
         throw new Error('Nome é obrigatório.');
     }
 
-    // aqui se usa o import do cpf validator
-    if (cpf && !cpfValidator.isValid(cpf)) {
-        throw new Error('CPF inválido. Deve conter 11 dígitos numéricos.');
+    // Normalizar CPF (remover caracteres não numéricos) e validar
+    if (cpf) {
+        const cpfLimpo = cpf.replace(/\D/g, '');
+        if (!cpfValidator.isValid(cpfLimpo)) {
+            throw new Error('CPF inválido. Deve conter 11 dígitos numéricos e ser um CPF válido.');
+        }
+        
+        // Verificar se CPF já está cadastrado
+        const cpfExistente = await prisma.funcionarios.findUnique({
+            where: { cpf: cpfLimpo },
+        });
+        
+        if (cpfExistente) {
+            throw new Error('Este CPF já está cadastrado no sistema.');
+        }
+        
+        // Atualizar o CPF no data para salvar apenas números
+        data.cpf = cpfLimpo;
     }
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -80,11 +95,31 @@ export async function createFuncionarios(data) {
 
 /* ------------------------------- ATUALIZAR ------------------------------- */
 export async function updateFuncionarios(id, data) {
-    const { nome, email, telefone, idade, cargo, salario, ativo } = data;
+    const { nome, cpf, email, telefone, idade, cargo, salario, ativo } = data;
 
     // VALIDAÇÕES
     if (nome !== undefined && nome.trim() === '') {
         throw new Error('Nome não pode ser vazio.');
+    }
+
+    // Normalizar e validar CPF se fornecido
+    if (cpf) {
+        const cpfLimpo = cpf.replace(/\D/g, '');
+        if (!cpfValidator.isValid(cpfLimpo)) {
+            throw new Error('CPF inválido. Deve conter 11 dígitos numéricos e ser um CPF válido.');
+        }
+        
+        // Verificar se CPF já está cadastrado em outro funcionário
+        const cpfExistente = await prisma.funcionarios.findUnique({
+            where: { cpf: cpfLimpo },
+        });
+        
+        if (cpfExistente && cpfExistente.id !== id) {
+            throw new Error('Este CPF já está cadastrado no sistema.');
+        }
+        
+        // Atualizar o CPF no data para salvar apenas números
+        data.cpf = cpfLimpo;
     }
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -122,6 +157,19 @@ export async function updateFuncionarios(id, data) {
     }
 }
 
+
+/* ------------------------------ BUSCAR POR CPF ----------------------------- */
+export async function getFuncionarioByCpf(cpf) {
+    try {
+        const cpfLimpo = cpf.replace(/\D/g, '');
+        return await prisma.funcionarios.findUnique({
+            where: { cpf: cpfLimpo },
+        });
+    } catch (err) {
+        console.error('error: ', err);
+        throw new Error(err.message);
+    }
+}
 
 /* ------------------------------- REMOVER ------------------------------- */
 export async function removeFuncionarios(id) {

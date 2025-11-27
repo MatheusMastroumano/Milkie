@@ -345,8 +345,8 @@ export default function Usuarios() {
   return (
     <main className="min-h-screen bg-[#FFFFFF] flex flex-col">
       <br></br>
-       <br></br>
-        <br></br>
+      <br></br>
+      <br></br>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6 flex-grow">
         <Header />
         {alert.show && (
@@ -374,7 +374,7 @@ export default function Usuarios() {
         )}
 
 
-      <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-4 text-center">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-4 text-center">
           Gerenciamento de Funcionários
         </h1>
         <p className="text-sm text-[#2A4E73] mb-6 text-center max-w-2xl mx-auto">
@@ -395,8 +395,8 @@ export default function Usuarios() {
           </div>
         )}
 
-        <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
-      <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
+        <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6 w-300">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-4 text-center">
             Usuários - {lojaNome || `Loja ${currentFilialId || ''}`}
           </h2>
 
@@ -453,9 +453,8 @@ export default function Usuarios() {
                         <td className="px-3 sm:px-4 py-2 sm:py-3">{usuario.funcao}</td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3">
                           <span
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              usuario.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}
+                            className={`px-2 py-1 rounded-full text-xs ${usuario.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              }`}
                           >
                             {usuario.ativo ? 'Ativo' : 'Inativo'}
                           </span>

@@ -77,7 +77,69 @@ export default function Funcionarios() {
     }, 5000);
   };
 
-  const validateForm = (funcionario, isEdit = false) => {
+  // Função para validar CPF
+  const validarCPF = (cpf) => {
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    
+    // Verifica se tem 11 dígitos
+    if (cpfLimpo.length !== 11) {
+      return false;
+    }
+    
+    // Verifica se todos os dígitos são iguais (ex: 111.111.111-11)
+    if (/^(\d)\1{10}$/.test(cpfLimpo)) {
+      return false;
+    }
+    
+    // Validação dos dígitos verificadores
+    let soma = 0;
+    let resto;
+    
+    // Valida primeiro dígito
+    for (let i = 1; i <= 9; i++) {
+      soma += parseInt(cpfLimpo.substring(i - 1, i)) * (11 - i);
+    }
+    resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(cpfLimpo.substring(9, 10))) {
+      return false;
+    }
+    
+    // Valida segundo dígito
+    soma = 0;
+    for (let i = 1; i <= 10; i++) {
+      soma += parseInt(cpfLimpo.substring(i - 1, i)) * (12 - i);
+    }
+    resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(cpfLimpo.substring(10, 11))) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Função para verificar se CPF já está cadastrado
+  const verificarCpfExistente = async (cpf, funcionarioId = null) => {
+    try {
+      const cpfLimpo = cpf.replace(/\D/g, '');
+      if (cpfLimpo.length !== 11) {
+        return false;
+      }
+      
+      const url = funcionarioId 
+        ? `/funcionarios/verificar-cpf/${cpfLimpo}?funcionarioId=${funcionarioId}`
+        : `/funcionarios/verificar-cpf/${cpfLimpo}`;
+      
+      const response = await apiJson(url);
+      return response.existe || false;
+    } catch (error) {
+      console.error('Erro ao verificar CPF:', error);
+      return false;
+    }
+  };
+
+  const validateForm = async (funcionario, isEdit = false) => {
     const newErrors = {};
 
     if (!funcionario.nome?.trim()) {
@@ -86,8 +148,24 @@ export default function Funcionarios() {
 
     if (!funcionario.cpf?.trim()) {
       newErrors.cpf = 'O CPF é obrigatório';
-    } else if (!/^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(funcionario.cpf)) {
-      newErrors.cpf = 'CPF inválido. Use o formato 000.000.000-00';
+    } else {
+      const cpfLimpo = funcionario.cpf.replace(/\D/g, '');
+      
+      // Verificar formato
+      if (!/^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(funcionario.cpf) && cpfLimpo.length !== 11) {
+        newErrors.cpf = 'CPF inválido. Use o formato 000.000.000-00';
+      } else if (!validarCPF(funcionario.cpf)) {
+        newErrors.cpf = 'CPF inválido. Verifique os dígitos informados.';
+      } else {
+        // Verificar se CPF já está cadastrado
+        const cpfExiste = await verificarCpfExistente(
+          funcionario.cpf, 
+          isEdit ? funcionario.id : null
+        );
+        if (cpfExiste) {
+          newErrors.cpf = 'Este CPF já está cadastrado no sistema.';
+        }
+      }
     }
 
     if (funcionario.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(funcionario.email)) {
@@ -166,7 +244,7 @@ export default function Funcionarios() {
   const handleAddFuncionario = async (e) => {
     e.preventDefault();
 
-    if (!validateForm(novoFuncionario)) return;
+    if (!(await validateForm(novoFuncionario))) return;
 
     try {
       // Fazer upload da imagem se houver
@@ -182,6 +260,7 @@ export default function Funcionarios() {
         salario: parseFloat(novoFuncionario.salario),
         loja_id: parseInt(novoFuncionario.loja_id),
         telefone: novoFuncionario.telefone.replace(/\D/g, ''),
+        cpf: novoFuncionario.cpf.replace(/\D/g, ''), // Enviar CPF sem formatação
         imagem: imagemUrl || null,
       };
 
@@ -224,7 +303,7 @@ export default function Funcionarios() {
   const handleEditFuncionario = async (e) => {
     e.preventDefault();
 
-    if (!validateForm(editFuncionario, true)) return;
+    if (!(await validateForm(editFuncionario, true))) return;
 
     try {
       const funcionarioData = {
@@ -233,6 +312,7 @@ export default function Funcionarios() {
         salario: parseFloat(editFuncionario.salario),
         loja_id: parseInt(editFuncionario.loja_id),
         telefone: editFuncionario.telefone.replace(/\D/g, ''),
+        cpf: editFuncionario.cpf.replace(/\D/g, ''), // Enviar CPF sem formatação
       };
 
       console.log('Updating funcionarioData:', funcionarioData);
@@ -600,12 +680,60 @@ export default function Funcionarios() {
                       id={isAddModalOpen ? 'add-cpf' : 'edit-cpf'}
                       type="text"
                       value={isAddModalOpen ? novoFuncionario.cpf : editFuncionario?.cpf || ''}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const formattedCPF = formatCPF(e.target.value);
                         if (isAddModalOpen) {
                           setNovoFuncionario({ ...novoFuncionario, cpf: formattedCPF });
                         } else {
                           setEditFuncionario({ ...editFuncionario, cpf: formattedCPF });
+                        }
+                        
+                        // Limpar erro de CPF quando o usuário começar a digitar
+                        if (errors.cpf) {
+                          const newErrors = { ...errors };
+                          delete newErrors.cpf;
+                          setErrors(newErrors);
+                        }
+                        
+                        // Validar CPF em tempo real quando completo
+                        if (formattedCPF.length === 14) {
+                          const cpfLimpo = formattedCPF.replace(/\D/g, '');
+                          if (cpfLimpo.length === 11) {
+                            const cpfValido = validarCPF(formattedCPF);
+                            if (!cpfValido) {
+                              setErrors({ ...errors, cpf: 'CPF inválido. Verifique os dígitos informados.' });
+                            } else {
+                              // Verificar se já existe
+                              const cpfExiste = await verificarCpfExistente(
+                                formattedCPF,
+                                isAddModalOpen ? null : editFuncionario?.id
+                              );
+                              if (cpfExiste) {
+                                setErrors({ ...errors, cpf: 'Este CPF já está cadastrado no sistema.' });
+                              } else {
+                                const newErrors = { ...errors };
+                                delete newErrors.cpf;
+                                setErrors(newErrors);
+                              }
+                            }
+                          }
+                        }
+                      }}
+                      onBlur={async () => {
+                        const cpf = isAddModalOpen ? novoFuncionario.cpf : editFuncionario?.cpf || '';
+                        if (cpf && cpf.replace(/\D/g, '').length === 11) {
+                          const cpfValido = validarCPF(cpf);
+                          if (!cpfValido) {
+                            setErrors({ ...errors, cpf: 'CPF inválido. Verifique os dígitos informados.' });
+                          } else {
+                            const cpfExiste = await verificarCpfExistente(
+                              cpf,
+                              isAddModalOpen ? null : editFuncionario?.id
+                            );
+                            if (cpfExiste) {
+                              setErrors({ ...errors, cpf: 'Este CPF já está cadastrado no sistema.' });
+                            }
+                          }
                         }
                       }}
                       maxLength={14}

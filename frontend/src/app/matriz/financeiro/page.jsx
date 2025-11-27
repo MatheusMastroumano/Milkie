@@ -752,8 +752,6 @@ export default function Financeiro() {
                     { title: 'Fluxo de Caixa', description: 'Entradas e saídas do período', type: 'fluxo-caixa' },
                     { title: 'Folha de Pagamento', description: 'Relatório completo da folha', type: 'folha' },
                     { title: 'Fornecedores', description: 'Pagamentos e pendências', type: 'fornecedores' },
-                    { title: 'Demonstrativo Resultado', description: 'DRE do período', type: 'dre' },
-                    { title: 'Personalizado', description: 'Relatório com filtros customizados', type: 'personalizado' },
                   ].map((relatorio) => (
                     <div key={relatorio.type} className="bg-white rounded-lg border p-6 hover:shadow-md transition-all">
                       <h3 className="font-bold text-[#2A4E73] mb-2">{relatorio.title}</h3>

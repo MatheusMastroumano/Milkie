@@ -103,6 +103,17 @@ export async function createProdutos(data) {
         throw new Error('Ativo inválido.');
     }
 
+    // Validar se SKU já existe no banco de dados
+    if (sku) {
+        const produtoExistente = await prisma.produtos.findUnique({
+            where: { sku: sku },
+        });
+
+        if (produtoExistente) {
+            throw new Error('Já existe um produto cadastrado com este SKU.');
+        }
+    }
+
     try {
         // Processar fornecedores_ids - converter para array de números
         let fornecedoresArray = [];

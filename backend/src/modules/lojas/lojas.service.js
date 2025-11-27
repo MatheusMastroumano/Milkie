@@ -75,30 +75,44 @@ export async function updateLojas(id, data) {
         throw new Error('Nome é obrigatório.');
     }
 
-    const CEPValido = await cep(CEP);
-
-    if (!CEP || !isCEP(CEP) || !CEPValido) {
-        throw new Error('CEP inválido.');
-    }
-
-
-    // isso faz com que o CEP não precise mudar na rota PUT
+    // Buscar loja atual primeiro
     const lojaAtual = await prisma.lojas.findUnique({
         where: { id: Number(id) },
     });
 
-    if (CEP && CEP !== lojaAtual.CEP) {
-        data.CEP = CEP;
+    if (!lojaAtual) {
+        throw new Error('Loja não encontrada.');
     }
-    // -----------------------------------------------------
 
+    // Validar CEP apenas se foi fornecido
+    if (CEP) {
+        const CEPValido = await cep(CEP);
 
+        if (!isCEP(CEP) || !CEPValido) {
+            throw new Error('CEP inválido.');
+        }
 
-    if (tipo !== 'matriz' && tipo !== 'filial') {
+        // Se o CEP mudou, verificar se já existe outra loja com esse CEP
+        if (CEP !== lojaAtual.CEP) {
+            const cepExiste = await prisma.lojas.findUnique({
+                where: { CEP: CEP },
+            });
+
+            if (cepExiste && cepExiste.id !== Number(id)) {
+                throw new Error('Já existe uma loja cadastrada com esse CEP.');
+            }
+            data.CEP = CEP;
+        }
+    } else {
+        // Se CEP não foi fornecido, manter o CEP atual
+        data.CEP = lojaAtual.CEP;
+    }
+
+    if (tipo !== undefined && tipo !== 'matriz' && tipo !== 'filial') {
         throw new Error('Tipo de loja inválido.');
     }
 
-    if (ativo !== true && ativo !== false) {
+    if (ativo !== undefined && ativo !== true && ativo !== false) {
         throw new Error('Ativo inválido.');
     }
 
