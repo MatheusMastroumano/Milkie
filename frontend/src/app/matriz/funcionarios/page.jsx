@@ -362,7 +362,7 @@ export default function Funcionarios() {
           Aqui você pode gerenciar todos os funcionários da sua rede. Adicione novos funcionários, edite informações existentes ou remova funcionários inativos com facilidade.
         </p>
 
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end mb-4 ">
           <button
             onClick={() => {
               setIsAddModalOpen(true);
@@ -375,7 +375,7 @@ export default function Funcionarios() {
           </button>
         </div>
 
-        <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
+        <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6 w-300">
           <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-2 text-center">
             Lista de Funcionários
           </h2>

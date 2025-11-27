@@ -7,8 +7,6 @@ import Header from '@/components/Header/page';
 import Footer from '@/components/Footer/page';
 import { apiJson } from '@/lib/api';
 
-
-
 export default function Lojas() {
   const [lojas, setLojas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +23,11 @@ export default function Lojas() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+
+  // Estados específicos para validação do CEP
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepValido, setCepValido] = useState(null); // null = não verificado, true = válido, false = inválido
+  const [enderecoEncontrado, setEnderecoEncontrado] = useState(null);
 
   useEffect(() => {
     fetchLojas();
@@ -49,6 +52,41 @@ export default function Lojas() {
     }, 5000);
   };
 
+  // Função para verificar se o CEP é real usando ViaCEP
+  const verificarCEP = async (cep) => {
+    const cepLimpo = cep.replace(/\D/g, '');
+    
+    if (cepLimpo.length !== 8) {
+      setCepValido(null);
+      setEnderecoEncontrado(null);
+      return;
+    }
+
+    setCepLoading(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+      const data = await response.json();
+
+      if (data.erro || !data.cep) {
+        setCepValido(false);
+        setEnderecoEncontrado(null);
+        setErrors(prev => ({ ...prev, CEP: 'CEP não encontrado. Verifique o número digitado.' }));
+      } else {
+        setCepValido(true);
+        setEnderecoEncontrado(data);
+        setErrors(prev => {
+          const { CEP, ...resto } = prev;
+          return resto;
+        });
+      }
+    } catch (error) {
+      setCepValido(false);
+      setErrors(prev => ({ ...prev, CEP: 'Erro ao verificar o CEP. Tente novamente.' }));
+    } finally {
+      setCepLoading(false);
+    }
+  };
+
   const validateForm = (loja, isEdit = false) => {
     const newErrors = {};
     
@@ -60,6 +98,10 @@ export default function Lojas() {
       newErrors.CEP = 'O CEP é obrigatório';
     } else if (!/^\d{5}-?\d{3}$/.test(loja.CEP)) {
       newErrors.CEP = 'CEP inválido. Use o formato 00000-000';
+    } else if (loja.CEP.length === 9 && cepValido === false) {
+      newErrors.CEP = 'Este CEP não existe. Por favor, insira um CEP válido.';
+    } else if (loja.CEP.length === 9 && cepValido === null) {
+      newErrors.CEP = 'Aguarde a verificação do CEP...';
     }
     
     if (!loja.numero || loja.numero <= 0) {
@@ -106,6 +148,8 @@ export default function Lojas() {
         ativo: true 
       });
       setErrors({});
+      setCepValido(null);
+      setEnderecoEncontrado(null);
       setIsAddModalOpen(false);
       await fetchLojas();
     } catch (error) {
@@ -134,6 +178,8 @@ export default function Lojas() {
       setIsModalOpen(false);
       setEditLoja(null);
       setErrors({});
+      setCepValido(null);
+      setEnderecoEncontrado(null);
       await fetchLojas();
     } catch (error) {
       showAlert('error', `Erro ao editar loja: ${error.message}`);
@@ -144,6 +190,12 @@ export default function Lojas() {
     setEditLoja({ ...loja });
     setIsModalOpen(true);
     setErrors({});
+    setCepValido(null);
+    setEnderecoEncontrado(null);
+    // Se já tiver CEP salvo, verifica automaticamente ao abrir o modal de edição
+    if (loja.CEP && loja.CEP.length === 9) {
+      verificarCEP(loja.CEP);
+    }
   };
 
   const closeModal = () => {
@@ -159,6 +211,8 @@ export default function Lojas() {
       ativo: true 
     });
     setErrors({});
+    setCepValido(null);
+    setEnderecoEncontrado(null);
   };
 
   const handleDeleteLoja = async (id) => {
@@ -169,16 +223,9 @@ export default function Lojas() {
     }
 
     try {
-      await apiJson(`/lojas/${id}`, {
-        method: 'DELETE',
-      });
-
+      await apiJson(`/lojas/${id}`, { method: 'DELETE' });
       showAlert('success', `Loja "${lojaToDelete.nome}" excluída com sucesso!`);
-      
-      if (editLoja && editLoja.id === id) {
-        closeModal();
-      }
-      
+      if (editLoja && editLoja.id === id) closeModal();
       await fetchLojas();
     } catch (error) {
       showAlert('error', `Erro ao excluir loja: ${error.message}`);
@@ -220,20 +267,16 @@ export default function Lojas() {
           <button
             onClick={() => setIsAddModalOpen(true)}
             className="px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-            aria-label="Abrir formulário para adicionar nova loja"
           >
             Adicionar Nova Loja
           </button>
         </div>
 
+        {/* Lista de Lojas */}
         <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-2 text-center">
             Lista de Lojas
           </h2>
-          <p className="text-sm text-[#2A4E73] mb-4 text-center">
-            Visualize todas as lojas cadastradas, incluindo seus detalhes e status.
-          </p>
-          
           {loading ? (
             <div className="flex justify-center items-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-[#2A4E73]" />
@@ -258,32 +301,20 @@ export default function Lojas() {
                   {lojas.map((loja) => (
                     <tr key={loja.id} className="border-b border-gray-200 hover:bg-[#CFE8F9]">
                       <td className="px-3 sm:px-4 py-2 sm:py-3">{loja.id}</td>
-                      <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[150px] sm:max-w-[200px]">
-                        {loja.nome}
-                      </td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[150px] sm:max-w-[200px]">{loja.nome}</td>
                       <td className="px-3 sm:px-4 py-2 sm:py-3 capitalize">{loja.tipo}</td>
                       <td className="px-3 sm:px-4 py-2 sm:py-3">{loja.CEP}</td>
                       <td className="px-3 sm:px-4 py-2 sm:py-3">{loja.numero}</td>
                       <td className="px-3 sm:px-4 py-2 sm:py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          loja.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs ${loja.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                           {loja.ativo ? 'Ativo' : 'Inativo'}
                         </span>
                       </td>
                       <td className="px-3 sm:px-4 py-2 sm:py-3 text-center space-x-2">
-                        <button
-                          onClick={() => openEditLoja(loja)}
-                          className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                          aria-label={`Editar loja ${loja.nome}`}
-                        >
+                        <button onClick={() => openEditLoja(loja)} className="px-3 py-1 text-sm bg-[#2A4E73] text-white rounded hover:bg-[#AD343E]">
                           Editar
                         </button>
-                        <button
-                          onClick={() => handleDeleteLoja(loja.id)}
-                          className="px-3 sm:px-4 py-1 sm:py-2 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                          aria-label={`Excluir loja ${loja.nome}`}
-                        >
+                        <button onClick={() => handleDeleteLoja(loja.id)} className="px-3 py-1 text-sm bg-[#AD343E] text-white rounded hover:bg-[#2A4E73]">
                           Excluir
                         </button>
                       </td>
@@ -295,185 +326,150 @@ export default function Lojas() {
           )}
         </section>
 
+        {/* Modal de Adicionar ou Editar */}
         {(isAddModalOpen || isModalOpen) && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-labelledby={isAddModalOpen ? "add-modal-title" : "edit-modal-title"} aria-modal="true">
-            <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 id={isAddModalOpen ? "add-modal-title" : "edit-modal-title"} className="text-lg font-semibold text-[#2A4E73]">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-[#2A4E73]">
                     {isAddModalOpen ? 'Adicionar Nova Loja' : 'Editar Loja'}
                   </h2>
-                  <button
-                    onClick={closeModal}
-                    className="text-[#2A4E73] hover:text-[#AD343E] text-2xl font-bold"
-                    aria-label="Fechar modal"
-                  >
-                    ×
-                  </button>
+                  <button onClick={closeModal} className="text-3xl text-[#2A4E73] hover:text-[#AD343E]">×</button>
                 </div>
-                <form onSubmit={isAddModalOpen ? handleAddLoja : handleEditLoja} className="space-y-3">
+
+                <form onSubmit={isAddModalOpen ? handleAddLoja : handleEditLoja} className="space-y-4">
+                  {/* Nome */}
                   <div>
-                    <label htmlFor={isAddModalOpen ? "add-nome" : "edit-nome"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                      Nome da Loja *
-                    </label>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Nome da Loja *</label>
                     <input
-                      id={isAddModalOpen ? "add-nome" : "edit-nome"}
                       type="text"
-                      value={isAddModalOpen ? novaLoja.nome : editLoja?.nome}
-                      onChange={(e) => {
-                        if (isAddModalOpen) {
-                          setNovaLoja({ ...novaLoja, nome: e.target.value });
-                        } else {
-                          setEditLoja({ ...editLoja, nome: e.target.value });
-                        }
-                      }}
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      value={isAddModalOpen ? novaLoja.nome : editLoja?.nome || ''}
+                      onChange={(e) => isAddModalOpen 
+                        ? setNovaLoja({ ...novaLoja, nome: e.target.value })
+                        : setEditLoja({ ...editLoja, nome: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#CFE8F9] focus:outline-none"
                       placeholder="Ex.: Loja Centro"
-                      aria-invalid={errors.nome ? 'true' : 'false'}
-                      aria-describedby={errors.nome ? (isAddModalOpen ? 'add-nome-error' : 'edit-nome-error') : undefined}
                     />
-                    {errors.nome && (
-                      <p id={isAddModalOpen ? "add-nome-error" : "edit-nome-error"} className="text-[#AD343E] text-xs mt-1">{errors.nome}</p>
-                    )}
+                    {errors.nome && <p className="text-red-600 text-xs mt-1">{errors.nome}</p>}
                   </div>
 
+                  {/* Tipo */}
                   <div>
-                    <label htmlFor={isAddModalOpen ? "add-tipo" : "edit-tipo"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                      Tipo *
-                    </label>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Tipo *</label>
                     <select
-                      id={isAddModalOpen ? "add-tipo" : "edit-tipo"}
-                      value={isAddModalOpen ? novaLoja.tipo : editLoja?.tipo}
-                      onChange={(e) => {
-                        if (isAddModalOpen) {
-                          setNovaLoja({ ...novaLoja, tipo: e.target.value });
-                        } else {
-                          setEditLoja({ ...editLoja, tipo: e.target.value });
-                        }
-                      }}
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      aria-invalid={errors.tipo ? 'true' : 'false'}
-                      aria-describedby={errors.tipo ? (isAddModalOpen ? 'add-tipo-error' : 'edit-tipo-error') : undefined}
+                      value={isAddModalOpen ? novaLoja.tipo : editLoja?.tipo || 'filial'}
+                      onChange={(e) => isAddModalOpen 
+                        ? setNovaLoja({ ...novaLoja, tipo: e.target.value })
+                        : setEditLoja({ ...editLoja, tipo: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
                     >
                       <option value="filial">Filial</option>
                       <option value="matriz">Matriz</option>
                     </select>
-                    {errors.tipo && (
-                      <p id={isAddModalOpen ? "add-tipo-error" : "edit-tipo-error"} className="text-[#AD343E] text-xs mt-1">{errors.tipo}</p>
-                    )}
+                    {errors.tipo && <p className="text-red-600 text-xs mt-1">{errors.tipo}</p>}
                   </div>
 
+                  {/* CEP com validação em tempo real */}
                   <div>
-                    <label htmlFor={isAddModalOpen ? "add-cep" : "edit-cep"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                      CEP *
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">
+                      CEP * <span className="text-xs text-gray-500">(verificado automaticamente)</span>
                     </label>
-                    <input
-                      id={isAddModalOpen ? "add-cep" : "edit-cep"}
-                      type="text"
-                      value={isAddModalOpen ? novaLoja.CEP : editLoja?.CEP}
-                      onChange={(e) => {
-                        const formattedCEP = formatCEP(e.target.value);
-                        if (isAddModalOpen) {
-                          setNovaLoja({ ...novaLoja, CEP: formattedCEP });
-                        } else {
-                          setEditLoja({ ...editLoja, CEP: formattedCEP });
-                        }
-                      }}
-                      maxLength={9}
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      placeholder="00000-000"
-                      aria-invalid={errors.CEP ? 'true' : 'false'}
-                      aria-describedby={errors.CEP ? (isAddModalOpen ? 'add-cep-error' : 'edit-cep-error') : undefined}
-                    />
-                    {errors.CEP && (
-                      <p id={isAddModalOpen ? "add-cep-error" : "edit-cep-error"} className="text-[#AD343E] text-xs mt-1">{errors.CEP}</p>
-                    )}
-                  </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        maxLength={9}
+                        value={isAddModalOpen ? novaLoja.CEP : editLoja?.CEP || ''}
+                        onChange={(e) => {
+                          const formatted = formatCEP(e.target.value);
+                          if (isAddModalOpen) {
+                            setNovaLoja({ ...novaLoja, CEP: formatted });
+                          } else {
+                            setEditLoja({ ...editLoja, CEP: formatted });
+                          }
+                          setErrors(prev => ({ ...prev, CEP: undefined }));
+                          setCepValido(null);
+                          setEnderecoEncontrado(null);
 
-                  <div>
-                    <label htmlFor={isAddModalOpen ? "add-numero" : "edit-numero"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                      Número *
-                    </label>
-                    <input
-                      id={isAddModalOpen ? "add-numero" : "edit-numero"}
-                      type="number"
-                      value={isAddModalOpen ? novaLoja.numero : editLoja?.numero}
-                      onChange={(e) => {
-                        if (isAddModalOpen) {
-                          setNovaLoja({ ...novaLoja, numero: e.target.value });
-                        } else {
-                          setEditLoja({ ...editLoja, numero: e.target.value });
-                        }
-                      }}
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      placeholder="123"
-                      min="1"
-                      aria-invalid={errors.numero ? 'true' : 'false'}
-                      aria-describedby={errors.numero ? (isAddModalOpen ? 'add-numero-error' : 'edit-numero-error') : undefined}
-                    />
-                    {errors.numero && (
-                      <p id={isAddModalOpen ? "add-numero-error" : "edit-numero-error"} className="text-[#AD343E] text-xs mt-1">{errors.numero}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label htmlFor={isAddModalOpen ? "add-complemento" : "edit-complemento"} className="block text-sm font-medium text-[#2A4E73] mb-1">
-                      Complemento *
-                    </label>
-                    <input
-                      id={isAddModalOpen ? "add-complemento" : "edit-complemento"}
-                      type="text"
-                      value={isAddModalOpen ? novaLoja.complemento : editLoja?.complemento}
-                      onChange={(e) => {
-                        if (isAddModalOpen) {
-                          setNovaLoja({ ...novaLoja, complemento: e.target.value });
-                        } else {
-                          setEditLoja({ ...editLoja, complemento: e.target.value });
-                        }
-                      }}
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      placeholder="Ex.: Sala 4 - Bloco B"
-                      aria-invalid={errors.complemento ? 'true' : 'false'}
-                      aria-describedby={errors.complemento ? (isAddModalOpen ? 'add-complemento-error' : 'edit-complemento-error') : undefined}
-                    />
-                    {errors.complemento && (
-                      <p id={isAddModalOpen ? "add-complemento-error" : "edit-complemento-error"} className="text-[#AD343E] text-xs mt-1">{errors.complemento}</p>
-                    )}
-                  </div>
-
-                  {isModalOpen && (
-                    <div>
-                      <label className="flex items-center text-sm font-medium text-[#2A4E73]">
-                        <input
-                          type="checkbox"
-                          checked={editLoja?.ativo}
-                          onChange={(e) => setEditLoja({ ...editLoja, ativo: e.target.checked })}
-                          className="mr-2 h-4 w-4 text-[#2A4E73] focus:ring-[#CFE8F9]"
-                          aria-label="Loja ativa"
-                        />
-                        Loja Ativa
-                      </label>
+                          if (formatted.length === 9) {
+                            verificarCEP(formatted);
+                          }
+                        }}
+                        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#CFE8F9] focus:outline-none pr-10 ${
+                          cepValido === true ? 'border-green-500' : 
+                          cepValido === false ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        placeholder="00000-000"
+                      />
+                      {cepLoading && <Loader2 className="absolute right-3 top-2.5 h-5 w-5 animate-spin text-[#2A4E73]" />}
+                      {cepValido === true && !cepLoading && <CheckCircle className="absolute right-3 top-2.5 h-5 w-5 text-green-600" />}
+                      {cepValido === false && !cepLoading && <XCircle className="absolute right-3 top-2.5 h-5 w-5 text-red-600" />}
                     </div>
+                    {errors.CEP && <p className="text-red-600 text-xs mt-1 flex items-center gap-1"><XCircle className="h-4 w-4" /> {errors.CEP}</p>}
+                    {cepValido === true && enderecoEncontrado && (
+                      <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
+                        <CheckCircle className="h-4 w-4" />
+                        CEP válido: {enderecoEncontrado.localidade && `${enderecoEncontrado.localidade}/${enderecoEncontrado.uf}`}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Número e Complemento */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#2A4E73] mb-1">Número *</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={isAddModalOpen ? novaLoja.numero : editLoja?.numero || ''}
+                        onChange={(e) => isAddModalOpen 
+                          ? setNovaLoja({ ...novaLoja, numero: e.target.value })
+                          : setEditLoja({ ...editLoja, numero: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      />
+                      {errors.numero && <p className="text-red-600 text-xs mt-1">{errors.numero}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2A4E73] mb-1">Complemento *</label>
+                      <input
+                        type="text"
+                        value={isAddModalOpen ? novaLoja.complemento : editLoja?.complemento || ''}
+                        onChange={(e) => isAddModalOpen 
+                          ? setNovaLoja({ ...novaLoja, complemento: e.target.value })
+                          : setEditLoja({ ...editLoja, complemento: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                        placeholder="Sala, bloco, etc."
+                      />
+                      {errors.complemento && <p className="text-red-600 text-xs mt-1">{errors.complemento}</p>}
+                    </div>
+                  </div>
+
+                  {/* Status (apenas edição) */}
+                  {isModalOpen && (
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={editLoja?.ativo ?? true}
+                        onChange={(e) => setEditLoja({ ...editLoja, ativo: e.target.checked })}
+                        className="h-4 w-4 text-[#2A4E73]"
+                      />
+                      <span>Loja Ativa</span>
+                    </label>
                   )}
 
-                  <div className="flex gap-3 pt-3">
+                  <div className="flex gap-3 pt-4">
                     <button
                       type="submit"
-                      className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      disabled={loading}
-                      aria-label={isAddModalOpen ? "Adicionar loja" : "Salvar alterações"}
+                      disabled={loading || cepLoading || cepValido === false}
+                      className="flex-1 py-2 bg-[#2A4E73] text-white rounded-md hover:bg-[#1e3a5f] disabled:opacity-50 disabled:cursor-not-allowed transition"
                     >
-                      {loading ? (
-                        <Loader2 className="h-4 w-4 animate-spin inline-block" />
-                      ) : (
-                        isAddModalOpen ? 'Adicionar' : 'Salvar'
-                      )}
+                      {loading || cepLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : (isAddModalOpen ? 'Adicionar' : 'Salvar')}
                     </button>
-                    <button
-                      onClick={closeModal}
-                      className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                      aria-label="Cancelar"
-                    >
+                    <button type="button" onClick={closeModal} className="flex-1 py-2 bg-[#AD343E] text-white rounded-md hover:bg-[#8f2a34] transition">
                       Cancelar
                     </button>
                   </div>
@@ -483,14 +479,13 @@ export default function Lojas() {
           </div>
         )}
       </div>
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
-       <Footer />
+      <br></br>
+      <br></br>
+      <br></br>
+      <br></br>
+      <br></br>
+      <br></br>
+      <Footer />
     </main>
   );
 }
