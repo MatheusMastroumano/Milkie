@@ -5,6 +5,13 @@ import Header from "@/components/Headerfilial/page";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, XCircle, X, Download, Filter, Plus, Users, FileText, TrendingUp, Building } from 'lucide-react';
 import { apiJson } from '@/lib/api';
+import { 
+  gerarPDFDespesas, 
+  gerarPDFFornecedores, 
+  gerarPDFFolha, 
+  gerarPDFFluxoCaixa,
+  gerarPDFPersonalizado 
+} from '@/lib/pdfGenerator';
 
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState('despesas');
@@ -266,8 +273,35 @@ export default function Financeiro() {
 
   // Funções para Relatórios
   const gerarRelatorio = (tipo) => {
-    showAlert('success', `Relatório ${tipo} gerado com sucesso!`);
-    // Aqui iria a lógica para gerar o relatório
+    try {
+      switch (tipo) {
+        case 'despesas':
+          gerarPDFDespesas(despesas, filtroData);
+          showAlert('success', 'Relatório de Despesas gerado com sucesso!');
+          break;
+        case 'fornecedores':
+          gerarPDFFornecedores(pagamentosFornecedores, filtroData);
+          showAlert('success', 'Relatório de Fornecedores gerado com sucesso!');
+          break;
+        case 'folha':
+          gerarPDFFolha(pagamentosFuncionarios, filtroData);
+          showAlert('success', 'Relatório de Folha de Pagamento gerado com sucesso!');
+          break;
+        case 'fluxo-caixa':
+          gerarPDFFluxoCaixa(despesas, pagamentosFornecedores, pagamentosFuncionarios, filtroData);
+          showAlert('success', 'Relatório de Fluxo de Caixa gerado com sucesso!');
+          break;
+        case 'personalizado':
+          gerarPDFPersonalizado(despesas, pagamentosFornecedores, pagamentosFuncionarios, filtroData);
+          showAlert('success', 'Relatório Personalizado gerado com sucesso!');
+          break;
+        default:
+          showAlert('error', 'Tipo de relatório não reconhecido');
+      }
+    } catch (error) {
+      console.error('Erro ao gerar relatório:', error);
+      showAlert('error', `Erro ao gerar relatório: ${error.message}`);
+    }
   };
 
   // Cálculos para os cards
@@ -756,21 +790,17 @@ export default function Financeiro() {
                     { title: 'Fluxo de Caixa', description: 'Entradas e saídas do período', type: 'fluxo-caixa' },
                     { title: 'Folha de Pagamento', description: 'Relatório completo da folha', type: 'folha' },
                     { title: 'Fornecedores', description: 'Pagamentos e pendências', type: 'fornecedores' },
-                    { title: 'Demonstrativo Resultado', description: 'DRE do período', type: 'dre' },
-                    { title: 'Personalizado', description: 'Relatório com filtros customizados', type: 'personalizado' },
+                    { title: 'Relatório Completo', description: 'Todos os dados financeiros', type: 'personalizado' },
                   ].map((relatorio) => (
                     <div key={relatorio.type} className="bg-white rounded-lg border p-6 hover:shadow-md transition-all">
                       <h3 className="font-bold text-[#2A4E73] mb-2">{relatorio.title}</h3>
                       <p className="text-sm text-[#666] mb-4">{relatorio.description}</p>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => gerarRelatorio(relatorio.title)}
+                          onClick={() => gerarRelatorio(relatorio.type)}
                           className="flex-1 px-3 py-2 bg-[#2A4E73] text-white text-sm rounded hover:bg-[#1E3A5C] transition-all"
                         >
                           Gerar PDF
-                        </button>
-                        <button className="px-3 py-2 border border-[#2A4E73] text-[#2A4E73] text-sm rounded hover:bg-[#CFE8F9] transition-all">
-                          <Filter className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
@@ -800,12 +830,24 @@ export default function Financeiro() {
                       />
                     </div>
                     <div className="flex items-end">
-                      <button className="w-full px-4 py-2 bg-[#2A4E73] text-white rounded-lg hover:bg-[#1E3A5C] transition-all">
+                      <button 
+                        onClick={() => {
+                          // Os filtros já são aplicados automaticamente quando os dados são carregados
+                          showAlert('success', 'Filtros aplicados! Os relatórios usarão o período selecionado.');
+                        }}
+                        className="w-full px-4 py-2 bg-[#2A4E73] text-white rounded-lg hover:bg-[#1E3A5C] transition-all"
+                      >
                         Aplicar Filtros
                       </button>
                     </div>
                     <div className="flex items-end">
-                      <button className="w-full px-4 py-2 border border-[#2A4E73] text-[#2A4E73] rounded-lg hover:bg-[#CFE8F9] transition-all">
+                      <button 
+                        onClick={() => {
+                          setFiltroData({ inicio: '', fim: '' });
+                          showAlert('success', 'Filtros limpos!');
+                        }}
+                        className="w-full px-4 py-2 border border-[#2A4E73] text-[#2A4E73] rounded-lg hover:bg-[#CFE8F9] transition-all"
+                      >
                         Limpar Filtros
                       </button>
                     </div>
