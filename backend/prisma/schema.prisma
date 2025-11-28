@@ -1,10 +1,10 @@
-datasource db {
-    provider = "mysql"
-    url = "mysql://root:@localhost:3306/milkie"
+generator client {
+  provider = "prisma-client-js"
 }
 
-generator client {
-    provider = "prisma-client-js"
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 generator erd {
@@ -12,263 +12,243 @@ generator erd {
   output   = "./der/diagram.svg"
 }
 
-/**
- * --------------------------- // matriz e filiais --------------------------
- */
+// --------------------------- // matriz e filiais --------------------------
 model lojas {
-    id           Int            @id @default(autoincrement())
-    nome         String
-    tipo         TipoLoja       @default(filial)
-    CEP          String         @unique
-    numero       Int
-    complemento  String
-    ativo        Boolean        @default(true)
-    criado_em    DateTime       @default(now())
-    usuarios     usuarios[]
-    estoque      estoque[]
-    vendas       vendas[]
-    caixa        caixa[]
-    funcionarios funcionarios[]
-    despesas     despesas[]
-    pagamentos_fornecedores pagamentos_fornecedores[]
-    pagamentos_funcionarios pagamentos_funcionarios[]
+  id                      Int                       @id @default(autoincrement())
+  nome                    String
+  tipo                    TipoLoja                  @default(filial)
+  CEP                     String                    @unique
+  numero                  Int
+  complemento             String
+  ativo                   Boolean                   @default(true)
+  criado_em               DateTime                  @default(now())
+  usuarios                usuarios[]
+  estoque                 estoque[]
+  vendas                  vendas[]
+  caixa                   caixa[]
+  funcionarios            funcionarios[]
+  despesas                despesas[]
+  pagamentos_fornecedores pagamentos_fornecedores[]
+  pagamentos_funcionarios pagamentos_funcionarios[]
 }
 
 enum TipoLoja {
-    matriz
-    filial
+  matriz
+  filial
 }
 
-/**
- * todos os funcionários da empresa, independente de terem
- * acesso ao sistema ou não (inclui faxineiros, zeladores, etc)
- */
+// todos os funcionários da empresa, independente de terem
+// acesso ao sistema ou não (inclui faxineiros, zeladores, etc)
 model funcionarios {
-    id        Int      @id @default(autoincrement())
-    imagem    String?
-    loja_id   Int
-    nome      String
-    cpf       String   @unique
-    email     String   @unique
-    telefone  String
-    idade     Int
-    cargo     String
-    salario   Decimal  @db.Decimal(10, 2)
-    ativo     Boolean  @default(true)
-    criado_em DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  imagem    String?
+  loja_id   Int
+  nome      String
+  cpf       String   @unique
+  email     String   @unique
+  telefone  String
+  idade     Int
+  cargo     String
+  salario   Decimal  @db.Decimal(10, 2)
+  ativo     Boolean  @default(true)
+  criado_em DateTime @default(now())
 
-    loja     lojas      @relation(fields: [loja_id], references: [id], onDelete: Cascade)
-    usuarios usuarios[]
-    pagamentos pagamentos_funcionarios[]
+  loja       lojas                     @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+  usuarios   usuarios[]
+  pagamentos pagamentos_funcionarios[]
 }
 
 // agora sim, só usuários com acesso ao sistema (caixa, gerente e admin)
 model usuarios {
-    id             Int     @id @default(autoincrement())
-    funcionario_id Int
-    loja_id        Int?
-    funcao         Funcao  @default(caixa)
-    username       String  @unique
-    senha_hash     String
-    ativo          Boolean @default(true)
+  id             Int     @id @default(autoincrement())
+  funcionario_id Int
+  loja_id        Int?
+  funcao         Funcao  @default(caixa)
+  username       String  @unique
+  senha_hash     String
+  ativo          Boolean @default(true)
 
-    funcionario  funcionarios @relation(fields: [funcionario_id], references: [id], onDelete: Cascade)
-    loja         lojas?       @relation(fields: [loja_id], references: [id], onDelete: SetNull)
-    vendas       vendas[]
-    caixa_abriu  caixa[]      @relation("CaixaAbertoPor")
-    caixa_fechou caixa[]      @relation("CaixaFechadoPor")
+  funcionario  funcionarios @relation(fields: [funcionario_id], references: [id], onDelete: Cascade)
+  loja         lojas?       @relation(fields: [loja_id], references: [id], onDelete: SetNull)
+  vendas       vendas[]
+  caixa_abriu  caixa[]      @relation("CaixaAbertoPor")
+  caixa_fechou caixa[]      @relation("CaixaFechadoPor")
 }
 
 enum Funcao {
-    admin
-    gerente
-    caixa
+  admin
+  gerente
+  caixa
 }
 
-/**
- * lista de todos os produtos com suas características,
- * independente de estoque, loja, etc (fica mais modular e escalável)
- */
+// lista de todos os produtos com suas características,
+// independente de estoque, loja, etc (fica mais modular e escalável)
 model produtos {
-    id              Int                   @id @default(autoincrement())
-    nome            String
-    marca           String
-    categoria       String
-    descricao       String
-    sku             String                @unique
-    fabricacao      DateTime
-    validade        DateTime
-    imagem_url      String?
-    fornecedores_ids Json?                // Array de IDs dos fornecedores [1, 2, 3]
-    ativo           Boolean               @default(true)
-    criado_em       DateTime              @default(now())
-    estoque         estoque[]
-    venda_itens     venda_itens[]
-    fornecedores    fornecedor_produtos[] // Mantido para compatibilidade
+  id               Int                   @id @default(autoincrement())
+  nome             String
+  marca            String
+  categoria        String
+  descricao        String
+  sku              String                @unique
+  fabricacao       DateTime
+  validade         DateTime
+  imagem_url       String?
+  fornecedores_ids Json? // Array de IDs dos fornecedores [1, 2, 3]
+  ativo            Boolean               @default(true)
+  criado_em        DateTime              @default(now())
+  estoque          estoque[]
+  venda_itens      venda_itens[]
+  fornecedores     fornecedor_produtos[] // Mantido para compatibilidade
 }
 
-/**
- * ---------- // qual produto está em qual loja e quantos dele tem ----------
- */
+// ---------- // qual produto está em qual loja e quantos dele tem ----------
 model estoque {
-    produto_id Int
-    loja_id    Int
-    preco      Decimal   @db.Decimal(10, 2)
-    quantidade Int
-    valido_de  DateTime  @default(now())
-    valido_ate DateTime?
+  produto_id Int
+  loja_id    Int
+  preco      Decimal   @db.Decimal(10, 2)
+  quantidade Int
+  valido_de  DateTime  @default(now())
+  valido_ate DateTime?
 
-    produto produtos @relation(fields: [produto_id], references: [id], onDelete: Cascade)
-    loja    lojas    @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+  produto produtos @relation(fields: [produto_id], references: [id], onDelete: Cascade)
+  loja    lojas    @relation(fields: [loja_id], references: [id], onDelete: Cascade)
 
-    @@id([produto_id, loja_id])
+  @@id([produto_id, loja_id])
 }
 
-/**
- * ---------------------- // fornecedores dos produtos ----------------------
- */
+// ---------------------- // fornecedores dos produtos ----------------------
 model fornecedores {
-    id        Int                   @id @default(autoincrement())
-    nome      String
-    cnpj_cpf  String                @unique
-    ativo     Boolean               @default(true)
-    criado_em DateTime              @default(now())
-    produtos  fornecedor_produtos[]
-    pagamentos pagamentos_fornecedores[]
+  id         Int                       @id @default(autoincrement())
+  nome       String
+  cnpj_cpf   String                    @unique
+  ativo      Boolean                   @default(true)
+  criado_em  DateTime                  @default(now())
+  produtos   fornecedor_produtos[]
+  pagamentos pagamentos_fornecedores[]
 }
 
-/**
- * ------- // ligação dos fornecedores com qual produto eles fornecem -------
- */
+// ------- // ligação dos fornecedores com qual produto eles fornecem -------
 model fornecedor_produtos {
-    fornecedor_id Int
-    produto_id    Int
+  fornecedor_id Int
+  produto_id    Int
 
-    fornecedor fornecedores @relation(fields: [fornecedor_id], references: [id], onDelete: Cascade)
-    produto    produtos     @relation(fields: [produto_id], references: [id], onDelete: Cascade)
+  fornecedor fornecedores @relation(fields: [fornecedor_id], references: [id], onDelete: Cascade)
+  produto    produtos     @relation(fields: [produto_id], references: [id], onDelete: Cascade)
 
-    @@id([fornecedor_id, produto_id])
+  @@id([fornecedor_id, produto_id])
 }
 
 // "cabeçalho" das vendas, só com informações cruciais, tipo nota fiscal
 model vendas {
-    id            Int      @id @default(autoincrement())
-    loja_id       Int
-    usuario_id    Int
-    comprador_cpf String?
-    valor_total   Decimal  @db.Decimal(10, 2)
-    data          DateTime @default(now())
+  id            Int      @id @default(autoincrement())
+  loja_id       Int
+  usuario_id    Int
+  comprador_cpf String?
+  valor_total   Decimal  @db.Decimal(10, 2)
+  data          DateTime @default(now())
 
-    loja       lojas              @relation(fields: [loja_id], references: [id], onDelete: Cascade)
-    usuario    usuarios           @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
-    itens      venda_itens[]
-    pagamentos venda_pagamentos[]
+  loja       lojas              @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+  usuario    usuarios           @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  itens      venda_itens[]
+  pagamentos venda_pagamentos[]
 }
 
-/**
- * ---------------------------- // itens vendidos ---------------------------
- */
+// ---------------------------- // itens vendidos ---------------------------
 model venda_itens {
-    id             Int     @id @default(autoincrement())
-    venda_id       Int
-    produto_id     Int
-    quantidade     Decimal @db.Decimal(10, 2)
-    preco_unitario Decimal @db.Decimal(10, 2)
-    subtotal       Decimal @db.Decimal(10, 2)
+  id             Int     @id @default(autoincrement())
+  venda_id       Int
+  produto_id     Int
+  quantidade     Decimal @db.Decimal(10, 2)
+  preco_unitario Decimal @db.Decimal(10, 2)
+  subtotal       Decimal @db.Decimal(10, 2)
 
-    venda   vendas   @relation(fields: [venda_id], references: [id], onDelete: Cascade)
-    produto produtos @relation(fields: [produto_id], references: [id], onDelete: Cascade)
+  venda   vendas   @relation(fields: [venda_id], references: [id], onDelete: Cascade)
+  produto produtos @relation(fields: [produto_id], references: [id], onDelete: Cascade)
 }
 
-/**
- * -------------------- // valores e métodos de pagamento -------------------
- */
+// -------------------- // valores e métodos de pagamento -------------------
 model venda_pagamentos {
-    id       Int             @id @default(autoincrement())
-    venda_id Int
-    metodo   MetodoPagamento
-    valor    Decimal         @db.Decimal(10, 2)
+  id       Int             @id @default(autoincrement())
+  venda_id Int
+  metodo   MetodoPagamento
+  valor    Decimal         @db.Decimal(10, 2)
 
-    venda vendas @relation(fields: [venda_id], references: [id], onDelete: Cascade)
+  venda vendas @relation(fields: [venda_id], references: [id], onDelete: Cascade)
 }
 
 enum MetodoPagamento {
-    dinheiro
-    cartaocredito
-    cartaodebito
-    pix
+  dinheiro
+  cartaocredito
+  cartaodebito
+  pix
 }
 
-/**
- * ------- // tabela da frente de caixa, onde a venda será registrada -------
- */
+// ------- // tabela da frente de caixa, onde a venda será registrada -------
 model caixa {
-    id            Int         @id @default(autoincrement())
-    loja_id       Int
-    aberto_por    Int
-    aberto_em     DateTime    @default(now())
-    fechado_por   Int?
-    fechado_em    DateTime?
-    valor_inicial Decimal     @default(0) @db.Decimal(10, 2)
-    valor_final   Decimal?
-    status        StatusCaixa @default(aberto)
+  id            Int         @id @default(autoincrement())
+  loja_id       Int
+  aberto_por    Int
+  aberto_em     DateTime    @default(now())
+  fechado_por   Int?
+  fechado_em    DateTime?
+  valor_inicial Decimal     @default(0) @db.Decimal(10, 2)
+  valor_final   Decimal?
+  status        StatusCaixa @default(aberto)
 
-    loja       lojas     @relation(fields: [loja_id], references: [id], onDelete: Cascade)
-    abertoPor  usuarios  @relation("CaixaAbertoPor", fields: [aberto_por], references: [id], onDelete: Cascade)
-    fechadoPor usuarios? @relation("CaixaFechadoPor", fields: [fechado_por], references: [id], onDelete: SetNull)
+  loja       lojas     @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+  abertoPor  usuarios  @relation("CaixaAbertoPor", fields: [aberto_por], references: [id], onDelete: Cascade)
+  fechadoPor usuarios? @relation("CaixaFechadoPor", fields: [fechado_por], references: [id], onDelete: SetNull)
 }
 
 enum StatusCaixa {
-    aberto
-    fechado
+  aberto
+  fechado
 }
 
-/**
- * ---------------------- // módulo financeiro ----------------------
- */
+// ---------------------- // módulo financeiro ----------------------
 
 model despesas {
-    id        Int      @id @default(autoincrement())
-    loja_id   Int
-    descricao String
-    valor     Decimal  @db.Decimal(10, 2)
-    data      DateTime
-    categoria String
-    status    StatusPagamento @default(pendente)
-    criado_em DateTime @default(now())
+  id        Int             @id @default(autoincrement())
+  loja_id   Int
+  descricao String
+  valor     Decimal         @db.Decimal(10, 2)
+  data      DateTime
+  categoria String
+  status    StatusPagamento @default(pendente)
+  criado_em DateTime        @default(now())
 
-    loja lojas @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+  loja lojas @relation(fields: [loja_id], references: [id], onDelete: Cascade)
 }
 
 model pagamentos_fornecedores {
-    id             Int      @id @default(autoincrement())
-    fornecedor_id  Int
-    loja_id        Int
-    valor          Decimal  @db.Decimal(10, 2)
-    vencimento     DateTime
-    data_pagamento DateTime?
-    status         StatusPagamento @default(pendente)
-    criado_em      DateTime @default(now())
+  id             Int             @id @default(autoincrement())
+  fornecedor_id  Int
+  loja_id        Int
+  valor          Decimal         @db.Decimal(10, 2)
+  vencimento     DateTime
+  data_pagamento DateTime?
+  status         StatusPagamento @default(pendente)
+  criado_em      DateTime        @default(now())
 
-    fornecedor fornecedores @relation(fields: [fornecedor_id], references: [id], onDelete: Cascade)
-    loja       lojas        @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+  fornecedor fornecedores @relation(fields: [fornecedor_id], references: [id], onDelete: Cascade)
+  loja       lojas        @relation(fields: [loja_id], references: [id], onDelete: Cascade)
 }
 
 model pagamentos_funcionarios {
-    id             Int      @id @default(autoincrement())
-    funcionario_id Int
-    loja_id        Int
-    salario        Decimal  @db.Decimal(10, 2)
-    comissao       Decimal  @db.Decimal(10, 2) @default(0)
-    data_pagamento DateTime?
-    status         StatusPagamento @default(pendente)
-    criado_em      DateTime @default(now())
+  id             Int             @id @default(autoincrement())
+  funcionario_id Int
+  loja_id        Int
+  salario        Decimal         @db.Decimal(10, 2)
+  comissao       Decimal         @default(0) @db.Decimal(10, 2)
+  data_pagamento DateTime?
+  status         StatusPagamento @default(pendente)
+  criado_em      DateTime        @default(now())
 
-    funcionario funcionarios @relation(fields: [funcionario_id], references: [id], onDelete: Cascade)
-    loja        lojas        @relation(fields: [loja_id], references: [id], onDelete: Cascade)
+  funcionario funcionarios @relation(fields: [funcionario_id], references: [id], onDelete: Cascade)
+  loja        lojas        @relation(fields: [loja_id], references: [id], onDelete: Cascade)
 }
 
 enum StatusPagamento {
-    pendente
-    pago
+  pendente
+  pago
 }
