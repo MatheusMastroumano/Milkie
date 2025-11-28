@@ -18,7 +18,7 @@ export default function PDV() {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
-                            <span>Início</span>
+                            <span>Sair</span>
                         </button>
                         <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] text-center flex-1">
                             Sistema PDV

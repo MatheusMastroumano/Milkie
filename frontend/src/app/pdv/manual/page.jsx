@@ -132,7 +132,7 @@ export default function PDVManual() {
             const q = Math.max(1, parseInt(inputValue || '0'));
             atualizarQuantidadeCarrinho(item.id, q);
         } else if (keypadMode === 'discount') {
-            const percent = Math.max(0, Math.min(999, parseFloat(inputValue || '0')));
+            const percent = Math.max(0, Math.min(90, parseFloat(inputValue || '0')));
             const base = item.originalPreco ?? item.preco;
             const novoPreco = Math.max(0, parseFloat((base * (1 - percent / 100)).toFixed(2)));
             setListaCompras(listaCompras.map((i) => i.id === item.id ? { ...i, preco: novoPreco, descontoPercent: percent, precoCustom: false } : i));
