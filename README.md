@@ -29,14 +29,57 @@ O **Milkiê** é um sistema voltado para o gerenciamento de **compras e vendas d
 
 ## 📂 Estrutura do Projeto
 
+### Diretório Raiz
 ```
-milkie/
-├── src/ # Código-fonte principal
-├── config/ # Arquivos de configuração
-├── public/ # Arquivos estáticos
-├── node_modules/ # Dependências instaladas
-├── package.json # Dependências e scripts
-└── README.md # Documentação do projeto
+Milkie/
+├── backend
+├── docs
+├── frontend
+├── .gitignore
+├── DOCUMENTACAO.md
+├── package-lock.json
+└── README.md
+```
+
+### API
+```
+Millkie/
+└── backend/
+    ├── playground
+    ├── prisma
+    ├── src
+    ├── uploads
+    ├── .env.example
+    ├── .gitignore
+    ├── package-lock.json
+    └── package.json
+```
+
+### UI
+```
+Milkie/
+└── frontend/
+    ├── public
+    ├── src
+    ├── .gitignore
+    ├── components.json
+    ├── eslint.config.mjs
+    ├── next.config.ts
+    ├── package-lock.json
+    ├── package.json
+    ├── postcss.config.mjs
+    ├── README.md
+    ├── SOLUCAO_ALERT_DIALOG.md
+    ├── tailwind.confing.js
+    └── tsconfig.json
+```
+
+### Documentação
+```
+Milkie/
+└── docs/
+    ├── Milkie_proposta.docx
+    └── script_principal.sql
 ```
 
 ---
