@@ -7,13 +7,13 @@
 <h1 align="center">Milkiê</h1>
 
 <p align="center">
-  <a href="https://github.com/seu-usuario/milkie/stargazers">
+  <a href="https://github.com/MatheusMastroumano/Milkie/stargazers">
     <img src="https://img.shields.io/github/stars/seu-usuario/milkie?style=flat-square" alt="Stars">
   </a>
-  <a href="https://github.com/seu-usuario/milkie/issues">
+  <a href="https://github.com/MatheusMastroumano/Milkie/issues">
     <img src="https://img.shields.io/github/issues/seu-usuario/milkie?style=flat-square" alt="Issues">
   </a>
-  <a href="https://github.com/seu-usuario/milkie/network">
+  <a href="https://github.com/MatheusMastroumano/Milkie/network">
     <img src="https://img.shields.io/github/forks/seu-usuario/milkie?style=flat-square" alt="Forks">
   </a>
   <a href="https://img.shields.io/badge/license-MIT-blue?style=flat-square">
