@@ -64,7 +64,7 @@ export function LoginForm({
             Faça login na sua conta
           </h1>
           <p className="text-[#4B5EAA] text-sm text-balance transition-colors duration-300 hover:text-[#A83B3B]">
-            Digite seu e-mail abaixo para fazer login na sua conta
+            Digite seu username abaixo para fazer login na sua conta
           </p>
         </div>
         {error && (
@@ -77,19 +77,14 @@ export function LoginForm({
         <Field>
           <div className="flex items-center">
             <FieldLabel htmlFor="password" className="text-[#4B5EAA] transition-colors duration-300 hover:text-[#A83B3B]">Senha</FieldLabel>
-            <a
-              href="#"
-              className="ml-auto text-sm underline-offset-4 hover:underline text-[#4B5EAA] transition-colors duration-300 hover:text-[#A83B3B]"
-            >
-              Esqueceu sua senha?
-            </a>
+         
           </div>
           <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} className="bg-[#FFFFFF] border-[#4B5EAA] focus:border-[#4B5EAA] text-[#1F2937] transition-colors duration-300 hover:border-[#A83B3B] hover:focus:border-[#A83B3B]" />
         </Field>
         <Field>
           <Button type="submit" disabled={loading} className="bg-[#4B5EAA] hover:bg-[#A83B3B] text-white transition-colors duration-300">{loading ? "Entrando..." : "Login"}</Button>
         </Field>
-        <FieldSeparator className="text-[#4B5EAA] transition-colors duration-300 hover:text-[#A83B3B]">Ou continue com</FieldSeparator>
+
         <Field>
 
         </Field>
