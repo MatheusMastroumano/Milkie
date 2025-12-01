@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Header from "@/components/Headerfilial/page";
 import { apiJson } from "@/lib/api";
+import Footer from "@/components/Footerfilial/page";
 
 export default function Home() {
   const [timeFilter, setTimeFilter] = useState("7d");
@@ -765,11 +766,7 @@ export default function Home() {
 
       </main>
 
-      {/* Footer */}
-      <footer className="mt-12 pb-8 text-center text-[#6B7280] text-sm">
-        <p>© 2025 Sistema de Gestão. Todos os direitos reservados.</p>
-        <p className="mt-1 text-xs">Última atualização: {new Date().toLocaleString('pt-BR')}</p>
-      </footer>
+      <Footer />
     </div>
   );
 }

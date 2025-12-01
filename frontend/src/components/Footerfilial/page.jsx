@@ -18,22 +18,22 @@ export default function Footer() {
             <h4 className="text-[#2A4E73] font-semibold mb-3">Navegação</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <a href="/matriz/home" className="hover:text-[#AD343E] transition-colors" aria-label="Ir para a página inicial">
+                <a href="/filial/home" className="hover:text-[#AD343E] transition-colors" aria-label="Ir para a página inicial">
                   Home
                 </a>
               </li>
               <li>
-                <a href="/matriz/funcionarios" className="hover:text-[#AD343E] transition-colors" aria-label="Ir para a página de funcionários">
+                <a href="/filial/funcionarios" className="hover:text-[#AD343E] transition-colors" aria-label="Ir para a página de funcionários">
                   Funcionários
                 </a>
               </li>
               <li>
-                <a href="/matriz/produtos" className="hover:text-[#AD343E] transition-colors" aria-label="Ir para a de produtos">
+                <a href="/filial/produtos" className="hover:text-[#AD343E] transition-colors" aria-label="Ir para a de produtos">
                   Produtos
                 </a>
               </li>
               <li>
-                <a href="/matriz/financeiro" className="hover:text-[#AD343E] transition-colors" aria-label="Ir para a seção de financeiro">
+                <a href="/filial/financeiro" className="hover:text-[#AD343E] transition-colors" aria-label="Ir para a seção de financeiro">
                   financeiro
                 </a>
               </li>

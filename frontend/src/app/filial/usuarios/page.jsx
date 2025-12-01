@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, XCircle, Loader2, Plus } from 'lucide-react';
 import Header from '@/components/Headerfilial/page';
-import Footer from '@/components/Footer/page';
+import Footer from '@/components/Footerfilial/page';
 import { apiJson } from '@/lib/api';
 
 

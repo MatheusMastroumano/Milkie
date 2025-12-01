@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Headerfilial/page";
+import Footer from '@/components/Footerfilial/page';
 import { apiJson } from "@/lib/api";
 
 export default function VendasFilial() {
@@ -217,12 +218,8 @@ export default function VendasFilial() {
               </div>
             </div>
 
-            <button
-              className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-              onClick={iniciarNovaVenda}
-            >
-              Nova Venda
-            </button>
+            
+             
           </div>
 
           {/* Cards de Resumo */}
@@ -329,9 +326,16 @@ export default function VendasFilial() {
                 </table>
               </div>
             </div>
+            
           </section>
         </div>
+        <br></br>
+        <br></br>
+        <br></br>
+        <br></br>
+      <Footer />
       </main>
+      
     </>
   );
 }

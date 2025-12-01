@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SimpleConfirm } from '@/components/ui/simple-confirm.jsx';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Header from '@/components/Headerfilial/page';
-import Footer from '@/components/Footer/page';
+import Footer from '@/components/Footerfilial/page';
 import { apiJson } from '@/lib/api';
 
 export default function EstoqueFilial() {
@@ -444,7 +444,7 @@ export default function EstoqueFilial() {
           onConfirm={confirmDialog.onConfirm}
         />
       </div>
-      <br /><br /><br /><br /><br /><br /><br />
+      <br />
       <Footer />
     </main>
   );

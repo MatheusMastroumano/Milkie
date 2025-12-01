@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiJson } from "@/lib/api";
 import Header from "@/components/Header/page";
+import Footer from "@/components/Footer/page";
 
 
 
@@ -393,6 +394,7 @@ export default function VendasFilial() {
             )}
           </section>
         </div>
+        <Footer />
       </main>
     </>
   );
