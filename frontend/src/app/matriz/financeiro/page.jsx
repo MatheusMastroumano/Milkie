@@ -13,6 +13,8 @@ import {
   gerarPDFPersonalizado 
 } from '@/lib/pdfGenerator';
 
+import Footer from "@/components/Footer/page";
+
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState('despesas');
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
@@ -932,6 +934,7 @@ export default function Financeiro() {
           </div>
         </div>
       </main>
+      <Footer />
     </>
   );
 }

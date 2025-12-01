@@ -90,7 +90,6 @@ export default function Pagamento() {
                         quantidade: Number(i.quantidade),
                         preco: Number(i.preco),
                     })),
-                    comprador_cpf: null,
                     metodo_pagamento: metodoBackend,
                 })
             });

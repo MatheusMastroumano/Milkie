@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from "@/components/Headerfilial/page";
-import Footer from "@/components/Footer/page";
+import Footer from "@/components/Footerfilial/page";
 import { apiJson } from "@/lib/api";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
@@ -338,8 +338,14 @@ export default function ProdutosFilial() {
             </div>
           </div>
         )}
+        <br></br>
+        <br></br>
+        <br></br>
+        <br></br>
+        <br></br>
+        <Footer />
       </main>
-      <Footer />
+      
     </>
   );
 }

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Header from '@/components/Headerfilial/page';
-import Footer from '@/components/Footer/page';
+import Footer from '@/components/Footerfilial/page';
 import { apiJson, apiFormData } from '@/lib/api';
 
 export default function Funcionarios() {

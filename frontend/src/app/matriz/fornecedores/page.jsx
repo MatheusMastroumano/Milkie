@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Header from "@/components/Header/page";
 import { apiJson } from '@/lib/api';
+import Footer from "@/components/Footer/page";
 
 
 
@@ -330,6 +331,7 @@ export default function Fornecedores() {
             </div>
           )}
         </div>
+        <Footer />
       </main>
     </>
   );

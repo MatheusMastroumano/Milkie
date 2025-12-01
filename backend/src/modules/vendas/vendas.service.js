@@ -1,6 +1,5 @@
 import prisma from '../../shared/config/database.js';
 import { Prisma } from '@prisma/client';
-import { cpf as cpfValidator } from 'cpf-cnpj-validator';
 
 /* ------------------------------ BUSCAR TODOS ----------------------------- */
 export async function getVendas() {
@@ -8,7 +7,11 @@ export async function getVendas() {
         return await prisma.vendas.findMany({
             include: {
                 loja: true,
-                usuario: true,
+                usuario: {
+                    include: {
+                        funcionario: true,
+                    }
+                },
             }
         });
     } catch (err) {
@@ -24,7 +27,11 @@ export async function getVendasById(id) {
             where: { id: id },
             include: {
                 loja: true,
-                usuario: true,
+                usuario: {
+                    include: {
+                        funcionario: true,
+                    }
+                },
             }
         });
     } catch (err) {
@@ -35,13 +42,6 @@ export async function getVendasById(id) {
 
 /* ------------------------------- CRIAR ------------------------------- */
 export async function createVendas(data) {
-    const { comprador_cpf } = data;
-
-    // aqui se usa o import do cpf validator
-    if (comprador_cpf && !cpfValidator.isValid(comprador_cpf)) {
-        throw new Error('CPF inválido. Deve conter 11 dígitos numéricos.');
-    }
-
     try {
         return await prisma.vendas.create({
             data: data,
@@ -54,13 +54,6 @@ export async function createVendas(data) {
 
 /* ------------------------------- ATUALIZAR ------------------------------- */
 export async function updateVendas(id, data) {
-    const { comprador_cpf } = data;
-
-    // aqui se usa o import do cpf validator
-    if (comprador_cpf && !cpfValidator.isValid(comprador_cpf)) {
-        throw new Error('CPF inválido. Deve conter 11 dígitos numéricos.');
-    }
-
     try {
         return await prisma.vendas.update({
             where: { id: id },
@@ -85,7 +78,7 @@ export async function removeVendas(id) {
 }
 
 /* --------------------------- FINALIZAR (TRANSACIONAL) --------------------------- */
-export async function finalizarVenda({ loja_id, usuario_id, itens, comprador_cpf = null, metodo_pagamento = 'dinheiro' }) {
+export async function finalizarVenda({ loja_id, usuario_id, itens, metodo_pagamento = 'dinheiro' }) {
     const metodoNormalizado = String(metodo_pagamento || 'dinheiro').toLowerCase();
     const metodosPermitidos = ['dinheiro', 'cartaocredito', 'cartaodebito', 'pix'];
     if (!metodosPermitidos.includes(metodoNormalizado)) {
@@ -94,10 +87,6 @@ export async function finalizarVenda({ loja_id, usuario_id, itens, comprador_cpf
     // itens esperado: [{ produto_id, quantidade }]
     if (!Array.isArray(itens) || itens.length === 0) {
         throw new Error('Itens da venda são obrigatórios');
-    }
-
-    if (comprador_cpf && !cpfValidator.isValid(comprador_cpf)) {
-        throw new Error('CPF inválido. Deve conter 11 dígitos numéricos.');
     }
 
     return await prisma.$transaction(async (tx) => {
@@ -199,7 +188,6 @@ export async function finalizarVenda({ loja_id, usuario_id, itens, comprador_cpf
             data: {
                 loja_id: Number(loja_id),
                 usuario_id: Number(usuarioIdFinal),
-                comprador_cpf: comprador_cpf || null,
                 valor_total,
             },
         });

@@ -212,16 +212,7 @@ export default function Navbar() {
             </svg>
           ),
         },
-        {
-          name: 'Relatórios: Gerar Relatórios',
-          shortName: 'Relatórios',
-          href: '/matriz/relatorios',
-          icon: (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-6m3 6v-3m-3-9a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-          ),
-        },
+       
       ],
     },
   ];

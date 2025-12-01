@@ -30,9 +30,9 @@ export async function getVendasByIdController(req, res) {
 /* ------------------------------- CRIAR ------------------------------- */
 export async function createVendasController(req, res) {
     try {
-        const { loja_id, usuario_id, comprador_cpf, valor_total } = req.body;
+        const { loja_id, usuario_id, valor_total } = req.body;
 
-        const vendaData = { loja_id, usuario_id, comprador_cpf, valor_total };
+        const vendaData = { loja_id, usuario_id, valor_total };
 
         const venda = await vendasService.createVendas(vendaData);
 
@@ -53,9 +53,9 @@ export async function updateVendasController(req, res) {
             return res.status(404).json({ mensagem: 'Venda nao encontrada' });
         }
 
-        const { loja_id, usuario_id, comprador_cpf, valor_total } = req.body;
+        const { loja_id, usuario_id, valor_total } = req.body;
 
-        const vendaData = { loja_id, usuario_id, comprador_cpf, valor_total };
+        const vendaData = { loja_id, usuario_id, valor_total };
 
         const updatedVenda = await vendasService.updateVendas(vendaId, vendaData);
 
@@ -87,13 +87,13 @@ export async function removeVendasController(req, res) {
 /* ------------------------------- FINALIZAR ------------------------------- */
 export async function finalizarVendaController(req, res) {
     try {
-        const { loja_id, usuario_id, itens, comprador_cpf, metodo_pagamento } = req.body;
+        const { loja_id, usuario_id, itens, metodo_pagamento } = req.body;
 
         if (!loja_id || !usuario_id) {
             return res.status(400).json({ mensagem: 'loja_id e usuario_id são obrigatórios' });
         }
 
-        const resultado = await vendasService.finalizarVenda({ loja_id, usuario_id, itens, comprador_cpf, metodo_pagamento });
+        const resultado = await vendasService.finalizarVenda({ loja_id, usuario_id, itens, metodo_pagamento });
         return res.status(201).json(resultado);
     } catch (err) {
         console.error('Erro ao finalizar venda: ', err.message);

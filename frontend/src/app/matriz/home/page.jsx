@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Header from "@/components/Header/page";
+import Footer from "@/components/Footer/page";
 import { apiJson } from "@/lib/api";
 
 export default function Home() {
@@ -813,11 +814,7 @@ export default function Home() {
 
       </main>
 
-      {/* Footer */}
-      <footer className="mt-12 pb-8 text-center text-[#6B7280] text-sm">
-        <p>© 2025 Sistema de Gestão. Todos os direitos reservados.</p>
-        <p className="mt-1 text-xs">Última atualização: {new Date().toLocaleString('pt-BR')}</p>
-      </footer>
+      <Footer />
     </div>
   );
 }
