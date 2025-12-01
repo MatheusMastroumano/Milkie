@@ -143,7 +143,6 @@ model vendas {
   id            Int      @id @default(autoincrement())
   loja_id       Int
   usuario_id    Int
-  comprador_cpf String?
   valor_total   Decimal  @db.Decimal(10, 2)
   data          DateTime @default(now())
 

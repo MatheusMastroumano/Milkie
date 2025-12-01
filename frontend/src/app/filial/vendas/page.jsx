@@ -71,8 +71,7 @@ export default function VendasFilial() {
           return {
             id: v.id,
             data: v.data,
-            cliente: v.comprador_cpf || 'Cliente Final',
-            vendedor: v.usuario?.funcionario?.nome || 'N/A',
+            caixa: v.usuario?.funcionario?.nome || 'N/A',
             itens: itens.map(i => ({
               produto: i.produto?.nome || 'Produto',
               quantidade: parseFloat(i.quantidade || 0),
@@ -277,8 +276,7 @@ export default function VendasFilial() {
                         ID
                       </th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Data/Hora</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Cliente</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Vendedor</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Caixa</th>
                       <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">
                         Forma de Pagamento
                       </th>
@@ -299,10 +297,7 @@ export default function VendasFilial() {
                         <td className="px-3 sm:px-4 py-2 sm:py-3">
                           {formatarData(venda.data)}
                         </td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[150px] sm:max-w-[200px]">
-                          {venda.cliente}
-                        </td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-3">{venda.vendedor}</td>
+                        <td className="px-3 sm:px-4 py-2 sm:py-3">{venda.caixa}</td>
                         <td className="px-3 sm:px-4 py-2 sm:py-3">
                           {venda.formaPagamento}
                         </td>

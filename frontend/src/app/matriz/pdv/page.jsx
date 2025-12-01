@@ -391,10 +391,7 @@ export default function VendasFilial() {
                             Data/Hora
                           </th>
                           <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">
-                            Cliente
-                          </th>
-                          <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">
-                            Vendedor
+                            Caixa
                           </th>
                           <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">
                             Forma de Pagamento
@@ -419,9 +416,6 @@ export default function VendasFilial() {
                               <td className="px-3 sm:px-4 py-2 sm:py-3">
                                 {formatarData(venda.data)}
                               </td>
-                              <td className="px-3 sm:px-4 py-2 sm:py-3 truncate max-w-[150px] sm:max-w-[200px]">
-                                {venda.comprador_cpf || 'Cliente Final'}
-                              </td>
                               <td className="px-3 sm:px-4 py-2 sm:py-3">{venda.usuario?.funcionario?.nome || 'N/A'}</td>
                               <td className="px-3 sm:px-4 py-2 sm:py-3">
                                 {venda.formaPagamento}
@@ -444,7 +438,7 @@ export default function VendasFilial() {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan="7" className="px-3 sm:px-4 py-2 sm:py-3 text-center text-[#2A4E73]">
+                            <td colSpan="6" className="px-3 sm:px-4 py-2 sm:py-3 text-center text-[#2A4E73]">
                               Nenhuma venda encontrada para esta filial no período selecionado.
                             </td>
                           </tr>
