@@ -6,13 +6,13 @@ import { apiJson } from "@/lib/api";
 import Header from "@/components/Header/page";
 import Footer from "@/components/Footer/page";
 
-
-
 export default function VendasFilial() {
   const router = useRouter();
   const [vendas, setVendas] = useState([]);
   const [filialId, setFilialId] = useState(null);
   const [periodoFiltro, setPeriodoFiltro] = useState("hoje");
+  const [dataInicio, setDataInicio] = useState(new Date().toISOString().split("T")[0]);
+  const [dataFim, setDataFim] = useState(new Date().toISOString().split("T")[0]);
   const [lojas, setLojas] = useState([]);
   const [lojaSearchTerm, setLojaSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -27,7 +27,7 @@ export default function VendasFilial() {
     } else {
       setVendas([]);
     }
-  }, [filialId, periodoFiltro]);
+  }, [filialId, periodoFiltro, dataInicio, dataFim]);
 
   const fetchLojas = async () => {
     try {
@@ -51,19 +51,25 @@ export default function VendasFilial() {
         vendasFiltradas = vendasFiltradas.filter(venda => venda.loja_id === filialId);
       }
       
-      if (periodoFiltro === "hoje") {
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0);
-        vendasFiltradas = vendasFiltradas.filter(venda => {
-          const dataVenda = new Date(venda.data);
-          return dataVenda >= hoje;
-        });
-      } else if (periodoFiltro === "semana") {
-        const semanaAtras = new Date();
-        semanaAtras.setDate(semanaAtras.getDate() - 7);
-        vendasFiltradas = vendasFiltradas.filter(venda => {
-          const dataVenda = new Date(venda.data);
-          return dataVenda >= semanaAtras;
+      // Filtrar por período
+      const now = new Date();
+      if (periodoFiltro === 'hoje') {
+        const hoje = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        vendasFiltradas = vendasFiltradas.filter(v => new Date(v.data) >= hoje);
+      } else if (periodoFiltro === 'semana') {
+        const semana = new Date(now);
+        semana.setDate(semana.getDate() - 7);
+        vendasFiltradas = vendasFiltradas.filter(v => new Date(v.data) >= semana);
+      } else if (periodoFiltro === 'mes') {
+        const mes = new Date(now.getFullYear(), now.getMonth(), 1);
+        vendasFiltradas = vendasFiltradas.filter(v => new Date(v.data) >= mes);
+      } else if (periodoFiltro === 'personalizado') {
+        const ini = new Date(dataInicio);
+        const fim = new Date(dataFim);
+        fim.setHours(23, 59, 59, 999);
+        vendasFiltradas = vendasFiltradas.filter(v => {
+          const d = new Date(v.data);
+          return d >= ini && d <= fim;
         });
       }
       
@@ -104,7 +110,6 @@ export default function VendasFilial() {
 
   // Função para visualizar detalhes da venda
   const visualizarVenda = (venda) => {
-    // Pode implementar uma página de detalhes se necessário
     alert(`Venda #${venda.id}\nTotal: R$ ${venda.valor_total}\nData: ${formatarData(venda.data)}`);
   };
 
@@ -134,7 +139,7 @@ export default function VendasFilial() {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6">
           {/* Título */}
           <h1 className="text-2xl sm:text-3xl font-bold text-[#2A4E73] mb-6 text-center">
-            Gestão de Vendas - Filial
+            Gestão de Vendas - PDV
           </h1>
 
           {/* Seleção de Loja e Filtros */}
@@ -234,7 +239,7 @@ export default function VendasFilial() {
                 Período
               </label>
               <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8">
+                <nav className="-mb-px flex space-x-8 overflow-x-auto">
                   <button
                     className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                       periodoFiltro === "hoje"
@@ -255,8 +260,66 @@ export default function VendasFilial() {
                   >
                     Esta Semana
                   </button>
+                  <button
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      periodoFiltro === "mes"
+                        ? "border-[#2A4E73] text-[#2A4E73]"
+                        : "border-transparent text-[#2A4E73] hover:text-[#AD343E] hover:border-[#AD343E]"
+                    }`}
+                    onClick={() => setPeriodoFiltro("mes")}
+                  >
+                    Este Mês
+                  </button>
+                  <button
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      periodoFiltro === "personalizado"
+                        ? "border-[#2A4E73] text-[#2A4E73]"
+                        : "border-transparent text-[#2A4E73] hover:text-[#AD343E] hover:border-[#AD343E]"
+                    }`}
+                    onClick={() => setPeriodoFiltro("personalizado")}
+                  >
+                    Personalizado
+                  </button>
                 </nav>
               </div>
+
+              {/* Filtro de Datas Personalizado */}
+              {periodoFiltro === "personalizado" && (
+                <div className="mt-4 p-4 bg-white rounded-md border border-gray-200">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <label
+                        htmlFor="dataInicio"
+                        className="block text-sm font-medium text-[#2A4E73] mb-1"
+                      >
+                        Data Inicial
+                      </label>
+                      <input
+                        id="dataInicio"
+                        type="date"
+                        className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        value={dataInicio}
+                        onChange={(e) => setDataInicio(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label
+                        htmlFor="dataFim"
+                        className="block text-sm font-medium text-[#2A4E73] mb-1"
+                      >
+                        Data Final
+                      </label>
+                      <input
+                        id="dataFim"
+                        type="date"
+                        className="w-full px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        value={dataFim}
+                        onChange={(e) => setDataFim(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Cards de Resumo */}
