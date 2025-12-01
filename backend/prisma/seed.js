@@ -245,207 +245,188 @@ async function main() {
 	// ==================== PRODUTOS ====================
 	console.log('📦 Criando produtos...');
 
-	const produtosComFornecedores = [
+	const produtosData = [
 		{
-			data: {
-				nome: 'Camiseta Básica Branca',
-				marca: 'Milkie',
-				categoria: 'Vestuário',
-				descricao: 'Camiseta 100% algodão',
-				sku: 'CAM-001',
-				fabricacao: new Date('2024-01-01'),
-				validade: new Date('2026-01-01'),
-				ativo: true,
-			},
-			fornecedores: [fornecedor1.id, fornecedor3.id],
-		},
-		
-		{
-			data: {
-				nome: 'Camiseta Básica Preta',
-				marca: 'Milkie',
-				categoria: 'Vestuário',
-				descricao: 'Camiseta 100% algodão premium',
-				sku: 'CAM-002',
-				fabricacao: new Date('2024-01-01'),
-				validade: new Date('2026-01-01'),
-				ativo: true,
-			},
+			nome: 'Leite Integral 1L',
+			marca: 'Milkie',
+			categoria: 'Laticínio',
+			descricao: 'Leite integral pasteurizado',
+			sku: 'LAT-001',
+			fabricacao: new Date('2024-01-01'),
+			validade: new Date('2026-01-01'),
+			ativo: true,
 			fornecedores_ids: [fornecedor1.id, fornecedor3.id],
 		},
-
 		{
-			data: {
-				nome: 'Calça Jeans Slim',
-				marca: 'Milkie',
-				categoria: 'Vestuário',
-				descricao: 'Calça jeans com corte slim fit',
-				sku: 'CAL-001',
-				fabricacao: new Date('2024-02-01'),
-				validade: new Date('2026-02-01'),
-				ativo: true,
-			},
+			nome: 'Leite Desnatado 1L',
+			marca: 'Milkie',
+			categoria: 'Laticínio',
+			descricao: 'Leite desnatado 0% gordura',
+			sku: 'LAT-002',
+			fabricacao: new Date('2024-01-01'),
+			validade: new Date('2026-01-01'),
+			ativo: true,
+			fornecedores_ids: [fornecedor1.id, fornecedor3.id],
+		},
+		{
+			nome: 'Queijo Minas Frescal 500g',
+			marca: 'Milkie',
+			categoria: 'Laticínio',
+			descricao: 'Queijo minas frescal tradicional',
+			sku: 'LAT-003',
+			fabricacao: new Date('2024-02-01'),
+			validade: new Date('2026-02-01'),
+			ativo: true,
 			fornecedores_ids: [fornecedor3.id],
 		},
-
 		{
-			data: {
-				nome: 'Caneca Personalizada 300ml',
-				marca: 'Milkie',
-				categoria: 'Acessórios',
-				descricao: 'Caneca de cerâmica 300ml',
-				sku: 'CPM-001',
-				fabricacao: new Date('2024-01-15'),
-				validade: new Date('2027-01-15'),
-				ativo: true,
-			},
+			nome: 'Iogurte Natural 170g',
+			marca: 'Milkie',
+			categoria: 'Laticínio',
+			descricao: 'Iogurte natural sem açúcar',
+			sku: 'LAT-004',
+			fabricacao: new Date('2024-01-15'),
+			validade: new Date('2026-01-15'),
+			ativo: true,
 			fornecedores_ids: [fornecedor2.id],
 		},
-		
 		{
-			data: {
-				nome: 'Queijo Mineiro',
-				marca: 'Milkie',
-				categoria: 'Laticinio',
-				descricao: 'Queijo feito em minas gerais',
-				sku: 'QMM-001',
-				fabricacao: new Date('2024-03-01'),
-				validade: new Date('2026-03-01'),
-				ativo: true,
-			},
+			nome: 'Queijo Mussarela 400g',
+			marca: 'Milkie',
+			categoria: 'Laticínio',
+			descricao: 'Queijo mussarela fatiado',
+			sku: 'LAT-005',
+			fabricacao: new Date('2024-03-01'),
+			validade: new Date('2026-03-01'),
+			ativo: true,
 			fornecedores_ids: [fornecedor1.id],
 		},
-		
 		{
-			data: {
-				nome: 'Mochila Milkie',
-				marca: 'Milkie',
-				categoria: 'Acessórios',
-				descricao: 'Mochila resistente 20 litros',
-				sku: 'MOC-001',
-				fabricacao: new Date('2024-02-15'),
-				validade: new Date('2026-02-15'),
-				ativo: true,
-			},
+			nome: 'Manteiga sem Sal 200g',
+			marca: 'Milkie',
+			categoria: 'Laticínio',
+			descricao: 'Manteiga cremosa sem sal',
+			sku: 'LAT-006',
+			fabricacao: new Date('2024-02-15'),
+			validade: new Date('2026-02-15'),
+			ativo: true,
 			fornecedores_ids: [fornecedor2.id, fornecedor3.id],
 		},
-		
 		{
-			data: {
-				nome: 'Leite 1L',
-				marca: 'Milkie',
-				categoria: 'Laticinio',
-				descricao: 'Leite de 1 litro',
-				sku: 'LML-001',
-				fabricacao: new Date('2024-01-20'),
-				validade: new Date('2026-01-20'),
-				ativo: true,
-			},
+			nome: 'Creme de Leite 300g',
+			marca: 'Milkie',
+			categoria: 'Laticínio',
+			descricao: 'Creme de leite fresco',
+			sku: 'LAT-007',
+			fabricacao: new Date('2024-01-20'),
+			validade: new Date('2026-01-20'),
+			ativo: true,
 			fornecedores_ids: [fornecedor2.id],
 		},
-
 		{
-			data: {
-				nome: 'Suporte para Notebook',
-				marca: 'TechGear',
-				categoria: 'Tecnologia',
-				descricao: 'Suporte ergonômico ajustável',
-				sku: 'TEC-002',
-				fabricacao: new Date('2024-03-10'),
-				validade: new Date('2027-03-10'),
-		
-				ativo: true,
-			},
+			nome: 'Requeijão Cremoso 220g',
+			marca: 'Milkie',
+			categoria: 'Laticínio',
+			descricao: 'Requeijão cremoso tradicional',
+			sku: 'LAT-008',
+			fabricacao: new Date('2024-03-10'),
+			validade: new Date('2026-03-10'),
+			ativo: true,
 			fornecedores_ids: [fornecedor2.id],
 		},
-
 		{
-			data: {
-				nome: 'Caderno Universitário 200 folhas',
-				marca: 'StudyMax',
-				categoria: 'Papelaria',
-				descricao: 'Caderno espiral 10 matérias',
-				sku: 'PAP-001',
-				fabricacao: new Date('2024-01-05'),
-				validade: new Date('2025-12-31'),
-				ativo: true,
-			},
+			nome: 'Queijo Parmesão Ralado 100g',
+			marca: 'Milkie',
+			categoria: 'Laticínio',
+			descricao: 'Queijo parmesão ralado fino',
+			sku: 'LAT-009',
+			fabricacao: new Date('2024-01-05'),
+			validade: new Date('2026-01-05'),
+			ativo: true,
 			fornecedores_ids: [fornecedor1.id],
 		},
-
 		{
-			data: {
-				nome: 'Estojo Escolar Duplo',
-				marca: 'StudyMax',
-				categoria: 'Papelaria',
-				descricao: 'Estojo com dois compartimentos',
-				sku: 'PAP-002',
-				fabricacao: new Date('2024-02-01'),
-				validade: new Date('2026-02-01'),
-				ativo: true,
-		
-			},
+			nome: 'Iogurte Grego 150g',
+			marca: 'Milkie',
+			categoria: 'Laticínio',
+			descricao: 'Iogurte grego natural cremoso',
+			sku: 'LAT-010',
+			fabricacao: new Date('2024-02-01'),
+			validade: new Date('2026-02-01'),
+			ativo: true,
 			fornecedores_ids: [fornecedor1.id, fornecedor3.id],
 		}
 	];
 
-const produtos = await prisma.$transaction(
- produtosComFornecedores.map(p => prisma.produtos.create({ data: p.data }))
-);
+const produtos = [];
+	for (const produtoInfo of produtosData) {
+		const { fornecedores_ids, ...produtoData } = produtoInfo;
+		
+		const produto = await prisma.produtos.create({
+			data: {
+				...produtoData,
+				fornecedores_ids: fornecedores_ids // Salvar IDs no campo JSON
+			}
+		});
+		
+		produtos.push({ ...produto, fornecedores_ids_temp: fornecedores_ids });
+	}
 
 	console.log(`✅ ${produtos.length} produtos criados\n`);
 
 	// ==================== RELACIONAMENTO FORNECEDOR-PRODUTOS ====================
 	console.log('🔗 Criando relacionamentos fornecedor-produtos...');
-	const relacionamentos = [];
 	for (const produto of produtos) {
-		if (produto.fornecedores_ids && Array.isArray(produto.fornecedores_ids)) {
-			for (const fornecedorId of produto.fornecedores_ids) {
-				relacionamentos.push({
-					fornecedor_id: fornecedorId,
-					produto_id: produto.id,
+		if (produto.fornecedores_ids_temp && Array.isArray(produto.fornecedores_ids_temp)) {
+			for (const fornecedorId of produto.fornecedores_ids_temp) {
+				await prisma.fornecedor_produtos.create({
+					data: {
+						fornecedor_id: fornecedorId,
+						produto_id: produto.id,
+					}
 				});
 			}
 		}
 	}
-	await prisma.fornecedor_produtos.createMany({ data: relacionamentos });
-	console.log(`✅ ${relacionamentos.length} relacionamentos criados\n`);
+	
+	const totalRelacionamentos = await prisma.fornecedor_produtos.count();
+	console.log(`✅ ${totalRelacionamentos} relacionamentos criados\n`);
 
 	// ==================== ESTOQUE ====================
 	console.log('📊 Criando estoque...');
 	const estoqueData = [];
 
 	// Estoque da Matriz
-	estoqueData.push(
-		{ produto_id: produtos[0].id, loja_id: lojaMatriz.id, preco: '49.90', quantidade: 50, valido_de: new Date() },
-		{ produto_id: produtos[1].id, loja_id: lojaMatriz.id, preco: '49.90', quantidade: 45, valido_de: new Date() },
-		{ produto_id: produtos[2].id, loja_id: lojaMatriz.id, preco: '129.90', quantidade: 30, valido_de: new Date() },
-		{ produto_id: produtos[3].id, loja_id: lojaMatriz.id, preco: '39.90', quantidade: 60, valido_de: new Date() },
-		{ produto_id: produtos[4].id, loja_id: lojaMatriz.id, preco: '59.90', quantidade: 40, valido_de: new Date() },
-		{ produto_id: produtos[5].id, loja_id: lojaMatriz.id, preco: '149.90', quantidade: 25, valido_de: new Date() },
-		{ produto_id: produtos[6].id, loja_id: lojaMatriz.id, preco: '79.90', quantidade: 35, valido_de: new Date() },
-		{ produto_id: produtos[7].id, loja_id: lojaMatriz.id, preco: '89.90', quantidade: 20, valido_de: new Date() },
-		{ produto_id: produtos[8].id, loja_id: lojaMatriz.id, preco: '29.90', quantidade: 80, valido_de: new Date() },
-		{ produto_id: produtos[9].id, loja_id: lojaMatriz.id, preco: '24.90', quantidade: 70, valido_de: new Date() }
+estoqueData.push(
+		{ produto_id: produtos[0].id, loja_id: lojaMatriz.id, preco: '5.90', quantidade: 100, valido_de: new Date() },
+		{ produto_id: produtos[1].id, loja_id: lojaMatriz.id, preco: '6.50', quantidade: 80, valido_de: new Date() },
+		{ produto_id: produtos[2].id, loja_id: lojaMatriz.id, preco: '18.90', quantidade: 50, valido_de: new Date() },
+		{ produto_id: produtos[3].id, loja_id: lojaMatriz.id, preco: '4.50', quantidade: 120, valido_de: new Date() },
+		{ produto_id: produtos[4].id, loja_id: lojaMatriz.id, preco: '22.90', quantidade: 60, valido_de: new Date() },
+		{ produto_id: produtos[5].id, loja_id: lojaMatriz.id, preco: '12.90', quantidade: 45, valido_de: new Date() },
+		{ produto_id: produtos[6].id, loja_id: lojaMatriz.id, preco: '7.90', quantidade: 70, valido_de: new Date() },
+		{ produto_id: produtos[7].id, loja_id: lojaMatriz.id, preco: '9.90', quantidade: 55, valido_de: new Date() },
+		{ produto_id: produtos[8].id, loja_id: lojaMatriz.id, preco: '8.90', quantidade: 90, valido_de: new Date() },
+		{ produto_id: produtos[9].id, loja_id: lojaMatriz.id, preco: '5.50', quantidade: 100, valido_de: new Date() }
 	);
 
 	// Estoque da Filial 1
 	estoqueData.push(
-		{ produto_id: produtos[0].id, loja_id: lojaFilial1.id, preco: '49.90', quantidade: 35, valido_de: new Date() },
-		{ produto_id: produtos[1].id, loja_id: lojaFilial1.id, preco: '49.90', quantidade: 30, valido_de: new Date() },
-		{ produto_id: produtos[3].id, loja_id: lojaFilial1.id, preco: '39.90', quantidade: 40, valido_de: new Date() },
-		{ produto_id: produtos[4].id, loja_id: lojaFilial1.id, preco: '59.90', quantidade: 25, valido_de: new Date() },
-		{ produto_id: produtos[6].id, loja_id: lojaFilial1.id, preco: '79.90', quantidade: 20, valido_de: new Date() },
-		{ produto_id: produtos[8].id, loja_id: lojaFilial1.id, preco: '29.90', quantidade: 50, valido_de: new Date() }
+		{ produto_id: produtos[0].id, loja_id: lojaFilial1.id, preco: '5.90', quantidade: 60, valido_de: new Date() },
+		{ produto_id: produtos[1].id, loja_id: lojaFilial1.id, preco: '6.50', quantidade: 50, valido_de: new Date() },
+		{ produto_id: produtos[3].id, loja_id: lojaFilial1.id, preco: '4.50', quantidade: 70, valido_de: new Date() },
+		{ produto_id: produtos[4].id, loja_id: lojaFilial1.id, preco: '22.90', quantidade: 40, valido_de: new Date() },
+		{ produto_id: produtos[6].id, loja_id: lojaFilial1.id, preco: '7.90', quantidade: 45, valido_de: new Date() },
+		{ produto_id: produtos[8].id, loja_id: lojaFilial1.id, preco: '8.90', quantidade: 60, valido_de: new Date() }
 	);
 
 	// Estoque da Filial 2
 	estoqueData.push(
-		{ produto_id: produtos[0].id, loja_id: lojaFilial2.id, preco: '49.90', quantidade: 40, valido_de: new Date() },
-		{ produto_id: produtos[2].id, loja_id: lojaFilial2.id, preco: '129.90', quantidade: 20, valido_de: new Date() },
-		{ produto_id: produtos[5].id, loja_id: lojaFilial2.id, preco: '149.90', quantidade: 15, valido_de: new Date() },
-		{ produto_id: produtos[7].id, loja_id: lojaFilial2.id, preco: '89.90', quantidade: 12, valido_de: new Date() },
-		{ produto_id: produtos[9].id, loja_id: lojaFilial2.id, preco: '24.90', quantidade: 45, valido_de: new Date() }
+		{ produto_id: produtos[0].id, loja_id: lojaFilial2.id, preco: '5.90', quantidade: 55, valido_de: new Date() },
+		{ produto_id: produtos[2].id, loja_id: lojaFilial2.id, preco: '18.90', quantidade: 35, valido_de: new Date() },
+		{ produto_id: produtos[5].id, loja_id: lojaFilial2.id, preco: '12.90', quantidade: 30, valido_de: new Date() },
+		{ produto_id: produtos[7].id, loja_id: lojaFilial2.id, preco: '9.90', quantidade: 40, valido_de: new Date() },
+		{ produto_id: produtos[9].id, loja_id: lojaFilial2.id, preco: '5.50', quantidade: 65, valido_de: new Date() }
 	);
 
 	await prisma.estoque.createMany({ data: estoqueData });
@@ -461,6 +442,7 @@ const produtos = await prisma.$transaction(
 	console.log(`  🔐 Usuários: ${6}`);
 	console.log(`  🏭 Fornecedores: ${3}`);
 	console.log(`  📦 Produtos: ${produtos.length}`);
+	console.log(`  🔗 Relacionamentos Fornecedor-Produto: ${totalRelacionamentos}`);
 	console.log(`  📊 Itens em Estoque: ${estoqueData.length}`);
 	console.log('\n🔑 CREDENCIAIS DE ACESSO:');
 	console.log('  ┌─────────────────────────────────────────┐');
