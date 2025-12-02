@@ -331,12 +331,7 @@ export default function PerfilMatriz() {
                   >
                     Alterar Senha
                   </button>
-                  <button
-                    onClick={() => setIsDeleteAccountOpen(true)}
-                    className="px-8 py-3 text-base font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
-                  >
-                    Excluir Conta
-                  </button>
+               
                 </div>
               </div>
             </div>

@@ -369,36 +369,39 @@ export default function Financeiro() {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-6">
           
           {/* Alert de Feedback */}
-          {alert.show && (
-            <div className="fixed top-20 right-4 z-50 max-w-sm w-full animate-in fade-in slide-in-from-right-2 duration-300">
-              <Alert 
-                variant={alert.type === 'success' ? 'default' : 'destructive'}
-                className="relative shadow-lg border-l-4"
-              >
-                <button
-                  onClick={closeAlert}
-                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-                <div className="flex items-start gap-3 pr-6">
-                  {alert.type === 'success' ? (
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                  ) : (
-                    <XCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <AlertTitle className="text-sm font-semibold truncate">
-                      {alert.type === 'success' ? 'Sucesso!' : 'Erro!'}
-                    </AlertTitle>
-                    <AlertDescription className="text-sm mt-1 line-clamp-2">
-                      {alert.message}
-                    </AlertDescription>
-                  </div>
-                </div>
-              </Alert>
-            </div>
-          )}
+    {alert.show && (
+  <div className="fixed top-4 right-4 z-50 w-[90%] max-w-sm animate-in fade-in-50 slide-in-from-right-5 duration-300">
+    <Alert 
+      variant={alert.type === "success" ? "default" : "destructive"}
+      className="relative shadow-xl border"
+    >
+      <button
+        onClick={closeAlert}
+        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+      >
+        <X className="h-4 w-4" />
+      </button>
+
+      <div className="flex items-start gap-3 pr-6">
+        {alert.type === "success" ? (
+          <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+        ) : (
+          <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+        )}
+
+        <div className="flex-1">
+          <AlertTitle className="text-sm font-semibold">
+            {alert.type === "success" ? "Sucesso!" : "Erro!"}
+          </AlertTitle>
+
+          <AlertDescription className="text-sm mt-1">
+            {alert.message}
+          </AlertDescription>
+        </div>
+      </div>
+    </Alert>
+  </div>
+)}
 
           {/* Cabeçalho */}
           <div className="text-center mb-8">
