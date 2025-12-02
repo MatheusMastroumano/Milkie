@@ -64,10 +64,17 @@ export const gerarPDFDespesas = (despesas, filtroData = {}) => {
     head: [['Descrição', 'Categoria', 'Data', 'Valor', 'Status']],
     body: tableData,
     theme: 'striped',
-    headStyles: { fillColor: [42, 78, 115], textColor: [255, 255, 255] },
-    styles: { fontSize: 9 },
+    headStyles: { 
+      fillColor: [42, 78, 115], 
+      textColor: [255, 255, 255],
+      halign: 'center'
+    },
+    styles: { 
+      fontSize: 9,
+      cellPadding: 3
+    },
     columnStyles: {
-      3: { halign: 'right' },
+      3: { halign: 'right', cellWidth: 'auto' },
       4: { halign: 'center' }
     }
   });
@@ -132,8 +139,17 @@ export const gerarPDFFornecedores = (pagamentosFornecedores, filtroData = {}) =>
     headStyles: { fillColor: [42, 78, 115], textColor: [255, 255, 255] },
     styles: { fontSize: 9 },
     columnStyles: {
-      2: { halign: 'right' },
+      2: { halign: 'right', cellWidth: 'auto' },
       3: { halign: 'center' }
+    },
+    styles: { 
+      fontSize: 9,
+      cellPadding: 3
+    },
+    headStyles: { 
+      fillColor: [42, 78, 115], 
+      textColor: [255, 255, 255],
+      halign: 'center'
     }
   });
   
@@ -187,10 +203,19 @@ export const gerarPDFFolha = (pagamentosFuncionarios, filtroData = {}) => {
     headStyles: { fillColor: [42, 78, 115], textColor: [255, 255, 255] },
     styles: { fontSize: 9 },
     columnStyles: {
-      2: { halign: 'right' },
-      3: { halign: 'right' },
-      4: { halign: 'right' },
+      2: { halign: 'right', cellWidth: 'auto' },
+      3: { halign: 'right', cellWidth: 'auto' },
+      4: { halign: 'right', cellWidth: 'auto' },
       5: { halign: 'center' }
+    },
+    styles: { 
+      fontSize: 9,
+      cellPadding: 3
+    },
+    headStyles: { 
+      fillColor: [42, 78, 115], 
+      textColor: [255, 255, 255],
+      halign: 'center'
     }
   });
   
@@ -209,7 +234,7 @@ export const gerarPDFFolha = (pagamentosFuncionarios, filtroData = {}) => {
 };
 
 // Função para gerar PDF de Fluxo de Caixa
-export const gerarPDFFluxoCaixa = (despesas, pagamentosFornecedores, pagamentosFuncionarios, filtroData = {}) => {
+export const gerarPDFFluxoCaixa = (despesas, pagamentosFornecedores, pagamentosFuncionarios, filtroData = {}, vendas = [], caixas = [], vendaPagamentos = []) => {
   const doc = new jsPDF();
   
   doc.setFontSize(18);
@@ -227,14 +252,116 @@ export const gerarPDFFluxoCaixa = (despesas, pagamentosFornecedores, pagamentosF
   doc.setTextColor(100, 100, 100);
   doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 34);
   
-  // Calcular totais
-  const totalDespesas = despesas.reduce((sum, d) => sum + Math.abs(d.valor || 0), 0);
-  const totalFornecedores = pagamentosFornecedores.reduce((sum, p) => sum + (p.valor || 0), 0);
-  const totalFolha = pagamentosFuncionarios.reduce((sum, p) => sum + (p.salario || 0) + (p.comissao || 0), 0);
+  let yPos = 45;
+  
+  // Filtrar vendas e caixas por período
+  let vendasFiltradas = vendas || [];
+  let caixasFiltrados = caixas || [];
+  
+  if (filtroData.inicio || filtroData.fim) {
+    vendasFiltradas = vendas.filter(v => {
+      const dataVenda = new Date(v.data);
+      if (filtroData.inicio && dataVenda < new Date(filtroData.inicio)) return false;
+      if (filtroData.fim && dataVenda > new Date(filtroData.fim)) return false;
+      return true;
+    });
+    
+    caixasFiltrados = caixas.filter(c => {
+      const dataAbertura = new Date(c.aberto_em);
+      if (filtroData.inicio && dataAbertura < new Date(filtroData.inicio)) return false;
+      if (filtroData.fim && dataAbertura > new Date(filtroData.fim)) return false;
+      return true;
+    });
+  }
+  
+  // Calcular totais de ENTRADAS (Vendas)
+  const totalVendas = vendasFiltradas.reduce((sum, v) => sum + parseFloat(v.valor_total || 0), 0);
+  
+  // Calcular dinheiro recebido (vendas pagas em dinheiro)
+  const pagamentosDinheiro = (vendaPagamentos || []).filter(p => {
+    const venda = vendasFiltradas.find(v => v.id === p.venda_id);
+    return venda && p.metodo === 'dinheiro';
+  });
+  const totalDinheiroRecebido = pagamentosDinheiro.reduce((sum, p) => sum + parseFloat(p.valor || 0), 0);
+  
+  // Calcular outros métodos de pagamento
+  const pagamentosCartao = (vendaPagamentos || []).filter(p => {
+    const venda = vendasFiltradas.find(v => v.id === p.venda_id);
+    return venda && (p.metodo === 'cartaocredito' || p.metodo === 'cartaodebito');
+  });
+  const totalCartao = pagamentosCartao.reduce((sum, p) => sum + parseFloat(p.valor || 0), 0);
+  
+  const pagamentosPix = (vendaPagamentos || []).filter(p => {
+    const venda = vendasFiltradas.find(v => v.id === p.venda_id);
+    return venda && p.metodo === 'pix';
+  });
+  const totalPix = pagamentosPix.reduce((sum, p) => sum + parseFloat(p.valor || 0), 0);
+  
+  // Calcular totais de caixa
+  const totalValorInicial = caixasFiltrados.reduce((sum, c) => sum + parseFloat(c.valor_inicial || 0), 0);
+  const totalValorFinal = caixasFiltrados.filter(c => c.valor_final).reduce((sum, c) => sum + parseFloat(c.valor_final || 0), 0);
+  const totalCaixa = totalValorFinal - totalValorInicial;
+  
+  // Seção ENTRADAS
+  doc.setFontSize(14);
+  doc.setTextColor(42, 78, 115);
+  doc.text('ENTRADAS', 14, yPos);
+  yPos += 8;
+  
+  const entradasData = [
+    ['Total de Vendas', formatCurrency(totalVendas)],
+    ['Dinheiro Recebido', formatCurrency(totalDinheiroRecebido)],
+    ['Cartão (Crédito/Débito)', formatCurrency(totalCartao)],
+    ['PIX', formatCurrency(totalPix)],
+    ['Movimentação de Caixa', formatCurrency(totalCaixa)],
+    ['TOTAL DE ENTRADAS', formatCurrency(totalVendas + totalCaixa)]
+  ];
+  
+  autoTable(doc, {
+    startY: yPos,
+    head: [['Categoria', 'Valor']],
+    body: entradasData,
+    theme: 'striped',
+    headStyles: { fillColor: [42, 78, 115], textColor: [255, 255, 255], halign: 'center' },
+    styles: { fontSize: 10, cellPadding: 3 },
+    columnStyles: {
+      1: { halign: 'right', fontStyle: 'bold', cellWidth: 'auto' }
+    }
+  });
+  
+  yPos = doc.lastAutoTable.finalY + 15;
+  
+  // Seção SAÍDAS
+  doc.setFontSize(14);
+  doc.setTextColor(42, 78, 115);
+  doc.text('SAÍDAS', 14, yPos);
+  yPos += 8;
+  
+  // Calcular totais de saídas
+  const totalDespesas = despesas.reduce((sum, d) => {
+    const dataDespesa = new Date(d.data);
+    if (filtroData.inicio && dataDespesa < new Date(filtroData.inicio)) return sum;
+    if (filtroData.fim && dataDespesa > new Date(filtroData.fim)) return sum;
+    return sum + Math.abs(d.valor || 0);
+  }, 0);
+  
+  const totalFornecedores = pagamentosFornecedores.reduce((sum, p) => {
+    const dataVencimento = new Date(p.vencimento);
+    if (filtroData.inicio && dataVencimento < new Date(filtroData.inicio)) return sum;
+    if (filtroData.fim && dataVencimento > new Date(filtroData.fim)) return sum;
+    return sum + (p.valor || 0);
+  }, 0);
+  
+  const totalFolha = pagamentosFuncionarios.reduce((sum, p) => {
+    const dataCriacao = new Date(p.criado_em || new Date());
+    if (filtroData.inicio && dataCriacao < new Date(filtroData.inicio)) return sum;
+    if (filtroData.fim && dataCriacao > new Date(filtroData.fim)) return sum;
+    return sum + (p.salario || 0) + (p.comissao || 0);
+  }, 0);
+  
   const totalSaidas = totalDespesas + totalFornecedores + totalFolha;
   
-  // Resumo
-  const resumoData = [
+  const saidasData = [
     ['Despesas', formatCurrency(totalDespesas)],
     ['Pagamentos Fornecedores', formatCurrency(totalFornecedores)],
     ['Folha de Pagamento', formatCurrency(totalFolha)],
@@ -242,22 +369,54 @@ export const gerarPDFFluxoCaixa = (despesas, pagamentosFornecedores, pagamentosF
   ];
   
   autoTable(doc, {
-    startY: 40,
+    startY: yPos,
     head: [['Categoria', 'Valor']],
-    body: resumoData,
+    body: saidasData,
     theme: 'striped',
-    headStyles: { fillColor: [42, 78, 115], textColor: [255, 255, 255] },
-    styles: { fontSize: 10 },
+    headStyles: { fillColor: [42, 78, 115], textColor: [255, 255, 255], halign: 'center' },
+    styles: { fontSize: 10, cellPadding: 3 },
     columnStyles: {
-      1: { halign: 'right', fontStyle: 'bold' }
+      1: { halign: 'right', fontStyle: 'bold', cellWidth: 'auto' }
+    }
+  });
+  
+  yPos = doc.lastAutoTable.finalY + 15;
+  
+  // Resumo Final
+  const saldo = (totalVendas + totalCaixa) - totalSaidas;
+  
+  doc.setFontSize(14);
+  doc.setTextColor(42, 78, 115);
+  doc.text('RESUMO FINAL', 14, yPos);
+  yPos += 8;
+  
+  const resumoFinalData = [
+    ['Total de Entradas', formatCurrency(totalVendas + totalCaixa)],
+    ['Total de Saídas', formatCurrency(totalSaidas)],
+    ['SALDO FINAL', formatCurrency(saldo)]
+  ];
+  
+  autoTable(doc, {
+    startY: yPos,
+    head: [['Item', 'Valor']],
+    body: resumoFinalData,
+    theme: 'grid',
+    headStyles: { fillColor: [42, 78, 115], textColor: [255, 255, 255], halign: 'center' },
+    styles: { fontSize: 11, cellPadding: 4, fontStyle: 'bold' },
+    columnStyles: {
+      1: { halign: 'right', cellWidth: 'auto' }
     }
   });
   
   const finalY = doc.lastAutoTable.finalY + 10;
   doc.setFontSize(12);
-  doc.setTextColor(173, 52, 62); // #AD343E
+  if (saldo >= 0) {
+    doc.setTextColor(0, 128, 0); // Verde para saldo positivo
+  } else {
+    doc.setTextColor(173, 52, 62); // Vermelho para saldo negativo
+  }
   doc.setFont(undefined, 'bold');
-  doc.text(`Total Geral de Saídas: ${formatCurrency(totalSaidas)}`, 14, finalY);
+  doc.text(`Saldo Final: ${formatCurrency(saldo)}`, 14, finalY);
   
   doc.save(`relatorio-fluxo-caixa-${new Date().toISOString().split('T')[0]}.pdf`);
 };
@@ -305,10 +464,19 @@ export const gerarPDFPersonalizado = (despesas, pagamentosFornecedores, pagament
       theme: 'striped',
       headStyles: { fillColor: [42, 78, 115], textColor: [255, 255, 255] },
       styles: { fontSize: 8 },
-      columnStyles: {
-        3: { halign: 'right' },
-        4: { halign: 'center' }
-      }
+    columnStyles: {
+      3: { halign: 'right', cellWidth: 'auto' },
+      4: { halign: 'center' }
+    },
+    styles: { 
+      fontSize: 8,
+      cellPadding: 3
+    },
+    headStyles: { 
+      fillColor: [42, 78, 115], 
+      textColor: [255, 255, 255],
+      halign: 'center'
+    }
     });
     
     yPos = doc.lastAutoTable.finalY + 15;
@@ -340,10 +508,19 @@ export const gerarPDFPersonalizado = (despesas, pagamentosFornecedores, pagament
       theme: 'striped',
       headStyles: { fillColor: [42, 78, 115], textColor: [255, 255, 255] },
       styles: { fontSize: 8 },
-      columnStyles: {
-        2: { halign: 'right' },
-        3: { halign: 'center' }
-      }
+    columnStyles: {
+      2: { halign: 'right', cellWidth: 'auto' },
+      3: { halign: 'center' }
+    },
+    styles: { 
+      fontSize: 9,
+      cellPadding: 3
+    },
+    headStyles: { 
+      fillColor: [42, 78, 115], 
+      textColor: [255, 255, 255],
+      halign: 'center'
+    }
     });
     
     yPos = doc.lastAutoTable.finalY + 15;
@@ -419,7 +596,16 @@ export const gerarPDFPersonalizado = (despesas, pagamentosFornecedores, pagament
     headStyles: { fillColor: [42, 78, 115], textColor: [255, 255, 255] },
     styles: { fontSize: 10 },
     columnStyles: {
-      1: { halign: 'right', fontStyle: 'bold' }
+      1: { halign: 'right', fontStyle: 'bold', cellWidth: 'auto' }
+    },
+    styles: { 
+      fontSize: 10,
+      cellPadding: 3
+    },
+    headStyles: { 
+      fillColor: [42, 78, 115], 
+      textColor: [255, 255, 255],
+      halign: 'center'
     }
   });
   

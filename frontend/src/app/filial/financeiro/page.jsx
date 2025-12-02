@@ -37,6 +37,11 @@ export default function Financeiro() {
   const [pagamentosFuncionarios, setPagamentosFuncionarios] = useState([]);
   const [novoPagamentoFuncionario, setNovoPagamentoFuncionario] = useState({ funcionario_id: '', salario: '', comissao: '' });
 
+  // Estados para Vendas e Caixa (para relatório de fluxo de caixa)
+  const [vendas, setVendas] = useState([]);
+  const [caixas, setCaixas] = useState([]);
+  const [vendaPagamentos, setVendaPagamentos] = useState([]);
+
   // Obter loja_id do usuário autenticado
   useEffect(() => {
     (async () => {
@@ -58,12 +63,15 @@ export default function Financeiro() {
   const carregarDados = async () => {
     try {
       setLoading(true);
-      const [despesasRes, pagamentosFornecedoresRes, pagamentosFuncionariosRes, fornecedoresRes, funcionariosRes] = await Promise.all([
+      const [despesasRes, pagamentosFornecedoresRes, pagamentosFuncionariosRes, fornecedoresRes, funcionariosRes, vendasRes, caixasRes, vendaPagamentosRes] = await Promise.all([
         apiJson('/despesas').catch(() => ({ despesas: [] })),
         apiJson('/pagamentos-fornecedores').catch(() => ({ pagamentos_fornecedores: [] })),
         apiJson('/pagamentos-funcionarios').catch(() => ({ pagamentos_funcionarios: [] })),
         apiJson('/fornecedores').catch(() => ({ fornecedores: [] })),
-        apiJson('/funcionarios').catch(() => ({ funcionarios: [] }))
+        apiJson('/funcionarios').catch(() => ({ funcionarios: [] })),
+        apiJson('/vendas').catch(() => ({ vendas: [] })),
+        apiJson('/caixa').catch(() => ({ caixa: [] })),
+        apiJson('/venda-pagamentos').catch(() => ({ venda_pagamentos: [] }))
       ]);
 
       // Filtrar apenas dados da loja atual
@@ -100,6 +108,18 @@ export default function Financeiro() {
 
       setFornecedoresLista(fornecedoresRes.fornecedores || []);
       setFuncionariosLista((funcionariosRes.funcionarios || []).filter(f => f.loja_id === lojaId));
+      
+      // Filtrar vendas, caixas e pagamentos da loja
+      const vendasFiltradas = (vendasRes.vendas || []).filter(v => v.loja_id === lojaId);
+      setVendas(vendasFiltradas);
+      
+      const caixasFiltrados = (caixasRes.caixa || caixasRes.caixas || []).filter(c => c.loja_id === lojaId);
+      setCaixas(caixasFiltrados);
+      
+      const vendaPagamentosFiltrados = (vendaPagamentosRes.venda_pagamentos || vendaPagamentosRes.vendaPagamentos || []).filter(p => {
+        return vendasFiltradas.some(v => v.id === p.venda_id);
+      });
+      setVendaPagamentos(vendaPagamentosFiltrados);
     } catch (error) {
       console.error('Erro ao carregar dados financeiros:', error);
       showAlert('error', 'Erro ao carregar dados financeiros');
@@ -342,7 +362,7 @@ export default function Financeiro() {
           showAlert('success', 'Relatório de Folha de Pagamento gerado com sucesso!');
           break;
         case 'fluxo-caixa':
-          gerarPDFFluxoCaixa(despesas, pagamentosFornecedores, pagamentosFuncionarios, filtroData);
+          gerarPDFFluxoCaixa(despesas, pagamentosFornecedores, pagamentosFuncionarios, filtroData, vendas, caixas, vendaPagamentos);
           showAlert('success', 'Relatório de Fluxo de Caixa gerado com sucesso!');
           break;
         case 'personalizado':
