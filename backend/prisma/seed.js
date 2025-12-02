@@ -413,36 +413,39 @@ const produtos = [];
 	const estoqueData = [];
 
 	// Estoque da Matriz
-estoqueData.push(
-		{ produto_id: produtos[0].id, loja_id: lojaMatriz.id, preco: '5.90', quantidade: 100, valido_de: new Date() },
-		{ produto_id: produtos[1].id, loja_id: lojaMatriz.id, preco: '6.50', quantidade: 80, valido_de: new Date() },
-		{ produto_id: produtos[2].id, loja_id: lojaMatriz.id, preco: '18.90', quantidade: 50, valido_de: new Date() },
-		{ produto_id: produtos[3].id, loja_id: lojaMatriz.id, preco: '4.50', quantidade: 120, valido_de: new Date() },
-		{ produto_id: produtos[4].id, loja_id: lojaMatriz.id, preco: '22.90', quantidade: 60, valido_de: new Date() },
-		{ produto_id: produtos[5].id, loja_id: lojaMatriz.id, preco: '12.90', quantidade: 45, valido_de: new Date() },
-		{ produto_id: produtos[6].id, loja_id: lojaMatriz.id, preco: '7.90', quantidade: 70, valido_de: new Date() },
-		{ produto_id: produtos[7].id, loja_id: lojaMatriz.id, preco: '9.90', quantidade: 55, valido_de: new Date() },
-		{ produto_id: produtos[8].id, loja_id: lojaMatriz.id, preco: '8.90', quantidade: 90, valido_de: new Date() },
-		{ produto_id: produtos[9].id, loja_id: lojaMatriz.id, preco: '5.50', quantidade: 100, valido_de: new Date() }
+	const dataValidade = new Date();
+	dataValidade.setMonth(dataValidade.getMonth() + 6); // 6 meses a partir de hoje
+	
+	estoqueData.push(
+		{ produto_id: produtos[0].id, loja_id: lojaMatriz.id, preco: '5.90', quantidade: 100, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[1].id, loja_id: lojaMatriz.id, preco: '6.50', quantidade: 80, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[2].id, loja_id: lojaMatriz.id, preco: '18.90', quantidade: 50, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[3].id, loja_id: lojaMatriz.id, preco: '4.50', quantidade: 120, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[4].id, loja_id: lojaMatriz.id, preco: '22.90', quantidade: 60, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[5].id, loja_id: lojaMatriz.id, preco: '12.90', quantidade: 45, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[6].id, loja_id: lojaMatriz.id, preco: '7.90', quantidade: 70, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[7].id, loja_id: lojaMatriz.id, preco: '9.90', quantidade: 55, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[8].id, loja_id: lojaMatriz.id, preco: '8.90', quantidade: 90, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[9].id, loja_id: lojaMatriz.id, preco: '5.50', quantidade: 100, valido_de: new Date(), valido_ate: dataValidade }
 	);
 
 	// Estoque da Filial 1
 	estoqueData.push(
-		{ produto_id: produtos[0].id, loja_id: lojaFilial1.id, preco: '5.90', quantidade: 60, valido_de: new Date() },
-		{ produto_id: produtos[1].id, loja_id: lojaFilial1.id, preco: '6.50', quantidade: 50, valido_de: new Date() },
-		{ produto_id: produtos[3].id, loja_id: lojaFilial1.id, preco: '4.50', quantidade: 70, valido_de: new Date() },
-		{ produto_id: produtos[4].id, loja_id: lojaFilial1.id, preco: '22.90', quantidade: 40, valido_de: new Date() },
-		{ produto_id: produtos[6].id, loja_id: lojaFilial1.id, preco: '7.90', quantidade: 45, valido_de: new Date() },
-		{ produto_id: produtos[8].id, loja_id: lojaFilial1.id, preco: '8.90', quantidade: 60, valido_de: new Date() }
+		{ produto_id: produtos[0].id, loja_id: lojaFilial1.id, preco: '5.90', quantidade: 60, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[1].id, loja_id: lojaFilial1.id, preco: '6.50', quantidade: 50, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[3].id, loja_id: lojaFilial1.id, preco: '4.50', quantidade: 70, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[4].id, loja_id: lojaFilial1.id, preco: '22.90', quantidade: 40, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[6].id, loja_id: lojaFilial1.id, preco: '7.90', quantidade: 45, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[8].id, loja_id: lojaFilial1.id, preco: '8.90', quantidade: 60, valido_de: new Date(), valido_ate: dataValidade }
 	);
 
 	// Estoque da Filial 2
 	estoqueData.push(
-		{ produto_id: produtos[0].id, loja_id: lojaFilial2.id, preco: '5.90', quantidade: 55, valido_de: new Date() },
-		{ produto_id: produtos[2].id, loja_id: lojaFilial2.id, preco: '18.90', quantidade: 35, valido_de: new Date() },
-		{ produto_id: produtos[5].id, loja_id: lojaFilial2.id, preco: '12.90', quantidade: 30, valido_de: new Date() },
-		{ produto_id: produtos[7].id, loja_id: lojaFilial2.id, preco: '9.90', quantidade: 40, valido_de: new Date() },
-		{ produto_id: produtos[9].id, loja_id: lojaFilial2.id, preco: '5.50', quantidade: 65, valido_de: new Date() }
+		{ produto_id: produtos[0].id, loja_id: lojaFilial2.id, preco: '5.90', quantidade: 55, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[2].id, loja_id: lojaFilial2.id, preco: '18.90', quantidade: 35, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[5].id, loja_id: lojaFilial2.id, preco: '12.90', quantidade: 30, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[7].id, loja_id: lojaFilial2.id, preco: '9.90', quantidade: 40, valido_de: new Date(), valido_ate: dataValidade },
+		{ produto_id: produtos[9].id, loja_id: lojaFilial2.id, preco: '5.50', quantidade: 65, valido_de: new Date(), valido_ate: dataValidade }
 	);
 
 	await prisma.estoque.createMany({ data: estoqueData });

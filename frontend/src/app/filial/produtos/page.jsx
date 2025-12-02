@@ -17,7 +17,7 @@ export default function ProdutosFilial() {
   const [erro, setErro] = useState(null);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [novoItem, setNovoItem] = useState({ produto_id: '', quantidade: '', preco: '' });
+  const [novoItem, setNovoItem] = useState({ produto_id: '', quantidade: '', preco: '', valido_ate: '' });
   const [errors, setErrors] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -83,6 +83,7 @@ export default function ProdutosFilial() {
       loja_id: lojaId,
       quantidade: parseFloat(novoItem.quantidade),
       preco: parseFloat(novoItem.preco),
+      valido_ate: novoItem.valido_ate || null,
     };
 
     if (!validateForm(payload)) return;
@@ -95,7 +96,7 @@ export default function ProdutosFilial() {
       const novo = response.estoque || response;
       
       showAlert('success', 'Produto adicionado ao estoque com sucesso!');
-      setNovoItem({ produto_id: '', quantidade: '', preco: '' });
+      setNovoItem({ produto_id: '', quantidade: '', preco: '', valido_ate: '' });
       setErrors({});
       setIsAddModalOpen(false);
     } catch (err) {
@@ -104,14 +105,14 @@ export default function ProdutosFilial() {
   };
 
   const openAddModal = (produtoId = '') => {
-    setNovoItem({ produto_id: produtoId.toString(), quantidade: '', preco: '' });
+    setNovoItem({ produto_id: produtoId.toString(), quantidade: '', preco: '', valido_ate: '' });
     setIsAddModalOpen(true);
     setErrors({});
   };
 
   const closeModal = () => {
     setIsAddModalOpen(false);
-    setNovoItem({ produto_id: '', quantidade: '', preco: '' });
+    setNovoItem({ produto_id: '', quantidade: '', preco: '', valido_ate: '' });
     setErrors({});
   };
 
@@ -315,6 +316,16 @@ export default function ProdutosFilial() {
                       />
                       {errors.preco && <p className="text-[#AD343E] text-xs mt-1">{errors.preco}</p>}
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-[#2A4E73] mb-1">Válido até</label>
+                    <input 
+                      type="date" 
+                      value={novoItem.valido_ate} 
+                      onChange={(e) => setNovoItem({ ...novoItem, valido_ate: e.target.value })} 
+                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]" 
+                    />
                   </div>
 
                   <div className="flex gap-3 pt-3">
