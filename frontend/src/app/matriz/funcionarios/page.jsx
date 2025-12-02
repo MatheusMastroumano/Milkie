@@ -455,7 +455,7 @@ export default function Funcionarios() {
           </button>
         </div>
 
-        <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6 w-300">
+        <section className="bg-[#F7FAFC] rounded-lg shadow-md p-4 sm:p-6 ">
           <h2 className="text-lg sm:text-xl font-semibold text-[#2A4E73] mb-2 text-center">
             Lista de Funcionários
           </h2>
