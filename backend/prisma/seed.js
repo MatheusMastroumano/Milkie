@@ -75,9 +75,9 @@ async function main() {
 	const funcionarioGerente1 = await prisma.funcionarios.create({
 		data: {
 			loja_id: lojaMatriz.id,
-			nome: 'Maria Silva',
+			nome: 'Gerente 1',
 			cpf: '22233344455',
-			email: 'maria.silva@example.com',
+			email: 'gerente1@example.com',
 			telefone: '11999991111',
 			idade: 28,
 			cargo: 'Gerente',
@@ -90,9 +90,9 @@ async function main() {
 	const funcionarioGerente2 = await prisma.funcionarios.create({
 		data: {
 			loja_id: lojaFilial1.id,
-			nome: 'João Santos',
+			nome: 'Gerente 2',
 			cpf: '33344455566',
-			email: 'joao.santos@example.com',
+			email: 'gerente2@example.com',
 			telefone: '11999992222',
 			idade: 32,
 			cargo: 'Gerente',
@@ -105,9 +105,9 @@ async function main() {
 	const funcionarioCaixa1 = await prisma.funcionarios.create({
 		data: {
 			loja_id: lojaMatriz.id,
-			nome: 'Ana Costa',
+			nome: 'Caixa 1',
 			cpf: '44455566677',
-			email: 'ana.costa@example.com',
+			email: 'caixa1@example.com',
 			telefone: '11999993333',
 			idade: 24,
 			cargo: 'Caixa',
@@ -120,9 +120,9 @@ async function main() {
 	const funcionarioCaixa2 = await prisma.funcionarios.create({
 		data: {
 			loja_id: lojaFilial1.id,
-			nome: 'Pedro Oliveira',
+			nome: 'Caixa 2',
 			cpf: '55566677788',
-			email: 'pedro.oliveira@example.com',
+			email: 'caixa2@example.com',
 			telefone: '11999994444',
 			idade: 22,
 			cargo: 'Caixa',
@@ -135,9 +135,9 @@ async function main() {
 	const funcionarioCaixa3 = await prisma.funcionarios.create({
 		data: {
 			loja_id: lojaFilial2.id,
-			nome: 'Carla Mendes',
+			nome: 'Caixa 3',
 			cpf: '66677788899',
-			email: 'carla.mendes@example.com',
+			email: 'caixa3@example.com',
 			telefone: '11999995555',
 			idade: 26,
 			cargo: 'Caixa',
@@ -170,7 +170,7 @@ async function main() {
 			funcionario_id: funcionarioGerente1.id,
 			loja_id: lojaMatriz.id,
 			funcao: 'gerente',
-			username: 'maria.gerente',
+			username: 'gerente1',
 			senha_hash: senhaHashGerente,
 			ativo: true,
 		},
@@ -181,7 +181,7 @@ async function main() {
 			funcionario_id: funcionarioGerente2.id,
 			loja_id: lojaFilial1.id,
 			funcao: 'gerente',
-			username: 'joao.gerente',
+			username: 'gerente2',
 			senha_hash: senhaHashGerente,
 			ativo: true,
 		},
@@ -192,7 +192,7 @@ async function main() {
 			funcionario_id: funcionarioCaixa1.id,
 			loja_id: lojaMatriz.id,
 			funcao: 'caixa',
-			username: 'ana.caixa',
+			username: 'caixa1',
 			senha_hash: senhaHashCaixa,
 			ativo: true,
 		},
@@ -203,7 +203,7 @@ async function main() {
 			funcionario_id: funcionarioCaixa2.id,
 			loja_id: lojaFilial1.id,
 			funcao: 'caixa',
-			username: 'pedro.caixa',
+			username: 'caixa2',
 			senha_hash: senhaHashCaixa,
 			ativo: true,
 		},
@@ -214,7 +214,7 @@ async function main() {
 			funcionario_id: funcionarioCaixa3.id,
 			loja_id: lojaFilial2.id,
 			funcao: 'caixa',
-			username: 'carla.caixa',
+			username: 'caixa3',
 			senha_hash: senhaHashCaixa,
 			ativo: true,
 		},
@@ -470,12 +470,11 @@ const produtos = [];
 	console.log('  │ Senha: admin123                         │');
 	console.log('  ├─────────────────────────────────────────┤');
 	console.log('  │ GERENTES                                │');
-	console.log('  │ Username: maria.gerente / joao.gerente  │');
+	console.log('  │ Username: gerente1 / gerente2          │');
 	console.log('  │ Senha: gerente123                       │');
 	console.log('  ├─────────────────────────────────────────┤');
 	console.log('  │ CAIXAS                                  │');
-	console.log('  │ Username: ana.caixa / pedro.caixa /     │');
-	console.log('  │           carla.caixa                   │');
+	console.log('  │ Username: caixa1 / caixa2 / caixa3      │');
 	console.log('  │ Senha: caixa123                         │');
 	console.log('  └─────────────────────────────────────────┘');
 	console.log('\n═══════════════════════════════════════════════════\n');
