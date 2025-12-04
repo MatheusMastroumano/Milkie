@@ -17,7 +17,7 @@ export async function getFornecedoresByIdController(req, res) {
         const fornecedor = await fornecedoresService.getFornecedoresById(req.params.id);
 
         if (!fornecedor) {
-            res.status(404).json({ mensagem: "Fornecedor não encontrado" });
+            return res.status(404).json({ mensagem: "Fornecedor não encontrado" });
         }
 
         res.status(200).json({ fornecedor });
@@ -50,10 +50,10 @@ export async function updateFornecedoresController(req, res) {
         const fornecedor = await fornecedoresService.getFornecedoresById(fornecedorId);
 
         if (!fornecedor) {
-            res.status(404).json({ mensagem: 'Fornecedor não encontrado' });
+            return res.status(404).json({ mensagem: 'Fornecedor não encontrado' });
         }
 
-        const { nome, cnpj_cpf, ativo, } = req.body;
+        const { nome, cnpj_cpf, ativo } = req.body;
 
         const fornecedorData = { nome, cnpj_cpf, ativo };
 
@@ -62,7 +62,7 @@ export async function updateFornecedoresController(req, res) {
         res.status(200).json({ mensagem: 'Fornecedor atualizado com sucesso: ', updatedFornecedor });
     } catch (err) {
         console.error('Erro ao atualizar fornecedor: ', err.message);
-        res.status(500).json({ mensagem: 'Erro ao atualizar fornecedor: ', err })
+        res.status(500).json({ mensagem: 'Erro ao atualizar fornecedor: ', erro: err.message })
     }
 }
 
@@ -72,13 +72,13 @@ export async function removeFornecedoresController(req, res) {
         const fornecedor = await fornecedoresService.getFornecedoresById(fornecedorId);
 
         if (!fornecedor) {
-            res.status(404).json({ mensagem: 'Fornecedor não encontrado' });
+            return res.status(404).json({ mensagem: 'Fornecedor não encontrado' });
         }
 
         await fornecedoresService.removeFornecedores(fornecedorId);
         res.status(200).json({mensagem: 'Fornecedor removido com sucesso'});
     } catch (err) {
         console.error('Erro remover fornecedor: ', err.message);
-        res.status(500).json({mensagem: 'Erro ao criar fornecdor: ', err})
+        res.status(500).json({mensagem: 'Erro ao remover fornecedor: ', erro: err.message})
     }
 }
