@@ -444,8 +444,9 @@ export default function EstoqueFilial() {
           onConfirm={confirmDialog.onConfirm}
         />
       </div>
-      <br />
+      <br /> <br />
       <Footer />
     </main>
+    
   );
 }

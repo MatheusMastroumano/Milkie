@@ -328,9 +328,9 @@ export default function VendasFilial() {
         <br></br>
         <br></br>
         <br></br>
-      <Footer />
-      </main>
       
+      </main>
+      <Footer />
     </>
   );
 }

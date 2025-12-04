@@ -349,14 +349,10 @@ export default function ProdutosFilial() {
             </div>
           </div>
         )}
-        <br></br>
-        <br></br>
-        <br></br>
-        <br></br>
-        <br></br>
-        <Footer />
+  
+        
       </main>
-      
+      <Footer />
     </>
   );
 }
