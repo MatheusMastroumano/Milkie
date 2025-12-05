@@ -1,9 +1,20 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
+import { apiJson } from '@/lib/api';
 
 export default function PDV() {
     const router = useRouter();
+
+    const handleLogout = async () => {
+        try {
+          await apiJson('/auth/logout', { method: 'POST' });
+        } catch (_) {
+          // ignore
+        } finally {
+          router.replace('/');
+        }
+      };
 
     return (
         <>
@@ -12,7 +23,7 @@ export default function PDV() {
                     {/* Barra superior */}
                     <div className="flex items-center justify-between mb-8">
                         <button
-                            onClick={() => router.push('/')}
+                            onClick={() => handleLogout()}
                             className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
