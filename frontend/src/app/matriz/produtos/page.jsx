@@ -505,7 +505,7 @@ export default function Produtos() {
 
         {/* Modal Adicionar/Editar Produto */}
         {(isAddModalOpen || isModalOpen) && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-labelledby={isAddModalOpen ? "add-produto-title" : "edit-produto-title"} aria-modal="true">
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4" role="dialog" aria-labelledby={isAddModalOpen ? "add-produto-title" : "edit-produto-title"} aria-modal="true">
             <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
               <div className="p-4">
                 <div className="flex items-center justify-between mb-4">
@@ -828,7 +828,7 @@ export default function Produtos() {
 
         {/* Modal Estoque */}
         {isEstoqueModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" role="dialog" aria-labelledby="estoque-modal-title" aria-modal="true">
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4" role="dialog" aria-labelledby="estoque-modal-title" aria-modal="true">
             <div className="bg-[#FFFFFF] rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
               <div className="p-4">
                 <div className="flex items-center justify-between mb-4">

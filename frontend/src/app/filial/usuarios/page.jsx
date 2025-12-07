@@ -487,7 +487,7 @@ export default function Usuarios() {
         {/* Modal para Adicionar Usuário */}
         {isAddModalOpen && currentFilialId && lojaNome && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4"
             role="dialog"
             aria-labelledby="add-modal-title"
             aria-modal="true"
@@ -628,7 +628,7 @@ export default function Usuarios() {
         {/* Modal para Editar Usuário */}
         {isEditModalOpen && editUsuario && currentFilialId && lojaNome && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4"
             role="dialog"
             aria-labelledby="edit-modal-title"
             aria-modal="true"
