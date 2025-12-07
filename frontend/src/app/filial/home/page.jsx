@@ -593,7 +593,7 @@ export default function Home() {
           <select 
             value={timeFilter}
             onChange={(e) => setTimeFilter(e.target.value)}
-            className="bg-[#FFFFFF] text-[#1F2937] rounded-lg px-4 py-2 border border-[#E5E7EB] focus:border-[#4B5EAA] focus:outline-none transition-colors"
+            className="w-auto min-w-[180px]"
           >
             <option value="24h">Últimas 24h</option>
             <option value="7d">Últimos 7 dias</option>

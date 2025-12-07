@@ -194,18 +194,18 @@ export default function RelatoriosFinanceiros() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="px-4 py-2 border border-[#E5E7EB] rounded-md focus:ring-2 focus:ring-[#4B5EAA] bg-white text-[#1F2937]"
+              className="w-auto min-w-[180px]"
             />
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="px-4 py-2 border border-[#E5E7EB] rounded-md focus:ring-2 focus:ring-[#4B5EAA] bg-white text-[#1F2937]"
+              className="w-auto min-w-[180px]"
             />
             <select
               value={selectedLojaId}
               onChange={(e) => setSelectedLojaId(e.target.value)}
-              className="px-4 py-2 border border-[#E5E7EB] rounded-md focus:ring-2 focus:ring-[#4B5EAA] bg-white text-[#1F2937]"
+              className="w-auto min-w-[180px]"
             >
               <option value="">Todas as Lojas</option>
               {lojas.map(loja => (

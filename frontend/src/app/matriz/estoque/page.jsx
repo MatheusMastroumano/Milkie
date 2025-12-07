@@ -253,7 +253,7 @@ export default function Estoque() {
           <select
             value={selectedLoja}
             onChange={(e) => setSelectedLoja(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
+            className="w-full"
           >
             <option value="">Selecione uma filial...</option>
             {lojas.map((loja) => (
@@ -348,7 +348,7 @@ export default function Estoque() {
                     <select
                       value={novoEstoque.produto_id}
                       onChange={(e) => setNovoEstoque({ ...novoEstoque, produto_id: e.target.value })}
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full"
                     >
                       <option value="">Selecione um produto...</option>
                       {produtos.map((p) => (
@@ -363,7 +363,7 @@ export default function Estoque() {
                     <select
                       value={novoEstoque.loja_id}
                       onChange={(e) => setNovoEstoque({ ...novoEstoque, loja_id: e.target.value })}
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full"
                     >
                       <option value="">Selecione uma filial...</option>
                       {lojas.map((loja) => (

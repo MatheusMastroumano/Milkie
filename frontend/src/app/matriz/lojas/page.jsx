@@ -364,7 +364,7 @@ export default function Lojas() {
                         ? setNovaLoja({ ...novaLoja, tipo: e.target.value })
                         : setEditLoja({ ...editLoja, tipo: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#CFE8F9]"
+                      className="w-full"
                     >
                       <option value="filial">Filial</option>
                       <option value="matriz">Matriz</option>

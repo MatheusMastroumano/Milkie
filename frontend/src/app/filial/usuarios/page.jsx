@@ -515,7 +515,7 @@ export default function Usuarios() {
                       id="funcionario_id"
                       value={novoUsuario.funcionario_id}
                       onChange={handleFuncionarioChange}
-                      className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       aria-invalid={!!errors.funcionario_id}
                       aria-describedby={errors.funcionario_id ? 'funcionario_id-error' : undefined}
                     >
@@ -540,7 +540,7 @@ export default function Usuarios() {
                       id="loja_id"
                       value={novoUsuario.loja_id}
                       disabled
-                      className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       aria-invalid={!!errors.loja_id}
                       aria-describedby={errors.loja_id ? 'loja_id-error' : undefined}
                     >
@@ -576,7 +576,7 @@ export default function Usuarios() {
                       id="username"
                       value={novoUsuario.username}
                       onChange={(e) => setNovoUsuario({ ...novoUsuario, username: e.target.value })}
-                      className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       placeholder="Ex.: usuario123"
                       aria-invalid={!!errors.username}
                       aria-describedby={errors.username ? 'username-error' : undefined}
@@ -594,7 +594,7 @@ export default function Usuarios() {
                       id="senha_hash"
                       value={novoUsuario.senha_hash}
                       onChange={(e) => setNovoUsuario({ ...novoUsuario, senha_hash: e.target.value })}
-                      className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       placeholder="Digite a senha"
                       aria-invalid={!!errors.senha_hash}
                       aria-describedby={errors.senha_hash ? 'senha_hash-error' : undefined}
@@ -668,7 +668,7 @@ export default function Usuarios() {
                       id="edit-funcionario_id"
                       value={editUsuario.funcionario_id}
                       onChange={handleEditFuncionarioChange}
-                      className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       aria-invalid={!!errors.funcionario_id}
                       aria-describedby={errors.funcionario_id ? 'edit-funcionario_id-error' : undefined}
                     >
@@ -693,7 +693,7 @@ export default function Usuarios() {
                       id="edit-loja_id"
                       value={editUsuario.loja_id}
                       disabled
-                      className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       aria-invalid={!!errors.loja_id}
                       aria-describedby={errors.loja_id ? 'edit-loja_id-error' : undefined}
                     >
@@ -729,7 +729,7 @@ export default function Usuarios() {
                       id="edit-username"
                       value={editUsuario.username}
                       onChange={(e) => setEditUsuario({ ...editUsuario, username: e.target.value })}
-                      className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       placeholder="Ex.: usuario123"
                       aria-invalid={!!errors.username}
                       aria-describedby={errors.username ? 'edit-username-error' : undefined}
@@ -747,7 +747,7 @@ export default function Usuarios() {
                       id="edit-senha_hash"
                       value={editSenha}
                       onChange={(e) => setEditSenha(e.target.value)}
-                      className="w-full px-3 py-2 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       placeholder="Digite a nova senha"
                       aria-invalid={!!errors.senha_hash}
                       aria-describedby={errors.senha_hash ? 'edit-senha_hash-error' : undefined}

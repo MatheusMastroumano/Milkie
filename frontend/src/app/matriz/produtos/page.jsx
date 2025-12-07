@@ -852,7 +852,7 @@ export default function Produtos() {
                       id="estoque-loja"
                       value={estoqueProduto.loja_id}
                       onChange={(e) => setEstoqueProduto({ ...estoqueProduto, loja_id: e.target.value })}
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       aria-invalid={errors.loja_id ? 'true' : 'false'}
                       aria-describedby={errors.loja_id ? 'estoque-loja-error' : undefined}
                     >

@@ -467,7 +467,7 @@ export default function Funcionarios() {
                         ? setNovoFuncionario({ ...novoFuncionario, nome: e.target.value })
                         : setEditFuncionario({ ...editFuncionario, nome: e.target.value })
                       }
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       placeholder="Ex.: Robert Lox"
                     />
                     {errors.nome && (
@@ -492,7 +492,7 @@ export default function Funcionarios() {
                         }
                       }}
                       maxLength={14}
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       placeholder="000.000.000-00"
                     />
                     {errors.cpf && (
@@ -512,7 +512,7 @@ export default function Funcionarios() {
                         ? setNovoFuncionario({ ...novoFuncionario, email: e.target.value })
                         : setEditFuncionario({ ...editFuncionario, email: e.target.value })
                       }
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       placeholder="Ex.: rob.lox@game.com"
                     />
                     {errors.email && (
@@ -537,7 +537,7 @@ export default function Funcionarios() {
                         }
                       }}
                       maxLength={11}
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       placeholder="11987654321"
                     />
                     {errors.telefone && (
@@ -557,7 +557,7 @@ export default function Funcionarios() {
                         ? setNovoFuncionario({ ...novoFuncionario, idade: e.target.value })
                         : setEditFuncionario({ ...editFuncionario, idade: e.target.value })
                       }
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       placeholder="Ex.: 67"
                       min="1"
                     />
@@ -581,7 +581,7 @@ export default function Funcionarios() {
                           setEditFuncionario({ ...editFuncionario, cargo: val });
                         }
                       }}
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                     >
                       <option value="">Selecione</option>
                       <option value="admin">admin</option>
@@ -606,7 +606,7 @@ export default function Funcionarios() {
                         ? setNovoFuncionario({ ...novoFuncionario, salario: e.target.value })
                         : setEditFuncionario({ ...editFuncionario, salario: e.target.value })
                       }
-                      className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                      className="w-full"
                       placeholder="Ex.: 6900.67"
                       min="0"
                     />
@@ -625,7 +625,7 @@ export default function Funcionarios() {
                         type="file"
                         accept="image/*"
                         onChange={handleImageChange}
-                        className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                        className="w-full"
                       />
                       {previewImagem && (
                         <div className="mt-2">

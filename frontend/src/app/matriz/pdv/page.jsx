@@ -222,7 +222,7 @@ export default function VendasFilial() {
                 id="select-loja"
                 value={filialId || ""}
                 onChange={(e) => setFilialId(parseInt(e.target.value))}
-                className="w-full sm:w-80 px-3 py-2 text-sm sm:text-base text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
+                className="w-full sm:w-80"
               >
                 <option value="">Selecione uma loja</option>
                 {lojas.map((loja) => (

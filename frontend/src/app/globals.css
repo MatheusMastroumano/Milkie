@@ -149,4 +149,71 @@ body.navbar-open {
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Estilo consistente para todos os selects */
+  select {
+    @apply w-full px-4 py-2.5 bg-white text-[#2A4E73] border border-[#E5E7EB] rounded-lg shadow-sm;
+    @apply focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] focus:border-[#4B5EAA];
+    @apply hover:border-[#4B5EAA]/50 transition-all duration-200;
+    @apply appearance-none cursor-pointer;
+    @apply text-sm font-medium;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%232A4E73' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+  }
+  
+  select:disabled {
+    @apply bg-[#F7FAFC] text-[#9CA3AF] cursor-not-allowed;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+  
+  /* Estilo para as opções dentro dos selects */
+  select option {
+    @apply bg-white text-[#2A4E73];
+    @apply px-3 py-2.5;
+    @apply text-sm font-medium;
+    @apply cursor-pointer;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    min-height: 2.5rem;
+    border-radius: 0.5rem; /* rounded-lg - mesmo valor dos selects */
+    margin: 0.125rem 0.25rem; /* Espaçamento entre opções */
+    border-bottom: 1px solid rgba(229, 231, 235, 0.3); /* Linha separadora com baixa opacidade */
+  }
+  
+  /* Remove a linha do último item */
+  select option:last-child {
+    border-bottom: none;
+  }
+  
+  /* Opção selecionada */
+  select option:checked,
+  select option[selected] {
+    @apply bg-[#CFE8F9] text-[#2A4E73];
+    @apply font-semibold;
+    border-radius: 0.5rem; /* rounded-lg - mesmo valor dos selects */
+  }
+  
+  /* Hover nas opções (funciona em alguns navegadores) - azul escuro dos botões */
+  select option:hover {
+    @apply bg-[#2A4E73] text-white; /* Azul escuro igual aos botões */
+    border-radius: 0.5rem; /* rounded-lg - mesmo valor dos selects */
+  }
+  
+  /* Opções desabilitadas */
+  select option:disabled {
+    @apply bg-[#F7FAFC] text-[#9CA3AF];
+    @apply cursor-not-allowed;
+    @apply opacity-60;
+    border-radius: 0.5rem; /* rounded-lg - mesmo valor dos selects */
+  }
+  
+  /* Primeira opção (placeholder) */
+  select option[value=""] {
+    @apply text-[#9CA3AF];
+    @apply font-normal;
+    border-radius: 0.5rem; /* rounded-lg - mesmo valor dos selects */
+  }
 }
