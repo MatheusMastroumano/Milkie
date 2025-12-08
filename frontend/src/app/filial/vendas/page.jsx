@@ -102,10 +102,7 @@ export default function VendasFilial() {
 
   // Função para visualizar detalhes da venda
   const visualizarVenda = (venda) => {
-    // Em produção, redirecionar para a página de detalhes da venda
-    router.push(`/filial/vendas/${venda.id}`);
-    
-    alert(`Redirecionando: Visualizando detalhes da venda #${venda.id}`);
+    alert(`Venda #${venda.id}\nTotal: R$ ${venda.valorTotal.toFixed(2)}\nData: ${formatarData(venda.data)}`);
   };
 
   // Função para calcular o total de vendas

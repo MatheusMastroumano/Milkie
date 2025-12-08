@@ -85,6 +85,13 @@ export default function EstoqueFilial() {
     if (!item.produto_id) err.produto_id = 'Selecione um produto';
     if (!item.quantidade || parseFloat(item.quantidade) <= 0) err.quantidade = 'Quantidade deve ser maior que 0';
     if (!item.preco || parseFloat(item.preco) <= 0) err.preco = 'Preço deve ser maior que 0';
+    if (item.valido_ate) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const d = new Date(item.valido_ate);
+      d.setHours(0,0,0,0);
+      if (d < today) err.valido_ate = 'Validade não pode ser no passado';
+    }
     setErrors(err);
     return Object.keys(err).length === 0;
   };
@@ -365,7 +372,7 @@ export default function EstoqueFilial() {
 
                   <div>
                     <label className="block text-sm font-medium text-[#2A4E73] mb-1">Válido até</label>
-                    <input type="date" value={novoItem.valido_ate} onChange={(e) => setNovoItem({ ...novoItem, valido_ate: e.target.value })} className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]" />
+                    <input type="date" min={new Date().toISOString().split("T")[0]} value={novoItem.valido_ate} onChange={(e) => setNovoItem({ ...novoItem, valido_ate: e.target.value })} className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]" />
                   </div>
 
                   <div className="flex gap-3 pt-3">
@@ -416,7 +423,7 @@ export default function EstoqueFilial() {
 
                   <div>
                     <label className="block text-sm font-medium text-[#2A4E73] mb-1">Válido até</label>
-                    <input type="date" value={editItem.valido_ate} onChange={(e) => setEditItem({ ...editItem, valido_ate: e.target.value })} className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]" />
+                    <input type="date" min={new Date().toISOString().split("T")[0]} value={editItem.valido_ate} onChange={(e) => setEditItem({ ...editItem, valido_ate: e.target.value })} className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9]" />
                   </div>
 
                   <div className="flex gap-3 pt-3">

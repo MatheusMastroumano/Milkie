@@ -331,12 +331,7 @@ export default function ProductDetails() {
               <p>
                 <b>Status do Sistema:</b> {produto.ativo ? "Ativado" : "Desativado"}
               </p>
-              {produto.imagem_url && (
-                <p>
-                  <b>Imagem:</b>{" "}
-                  <span className="font-mono text-xs break-all">{produto.imagem_url}</span>
-                </p>
-              )}
+           
             </div>
           </div>
 

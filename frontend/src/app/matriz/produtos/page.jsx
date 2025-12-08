@@ -110,6 +110,13 @@ export default function Produtos() {
     if (produto.validade && isNaN(new Date(produto.validade))) {
       newErrors.validade = 'Data inválida';
     }
+    if (produto.validade) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const d = new Date(produto.validade);
+      d.setHours(0,0,0,0);
+      if (d < today) newErrors.validade = 'Validade não pode ser no passado';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -123,6 +130,13 @@ export default function Produtos() {
     if (isNaN(preco) || preco <= 0) newErrors.preco = 'Preço inválido';
     if (estoque.valido_ate && isNaN(new Date(estoque.valido_ate))) {
       newErrors.valido_ate = 'Data inválida';
+    }
+    if (estoque.valido_ate) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const d = new Date(estoque.valido_ate);
+      d.setHours(0,0,0,0);
+      if (d < today) newErrors.valido_ate = 'Validade não pode ser no passado';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -636,6 +650,7 @@ export default function Produtos() {
                     <input
                       id={isAddModalOpen ? "add-validade" : "edit-validade"}
                       type="date"
+                      min={new Date().toISOString().split('T')[0]}
                       value={isAddModalOpen ? novoProduto.validade : editProduto?.validade}
                       onChange={(e) => isAddModalOpen
                         ? setNovoProduto({ ...novoProduto, validade: e.target.value })
@@ -915,6 +930,7 @@ export default function Produtos() {
                     <input
                       id="estoque-validade"
                       type="date"
+                      min={new Date().toISOString().split('T')[0]}
                       value={estoqueProduto.valido_ate}
                       onChange={(e) => setEstoqueProduto({ ...estoqueProduto, valido_ate: e.target.value })}
                       className="w-full px-3 py-1.5 text-sm text-[#2A4E73] border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"

@@ -8,7 +8,6 @@ const SimpleConfirm = ({
   confirmText = 'Confirmar',
   cancelText = 'Cancelar',
   onConfirm,
-  type = 'warning'
 }) => {
   if (!isOpen) return null;
 
@@ -23,76 +22,35 @@ const SimpleConfirm = ({
     onClose();
   };
 
-  const getColors = () => {
-    switch (type) {
-      case 'warning':
-        return {
-          bg: 'bg-yellow-50',
-          border: 'border-yellow-200',
-          icon: '⚠️',
-          confirmBtn: 'bg-yellow-600 hover:bg-yellow-700'
-        };
-      case 'error':
-        return {
-          bg: 'bg-red-50',
-          border: 'border-red-200',
-          icon: '❌',
-          confirmBtn: 'bg-red-600 hover:bg-red-700'
-        };
-      case 'success':
-        return {
-          bg: 'bg-green-50',
-          border: 'border-green-200',
-          icon: '✅',
-          confirmBtn: 'bg-green-600 hover:bg-green-700'
-        };
-      default:
-        return {
-          bg: 'bg-blue-50',
-          border: 'border-blue-200',
-          icon: 'ℹ️',
-          confirmBtn: 'bg-blue-600 hover:bg-blue-700'
-        };
-    }
-  };
-
-  const colors = getColors();
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black bg-opacity-50"
-        onClick={handleCancel}
-      />
-      
-      {/* Dialog */}
-      <div className={`relative ${colors.bg} ${colors.border} border-2 rounded-lg shadow-xl max-w-md w-full`}>
-        {/* Header */}
-        <div className="p-6 pb-4">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-2xl">{colors.icon}</span>
-            <h3 className="text-lg font-semibold text-gray-900">
-              {title}
-            </h3>
-          </div>
-          
-          {/* Content */}
-          <p className="text-gray-700 leading-relaxed mb-6">
-            {description}
-          </p>
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="absolute inset-0" onClick={handleCancel} />
 
-          {/* Actions */}
+      <div className="relative bg-[#FFFFFF] rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-[#2A4E73]">{title}</h3>
+            <button
+              onClick={handleCancel}
+              className="text-[#2A4E73] hover:text-[#AD343E] text-2xl font-bold"
+              aria-label="Fechar modal"
+            >
+              ×
+            </button>
+          </div>
+
+          <p className="text-sm text-[#2A4E73] mb-6">{description}</p>
+
           <div className="flex gap-3">
             <button
               onClick={handleConfirm}
-              className={`flex-1 px-4 py-2 rounded-md font-medium text-white transition-colors ${colors.confirmBtn}`}
+              className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#AD343E] rounded-md hover:bg-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
             >
               {confirmText}
             </button>
             <button
               onClick={handleCancel}
-              className="flex-1 px-4 py-2 rounded-md font-medium bg-gray-200 hover:bg-gray-300 text-gray-800 transition-colors"
+              className="flex-1 px-4 py-1.5 text-sm font-medium text-[#FFFFFF] bg-[#2A4E73] rounded-md hover:bg-[#AD343E] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
             >
               {cancelText}
             </button>
