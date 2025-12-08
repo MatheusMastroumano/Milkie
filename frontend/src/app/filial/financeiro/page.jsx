@@ -542,7 +542,7 @@ export default function Financeiro() {
                       type="text"
                       value={novaDespesa.descricao}
                       onChange={(e) => setNovaDespesa({ ...novaDespesa, descricao: e.target.value })}
-                      className="w-full"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm text-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                       placeholder="Descrição da despesa"
                     />
                   </div>
@@ -553,7 +553,7 @@ export default function Financeiro() {
                       step="0.01"
                       value={novaDespesa.valor}
                       onChange={(e) => setNovaDespesa({ ...novaDespesa, valor: e.target.value })}
-                      className="w-full"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm text-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                       placeholder="R$ 0,00"
                     />
                   </div>
@@ -563,7 +563,7 @@ export default function Financeiro() {
                       type="date"
                       value={novaDespesa.data}
                       onChange={(e) => setNovaDespesa({ ...novaDespesa, data: e.target.value })}
-                      className="w-full"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm text-[#2A4E73] bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                     />
                   </div>
                   <div className="lg:col-span-2">
@@ -571,7 +571,7 @@ export default function Financeiro() {
                     <select
                       value={novaDespesa.categoria}
                       onChange={(e) => setNovaDespesa({ ...novaDespesa, categoria: e.target.value })}
-                      className="w-full"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm text-[#2A4E73] bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                     >
                       <option value="Fixas">Fixas</option>
                       <option value="Variáveis">Variáveis</option>
@@ -665,7 +665,7 @@ export default function Financeiro() {
                     <select
                       value={novoPagamentoFornecedor.fornecedor_id}
                       onChange={(e) => setNovoPagamentoFornecedor({ ...novoPagamentoFornecedor, fornecedor_id: e.target.value })}
-                      className="w-full"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm text-[#2A4E73] bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                     >
                       <option value="">Selecione um fornecedor</option>
                       {fornecedoresLista.filter(f => f.ativo).map(f => (
@@ -680,7 +680,7 @@ export default function Financeiro() {
                       step="0.01"
                       value={novoPagamentoFornecedor.valor}
                       onChange={(e) => setNovoPagamentoFornecedor({ ...novoPagamentoFornecedor, valor: e.target.value })}
-                      className="w-full"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm text-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                       placeholder="R$ 0,00"
                     />
                   </div>
@@ -690,7 +690,7 @@ export default function Financeiro() {
                       type="date"
                       value={novoPagamentoFornecedor.vencimento}
                       onChange={(e) => setNovoPagamentoFornecedor({ ...novoPagamentoFornecedor, vencimento: e.target.value })}
-                      className="w-full"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm text-[#2A4E73] bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                     />
                   </div>
                   <div className="lg:col-span-2 flex items-end">
@@ -780,7 +780,7 @@ export default function Financeiro() {
                           salario: func ? func.salario.toString() : ''
                         });
                       }}
-                      className="w-full"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm text-[#2A4E73] bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                     >
                       <option value="">Selecione um funcionário</option>
                       {funcionariosLista.filter(f => f.ativo).map(f => (
@@ -795,7 +795,7 @@ export default function Financeiro() {
                       step="0.01"
                       value={novoPagamentoFuncionario.salario}
                       onChange={(e) => setNovoPagamentoFuncionario({ ...novoPagamentoFuncionario, salario: e.target.value })}
-                      className="w-full"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm text-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                       placeholder="R$ 0,00"
                     />
                   </div>
@@ -806,7 +806,7 @@ export default function Financeiro() {
                       step="0.01"
                       value={novoPagamentoFuncionario.comissao}
                       onChange={(e) => setNovoPagamentoFuncionario({ ...novoPagamentoFuncionario, comissao: e.target.value })}
-                      className="w-full"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm text-[#2A4E73] focus:outline-none focus:ring-2 focus:ring-[#CFE8F9] transition-colors"
                       placeholder="R$ 0,00"
                     />
                   </div>

@@ -48,7 +48,6 @@ export async function createFornecedores(data) {
                 nome,
                 cnpj_cpf,
                 ativo: ativo ?? true,
-                produtos_fornecidos: produtos_fornecidos || null,
                 criado_em: new Date(),
             },
         });
@@ -62,7 +61,7 @@ export async function createFornecedores(data) {
 //atualizar fornecedores
 export async function updateFornecedoresById(id, data) {
 
-    const { nome, cnpj_cpf, produtos_fornecidos, ativo } = data;
+    const { nome, cnpj_cpf, ativo } = data;
 
     if (cnpj_cpf && !cpf.isValid(cnpj_cpf) && !cnpj.isValid(cnpj_cpf)) {
         throw new Error('CPF ou CNPJ inválido.');
@@ -77,7 +76,6 @@ export async function updateFornecedoresById(id, data) {
             ...(nome !== undefined && { nome }),
             ...(cnpj_cpf !== undefined && { cnpj_cpf }),
             ...(ativo !== undefined && { ativo }),
-            ...(produtos_fornecidos !== undefined && { produtos_fornecidos }),
         };
 
         return await prisma.fornecedores.update({
